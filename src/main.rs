@@ -22,28 +22,9 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugin(EnvironmentPlugin)
         .add_plugin(DudePlugin)
-        .add_startup_system(setup.system())
         .add_system(exit.system())
         .add_plugin(CameraPlugin)
         .run();
-}
-
-fn setup(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-) {
-//  commands.spawn_bundle(PbrBundle {
-//      mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-//      material: materials.add(Color::hex(COLOR_BOX).unwrap().into()),
-//      transform: Transform::from_xyz(0.0, 0.5, 0.0),
-//      ..Default::default()
-//  });
-    // light
-    commands.spawn_bundle(LightBundle {
-        transform: Transform::from_xyz(4.0, 8.0, 4.0),
-        ..Default::default()
-    });
 }
 
 fn exit(keys: Res<Input<KeyCode>>, mut exit: ResMut<Events<AppExit>>) {

@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use crate::environment;
+use crate::environment::{Direction};
 
 #[derive(Default)]
 struct Loaded(bool);
@@ -16,18 +17,8 @@ impl Plugin for DudePlugin {
            .add_startup_system(setup_dude.system())
            .add_system(spawn_dude.system())
            .add_system(update_dude.system())
-           .add_system(move_dude.system());
-//         .add_system(animate_ant.system())
-//         .add_system(update_ant.system())
-//         .add_system(update_raycast_with_cursor.system())
-//          .add_system_to_stage(
-//              stage::POST_UPDATE, // We want this system to run after we've updated our ray casting source
-//              update_raycast::<crate::MyRaycastSet>.system(), // This provided system does the ray casting
-//          )
-//          .add_system_to_stage(
-//              stage::POST_UPDATE, // We want this system to run after ray casting has been computed
-//              update_debug_cursor::<crate::MyRaycastSet>.system(), // Update the debug cursor location
-//          );
+           .add_system(move_dude.system())
+           .add_system(push_box.system());
     }
 }
 
@@ -63,6 +54,7 @@ fn spawn_dude(
                 x: 0,
                 y: 0,
                 z: 0,
+                facing: Direction::Left,
                 target: None,
                 queued_movement: None,
             })
@@ -80,6 +72,7 @@ fn spawn_dude(
 fn update_dude(
     mut dudes: Query<(Entity, &mut Dude, &mut Transform)>, 
     level: Res<environment::Level>,
+    box_positions: Query<(Entity, &environment::BoxObject, &environment::Position)>,
     time: Res<Time>, 
 ) {
     for (_entity, mut dude, mut dude_transform) in dudes.iter_mut() {
@@ -91,6 +84,14 @@ fn update_dude(
         if !dude.target.is_some() { continue; }
 
         let (target_translation, target_rotation) = dude.target.unwrap();
+
+        let mut is_blocked = false;
+        for (_, box_object, position) in box_positions.iter() {
+            if position.matches(target_translation) {
+                is_blocked = true;
+                break;
+            }
+        }
 
         if target_translation == dude_transform.translation || target_translation.distance(dude_transform.translation) < 0.1 {
             dude_transform.translation = target_translation;
@@ -104,14 +105,53 @@ fn update_dude(
         let target_position = Vec3::new(target_translation.x - dude_transform.translation.x,
                                         0.0,
                                         target_translation.z - dude_transform.translation.z).normalize();
-         
-        dude_transform.translation += target_position * 0.01 * time.delta().subsec_millis() as f32;
-        dude_transform.rotation = target_rotation;
+
+        dude_transform.rotation = match target_rotation {
+                                      Direction::Up => Quat::from_axis_angle(Vec3::Y, -std::f32::consts::FRAC_PI_2),
+                                      Direction::Down => Quat::from_axis_angle(Vec3::Y, std::f32::consts::FRAC_PI_2),
+                                      Direction::Right => Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI),
+                                      Direction::Left => Quat::from_axis_angle(Vec3::Y, 0.0),
+                                  };
+        dude.facing = target_rotation;
+
+        if is_blocked {
+            // can't move here
+            dude.target = None;
+            dude.x = dude_transform.translation.x as i32;
+            dude.y = dude_transform.translation.y as i32;
+            dude.z = dude_transform.translation.z as i32;
+            println!("NO!");
+            continue;
+        } else {
+            dude_transform.translation += target_position * 0.01 * time.delta().subsec_millis() as f32;
+        }
     }
 }
 
-enum MoveDirection {
-    Up, Down, Left, Right 
+fn push_box(
+    keyboard_input: Res<Input<KeyCode>>,
+    level: Res<environment::Level>,
+    dudes: Query<(Entity, &Dude, &Transform)>, 
+    mut box_positions: Query<(Entity, &mut environment::BoxObject, &mut environment::Position)>,
+    time: Res<Time>, 
+) { 
+    for (_entity, dude, transform) in dudes.iter() {
+        if keyboard_input.just_pressed(KeyCode::E) {
+            let (x, y, z) = match dude.facing {
+                                Direction::Up => (dude.x + 1, dude.y, dude.z),
+                                Direction::Down => (dude.x - 1, dude.y, dude.z),
+                                Direction::Right => (dude.x, dude.y, dude.z + 1),
+                                Direction::Left => (dude.x, dude.y, dude.z - 1),
+                            };
+
+            for (_e, mut box_object, box_position) in box_positions.iter_mut() {
+                if box_position.matches(Vec3::new(x as f32, y as f32, z as f32)) {
+                    box_object.target = Some(dude.facing);
+                    println!("Pushed box {:?}", box_object.target);
+                }
+            }
+        }
+    }
 }
 
 fn move_dude(
@@ -120,32 +160,25 @@ fn move_dude(
     mut dudes: Query<(Entity, &mut Dude)>, 
 ) {
     for (_entity, mut dude) in dudes.iter_mut() {
+        let mut move_direction = None;
         if keyboard_input.just_pressed(KeyCode::W) {
-            if !dude.target.is_some() {
-                dude.move_direction(level.width, level.length, MoveDirection::Up);
-            } else {
-                dude.queued_movement = Some(MoveDirection::Up);
-            }
+            move_direction = Some(Direction::Up); 
         }
         if keyboard_input.just_pressed(KeyCode::S) {
-            if !dude.target.is_some() {
-                dude.move_direction(level.width, level.length, MoveDirection::Down);
-            } else {
-                dude.queued_movement = Some(MoveDirection::Down);
-            }
+            move_direction = Some(Direction::Down); 
         }
         if keyboard_input.just_pressed(KeyCode::A) {
-            if !dude.target.is_some() {
-                dude.move_direction(level.width, level.length, MoveDirection::Left);
-            } else {
-                dude.queued_movement = Some(MoveDirection::Left);
-            }
+            move_direction = Some(Direction::Left); 
         }
         if keyboard_input.just_pressed(KeyCode::D) {
+            move_direction = Some(Direction::Right); 
+        }
+
+        if let Some(move_direction) = move_direction {
             if !dude.target.is_some() {
-                dude.move_direction(level.width, level.length, MoveDirection::Right);
+                dude.move_direction(level.width, level.length, move_direction);
             } else {
-                dude.queued_movement = Some(MoveDirection::Right);
+                dude.queued_movement = Some(move_direction);
             }
         }
     }
@@ -156,39 +189,36 @@ struct Dude {
     x: i32,
     y: i32,
     z: i32,
-    target: Option::<(Vec3, Quat)>,
-    queued_movement: Option::<MoveDirection>,
+    facing: Direction,
+    target: Option::<(Vec3, Direction)>,
+    queued_movement: Option::<Direction>,
 }
 
 impl Dude {
-    fn move_direction(&mut self, width: i32, length: i32, direction: MoveDirection) {
+    fn move_direction(&mut self, width: i32, length: i32, direction: Direction) {
         match direction {
-            MoveDirection::Up => {
+            Direction::Up => {
                 if self.x < (width - 1) {
                     let target = Vec3::new(self.x as f32 + 1.0, self.y as f32, self.z as f32);
-                    let rotation = Quat::from_axis_angle(Vec3::Y, -std::f32::consts::FRAC_PI_2);
-                    self.target = Some((target, rotation));
+                    self.target = Some((target, direction));
                 }
             },
-            MoveDirection::Down => {
+            Direction::Down => {
                 if self.x > 0 {
                     let target = Vec3::new(self.x as f32 - 1.0, self.y as f32, self.z as f32);
-                    let rotation = Quat::from_axis_angle(Vec3::Y, std::f32::consts::FRAC_PI_2);
-                    self.target = Some((target, rotation));
+                    self.target = Some((target, direction));
                 }
             }
-            MoveDirection::Right => {
+            Direction::Right => {
                 if self.z < length - 1 {
                     let target = Vec3::new(self.x as f32, self.y as f32, self.z as f32 + 1.0);
-                    let rotation = Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI);
-                    self.target = Some((target, rotation));
+                    self.target = Some((target, direction));
                 }
             }
-            MoveDirection::Left => {
+            Direction::Left => {
                 if self.z > 0 {
                     let target = Vec3::new(self.x as f32, self.y as f32, self.z as f32 - 1.0);
-                    let rotation = Quat::from_axis_angle(Vec3::Y, 0.0);
-                    self.target = Some((target, rotation));
+                    self.target = Some((target, direction));
                 }
             }
         }
