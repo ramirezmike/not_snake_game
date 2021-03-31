@@ -79,6 +79,7 @@ fn update_box(
     mut boxes: QuerySet<(Query<(Entity, &mut BoxObject, &mut Position, &mut Transform)>, 
                          Query<(Entity, &BoxObject, &Position)>)>, 
     time: Res<Time>, 
+    level: Res<Level>,
 ) {
     let mut boxes_to_update: Vec::<(Entity, Vec3)> = Vec::new();
     for (entity, mut box_object, mut position, mut transform) in boxes.q0_mut().iter_mut() {
@@ -115,7 +116,14 @@ fn update_box(
         boxes_to_update.push((entity, target_translation));
     }
 
-    let mut boxes_that_cant_move = Vec::new();
+    let (mut boxes_to_update, mut boxes_that_cant_move): (Vec::<(Entity, Vec3)>, Vec::<(Entity, Vec3)>) 
+                          = boxes_to_update.into_iter()
+                                           .partition(|x| {
+                                               let (x, y, z) = (x.1.x as i32, x.1.y as i32, x.1.z as i32);
+                                               x >= 0 && x < level.width &&
+                                               z >= 0 && z < level.length
+                                           });
+
     for (entity, _box_object, position) in boxes.q1_mut().iter_mut() {
         let (ok_boxes, mut blocked_boxes): (Vec::<(Entity, Vec3)>, Vec::<(Entity, Vec3)>) 
             = boxes_to_update.into_iter().partition(|x| entity == x.0 || !position.matches((*x).1));
@@ -123,8 +131,10 @@ fn update_box(
         boxes_to_update = ok_boxes;
     }
 
-    for blocked_box in boxes_that_cant_move {
-        // need to get the box entity and set its target to None
+    for (entity, _target_translation) in boxes_that_cant_move {
+        if let Ok((_e, mut box_object, _position, _transform)) = boxes.q0_mut().get_mut(entity) {
+            box_object.target = None;
+        }
         // also need to populate boxes_that_cant_move with boxes that are
         // out of bounds based on the level structure
     }
