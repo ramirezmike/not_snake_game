@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use crate::environment;
-use crate::environment::{Direction};
+use crate::environment::{Direction, EntityType, GameObject, Position, Level};
 
 #[derive(Default)]
 struct Loaded(bool);
@@ -40,12 +40,14 @@ fn spawn_dude(
     meshes: Res<DudeMeshes>, 
     loaded: Res<Loaded>,
     mut spawned: ResMut<Spawned>,
+    mut level: ResMut<Level>,
 ) {
     if !loaded.0 || spawned.0 { return; }
 
     let mut transform = Transform::from_translation(Vec3::new(0.0, 0.0, 0.0));
     transform.apply_non_uniform_scale(Vec3::new(0.25, 0.25, 0.25)); 
     transform.rotate(Quat::from_axis_angle(Vec3::new(0.0, 1.0, 0.0), 0.0));
+    let player_entity = 
     commands.spawn_bundle(PbrBundle {
                 transform,
                 ..Default::default()
@@ -62,20 +64,24 @@ fn spawn_dude(
                 parent.spawn_bundle(PbrBundle {
                     mesh: meshes.step1.clone(),
                     material: meshes.material.clone(),
-                    transform: Transform::from_rotation(Quat::from_axis_angle(Vec3::new(0.0, 1.0, 0.0), 1.57079632679)),
+                    transform: {
+                        let mut transform = Transform::from_rotation(Quat::from_axis_angle(Vec3::new(0.0, 1.0, 0.0), 1.57079632679));
+                        transform.translation = Vec3::new(0.0, 0.5, 0.0);
+                        transform
+                    },
                     ..Default::default()
                 });
-            });
+            }).id();
     spawned.0 = true;
+    level.set(0, 0, 0, Some(GameObject::new(player_entity, EntityType::Dude)));
 }
 
 fn update_dude(
     mut dudes: Query<(Entity, &mut Dude, &mut Transform)>, 
-    level: Res<environment::Level>,
-    box_positions: Query<(Entity, &environment::BoxObject, &environment::Position)>,
+    mut level: ResMut<Level>,
     time: Res<Time>, 
 ) {
-    for (_entity, mut dude, mut dude_transform) in dudes.iter_mut() {
+    for (entity, mut dude, mut dude_transform) in dudes.iter_mut() {
         if !dude.target.is_some() && dude.queued_movement.is_some() {
             let queued_movement = dude.queued_movement.take().unwrap();
             dude.move_direction(level.width, level.length, queued_movement);
@@ -85,20 +91,15 @@ fn update_dude(
 
         let (target_translation, target_rotation) = dude.target.unwrap();
 
-        let mut is_blocked = false;
-        for (_, box_object, position) in box_positions.iter() {
-            if position.matches(target_translation) {
-                is_blocked = true;
-                break;
-            }
-        }
-
         if target_translation == dude_transform.translation || target_translation.distance(dude_transform.translation) < 0.1 {
             dude_transform.translation = target_translation;
             dude.target = None;
+
+            level.set(dude.x, dude.y, dude.z, None);
             dude.x = dude_transform.translation.x as i32;
             dude.y = dude_transform.translation.y as i32;
             dude.z = dude_transform.translation.z as i32;
+            level.set(dude.x, dude.y, dude.z, Some(GameObject::new(entity, EntityType::Dude)));
             continue;
         }
 
@@ -114,7 +115,9 @@ fn update_dude(
                                   };
         dude.facing = target_rotation;
 
-        if is_blocked {
+
+        
+        if !level.is_type_with_vec(target_translation, None) {
             // can't move here
             dude.target = None;
             dude.x = dude_transform.translation.x as i32;
@@ -130,12 +133,11 @@ fn update_dude(
 
 fn push_box(
     keyboard_input: Res<Input<KeyCode>>,
-    level: Res<environment::Level>,
-    dudes: Query<(Entity, &Dude, &Transform)>, 
-    mut box_positions: Query<(Entity, &mut environment::BoxObject, &mut environment::Position)>,
-    time: Res<Time>, 
+    level: Res<Level>,
+    dudes: Query<(&Dude, &Transform)>, 
+    mut blocks: Query<&mut environment::BoxObject>,
 ) { 
-    for (_entity, dude, transform) in dudes.iter() {
+    for (dude, _transform) in dudes.iter() {
         if keyboard_input.just_pressed(KeyCode::E) {
             let (x, y, z) = match dude.facing {
                                 Direction::Up => (dude.x + 1, dude.y, dude.z),
@@ -144,10 +146,12 @@ fn push_box(
                                 Direction::Left => (dude.x, dude.y, dude.z - 1),
                             };
 
-            for (_e, mut box_object, box_position) in box_positions.iter_mut() {
-                if box_position.matches(Vec3::new(x as f32, y as f32, z as f32)) {
-                    box_object.target = Some(dude.facing);
-                    println!("Pushed box {:?}", box_object.target);
+            if level.is_type(x, y, z, Some(EntityType::Block)) {
+                if let Some(block) = level.get(x, y, z) {
+                    if let Ok(mut block) = blocks.get_mut(block.entity) {
+                        block.target = Some(dude.facing);
+                        println!("Pushed box {:?}", block.target);
+                    }
                 }
             }
         }
@@ -156,7 +160,7 @@ fn push_box(
 
 fn move_dude(
     keyboard_input: Res<Input<KeyCode>>,
-    level: Res<environment::Level>,
+    level: Res<Level>,
     mut dudes: Query<(Entity, &mut Dude)>, 
 ) {
     for (_entity, mut dude) in dudes.iter_mut() {

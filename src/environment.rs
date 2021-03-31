@@ -6,6 +6,7 @@ impl Plugin for EnvironmentPlugin {
         app.insert_resource(Level {
                width: 6,
                length: 12,
+               game_objects: vec![vec![vec![None; 12]; 1]; 6],
            })
            .add_startup_system(create_environment.system())
            .add_system(update_box.system());
@@ -15,29 +16,110 @@ impl Plugin for EnvironmentPlugin {
 pub struct Level {
     pub width: i32,
     pub length: i32,
+    pub game_objects: Vec::<Vec::<Vec::<Option::<GameObject>>>>
 }
 
-pub struct Position { pub x: i32, pub y: i32, pub z: i32 }
+impl Level {
+    pub fn set_with_vec(&mut self, position: Vec3, game_object: Option::<GameObject>) {
+        self.set(position.x as i32, position.y as i32, position.z as i32, game_object);
+    }
+
+    pub fn set(&mut self, x: i32, y: i32, z: i32, game_object: Option::<GameObject>) {
+        if x < 0 || y < 0 || z < 0 { return; }
+
+        let (x, y, z) = (x as usize, y as usize, z as usize);
+        if x < self.game_objects.len()
+        && y < self.game_objects[x].len()
+        && z < self.game_objects[x][y].len() { 
+            self.game_objects[x][y][z] = game_object;
+        }
+    }
+
+    pub fn get(&self, x: i32, y: i32, z: i32) -> Option::<GameObject> {
+        self.game_objects[x as usize][y as usize][z as usize]
+    }
+
+    pub fn is_type_with_vec(&self, position: Vec3, entity_type: Option::<EntityType>) -> bool {
+        self.is_type(position.x as i32, position.y as i32, position.z as i32, entity_type)
+    }
+
+    pub fn is_with_vec(&self, position: Vec3, game_object: Option::<GameObject>) -> bool {
+        self.is(position.x as i32, position.y as i32, position.z as i32, game_object)
+    }
+
+    pub fn is(&self, x: i32, y: i32, z: i32, game_object: Option::<GameObject>) -> bool {
+        if x < 0 || y < 0 || z < 0 { return false; }
+
+        let (x, y, z) = (x as usize, y as usize, z as usize);
+
+        if let Some(x_objects) = self.game_objects.get(x) {
+            if let Some(y_objects) = x_objects.get(y) {
+                if let Some(stored_game_object) = y_objects.get(z) {
+                    return *stored_game_object == game_object;
+                }
+            }
+        }
+
+        false
+    }
+
+    pub fn is_type(&self, x: i32, y: i32, z: i32, entity_type: Option::<EntityType>) -> bool {
+        if x < 0 || y < 0 || z < 0 { return false; }
+
+        let (x, y, z) = (x as usize, y as usize, z as usize);
+
+        if let Some(x_objects) = self.game_objects.get(x) {
+            if let Some(y_objects) = x_objects.get(y) {
+                if let Some(game_object) = y_objects.get(z) {
+                    return match (game_object, entity_type) {
+                        (None, None) => true,
+                        (None, _) | (_, None) => false,
+                        _ => game_object.unwrap().entity_type == entity_type.unwrap()
+                    }
+                }
+            }
+        }
+
+        false
+    }
+}
+
+#[derive(Copy, Clone, PartialEq)]
+pub struct GameObject {
+    pub entity: Entity,
+    pub entity_type: EntityType
+}
+
+impl GameObject {
+    pub fn new(entity: Entity, entity_type: EntityType) -> Self {
+        GameObject { entity, entity_type }
+    }
+}
+
+#[derive(Copy, Clone, PartialEq)]
+pub enum EntityType {
+    Block,
+    Dude,
+}
+
 #[derive(Copy, Clone, Debug)]
 pub enum Direction {
     Up, Down, Left, Right 
 }
 
-
+#[derive(Copy, Clone)]
+pub struct Position { pub x: i32, pub y: i32, pub z: i32 }
 impl Position {
     pub fn matches(&self, v: Vec3) -> bool {
         v.x as i32 == self.x && v.y as i32 == self.y && v.z as i32 == self.z
     }
 }
 
-impl Level {
-}
-
 pub fn create_environment(
     mut commands: Commands,
-    level: Res<Level>,
+    mut level: ResMut<Level>,
     mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>
+    mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     let mesh = meshes.add(Mesh::from(shape::Plane { size: 1.0 }));
 
@@ -61,14 +143,17 @@ pub fn create_environment(
         ..Default::default()
     });
 
-    commands.spawn_bundle(PbrBundle {
-      mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-      material: materials.add(Color::hex(crate::COLOR_BOX).unwrap().into()),
-      transform: Transform::from_xyz(2.0, 0.5, 5.0),
-      ..Default::default()
-    })
-    .insert(Position { x: 2, y: 0, z: 5 })
-    .insert(BoxObject { target: None });
+    let block_entity =
+        commands.spawn_bundle(PbrBundle {
+          mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
+          material: materials.add(Color::hex(crate::COLOR_BOX).unwrap().into()),
+          transform: Transform::from_xyz(2.0, 0.5, 5.0),
+          ..Default::default()
+        })
+        .insert(Position { x: 2, y: 0, z: 5 })
+        .insert(BoxObject { target: None })
+        .id();
+    level.set(2, 0, 5, Some(GameObject::new(block_entity, EntityType::Block)));
 }
 
 pub struct BoxObject { 
@@ -76,92 +161,50 @@ pub struct BoxObject {
 }
 
 fn update_box(
-    mut boxes: QuerySet<(Query<(Entity, &mut BoxObject, &mut Position, &mut Transform)>, 
-                         Query<(Entity, &BoxObject, &Position)>)>, 
+    mut boxes: Query<(Entity, &mut BoxObject, &mut Position, &mut Transform)>, 
+    mut level: ResMut<Level>,
     time: Res<Time>, 
-    level: Res<Level>,
 ) {
-    let mut boxes_to_update: Vec::<(Entity, Vec3)> = Vec::new();
-    for (entity, mut box_object, mut position, mut transform) in boxes.q0_mut().iter_mut() {
+    for (entity, mut box_object, mut position, mut transform) in boxes.iter_mut() {
         if !box_object.target.is_some() { continue; }
 
+        let current = transform.translation;
         let target_translation = match box_object.target.unwrap() {
                                      Direction::Up 
-                                         => Transform::from_xyz((position.x + 1) as f32, 
-                                                                position.y as f32, 
-                                                                position.z as f32),
+                                         => Transform::from_xyz(current.x + 1.0, 
+                                                                current.y, 
+                                                                current.z),
                                      Direction::Down 
-                                         => Transform::from_xyz((position.x - 1) as f32, 
-                                                                position.y as f32, 
-                                                                position.z as f32),
+                                         => Transform::from_xyz(current.x - 1.0, 
+                                                                current.y, 
+                                                                current.z),
                                      Direction::Right 
-                                         => Transform::from_xyz(position.x as f32, 
-                                                                position.y as f32, 
-                                                                (position.z + 1) as f32),
+                                         => Transform::from_xyz(current.x, 
+                                                                current.y, 
+                                                                current.z + 1.0),
                                      Direction::Left 
-                                         => Transform::from_xyz(position.x as f32, 
-                                                                position.y as f32, 
-                                                                (position.z - 1) as f32),
+                                         => Transform::from_xyz(current.x, 
+                                                                current.y, 
+                                                                current.z - 1.0),
                                  }.translation;
 
-        if target_translation == transform.translation || target_translation.distance(transform.translation) < 0.1 {
-            transform.translation = target_translation;
-            box_object.target = None;
-            position.x = transform.translation.x as i32;
-            position.y = transform.translation.y as i32;
-            position.z = transform.translation.z as i32;
-            continue;
-        }
-
-        boxes_to_update.push((entity, target_translation));
-    }
-
-    let (mut boxes_to_update, mut boxes_that_cant_move): (Vec::<(Entity, Vec3)>, Vec::<(Entity, Vec3)>) 
-                          = boxes_to_update.into_iter()
-                                           .partition(|x| {
-                                               let (x, y, z) = (x.1.x as i32, x.1.y as i32, x.1.z as i32);
-                                               x >= 0 && x < level.width &&
-                                               z >= 0 && z < level.length
-                                           });
-
-    for (entity, _box_object, position) in boxes.q1_mut().iter_mut() {
-        let (ok_boxes, mut blocked_boxes): (Vec::<(Entity, Vec3)>, Vec::<(Entity, Vec3)>) 
-            = boxes_to_update.into_iter().partition(|x| entity == x.0 || !position.matches((*x).1));
-        boxes_that_cant_move.append(&mut blocked_boxes); 
-        boxes_to_update = ok_boxes;
-    }
-
-    for (entity, _target_translation) in boxes_that_cant_move {
-        if let Ok((_e, mut box_object, _position, _transform)) = boxes.q0_mut().get_mut(entity) {
-            box_object.target = None;
-        }
-        // also need to populate boxes_that_cant_move with boxes that are
-        // out of bounds based on the level structure
-    }
-
-    for (entity, target_translation) in boxes_to_update {
-        if let Ok((_entity, _box_object, mut position, mut transform)) = boxes.q0_mut().get_mut(entity) {
+        if level.is_type_with_vec(target_translation, None) 
+            || level.is_with_vec(target_translation, Some(GameObject::new(entity, EntityType::Block))) {
             let target_position = Vec3::new(target_translation.x - transform.translation.x,
                                             0.0,
                                             target_translation.z - transform.translation.z).normalize();
              
+            level.set(position.x, position.y, position.z, None);
+            level.set_with_vec(target_position, Some(GameObject::new(entity, EntityType::Block)));
             transform.translation += target_position * 0.01 * time.delta().subsec_millis() as f32;
+        } else {
+            println!("Can't move!");
+            box_object.target = None;
             position.x = transform.translation.x as i32;
             position.y = transform.translation.y as i32;
             position.z = transform.translation.z as i32;
+            transform.translation = Vec3::new(position.x as f32, position.y as f32 + 0.5, position.z as f32);
+            level.set(position.x, position.y, position.z, Some(GameObject::new(entity, EntityType::Block)));
         }
     }
 }
-
-//  fn spawn_box(
-//      mut commands: Commands,
-//      mut meshes: ResMut<Assets<Mesh>>,
-//      mut materials: ResMut<Assets<StandardMaterial>>,
-//  ) {
-//      commands.spawn_bundle(PbrBundle {
-//        mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-//        material: materials.add(Color::hex(crate::COLOR_BOX).unwrap().into()),
-//        transform: Transform::from_xyz(0.0, 0.5, 0.0),
-//        ..Default::default()
-//      });
-//  }
