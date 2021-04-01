@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use crate::{environment, Direction, EntityType, GameObject, level::Level, Position};
+use crate::{environment, Direction, EntityType, GameObject, level::Level, Position, holdable};
 
 #[derive(Default)]
 struct Loaded(bool);
@@ -15,8 +15,9 @@ impl Plugin for DudePlugin {
            .add_system(check_assets_ready.system())
            .add_startup_system(setup_dude.system())
            .add_system(spawn_dude.system())
-           .add_system(move_dude.system())
-           .add_system(lift_box.system())
+           .add_system(player_input.system())
+
+
            .add_system(push_box.system())
            .add_system(update_dude.system());
     }
@@ -56,11 +57,11 @@ fn spawn_dude(
                 facing: Direction::Left,
                 target: None,
                 queued_movement: None,
-                holding: None,
-                lift_cooldown: Timer::from_seconds(0.2, false),
+                lift_cooldown: Timer::from_seconds(0.1, false),
             })
             .insert(Position { x: 0, y: 0, z: 0 })
             .insert(EntityType::Dude)
+            .insert(holdable::Holder { holding: None })
             .with_children(|parent|  {
                 parent.spawn_bundle(PbrBundle {
                     mesh: meshes.step1.clone(),
@@ -83,7 +84,6 @@ fn update_dude(
     time: Res<Time>, 
 ) {
     for (entity, mut dude, mut dude_transform, mut dude_position) in dudes.iter_mut() {
-        dude.lift_cooldown.tick(time.delta());
 //        println!("{} {} {}", dude.x, dude.y, dude.z);
         if !dude.target.is_some() && dude.queued_movement.is_some() {
             let queued_movement = dude.queued_movement.take().unwrap();
@@ -95,9 +95,12 @@ fn update_dude(
         let (mut target_translation, target_rotation) = dude.target.unwrap();
 
         let i32_target_translation = target_translation.as_i32();
+
+        // move on top of block
         if level.is_type_with_vec(target_translation, Some(EntityType::Block)) 
            && level.is_type(dude_position.x, dude_position.y + 1, dude_position.z, None) 
-           && level.is_type(i32_target_translation.x, i32_target_translation.y + 1, i32_target_translation.z, None) {
+           && level.is_type(i32_target_translation.x, i32_target_translation.y + 1, i32_target_translation.z, None) 
+           && dude.facing == target_rotation {
             target_translation.y += 1.0;
             dude.target = Some((target_translation, target_rotation));
         }
@@ -129,10 +132,18 @@ fn update_dude(
                                       Direction::Down => Quat::from_axis_angle(Vec3::Y, std::f32::consts::FRAC_PI_2),
                                       Direction::Right => Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI),
                                       Direction::Left => Quat::from_axis_angle(Vec3::Y, 0.0),
+                                      _ => dude_transform.rotation
                                   };
+
+        let is_target_cliff_player_isnt_facing =
+                level.is_type_with_vec(target_translation, None)
+             && level.is_type(i32_target_translation.x, i32_target_translation.y - 1, i32_target_translation.z, None) 
+             && dude.facing != target_rotation;
+        
+
         dude.facing = target_rotation;
 
-        if !level.is_type_with_vec(target_translation, None) {
+        if !level.is_type_with_vec(target_translation, None) || is_target_cliff_player_isnt_facing {
             // can't move here
             println!("NO! {:?} is here", level.get_with_vec(target_translation));
             dude.target = None;
@@ -146,62 +157,44 @@ fn update_dude(
     }
 }
 
-fn lift_box(
-    mut commands: Commands, 
+fn player_input(
     keyboard_input: Res<Input<KeyCode>>,
-    mut level: ResMut<Level>,
-    mut dudes: Query<(Entity, &mut Dude, &mut Transform, &mut Position), Without<environment::BoxObject>>, 
-    mut blocks: QuerySet<(Query<(&mut environment::BoxObject, &mut Transform, &mut Position)>, 
-                          Query<(&environment::BoxObject, &Transform, &mut Position)>)>
+    level: Res<Level>,
+    time: Res<Time>, 
+    mut lift_holdable_event_writer: EventWriter<holdable::LiftHoldableEvent>,
+    mut dudes: Query<(Entity, &mut Dude, &mut Position)>, 
 ) {
-    if keyboard_input.just_pressed(KeyCode::J) {
-        for (dude_entity, mut dude, mut dude_transform, mut dude_position) in dudes.iter_mut() {
-            if !dude.lift_cooldown.finished() {
-                continue;
-            }
+    for (entity, mut dude, mut position) in dudes.iter_mut() {
+        dude.lift_cooldown.tick(time.delta());
+
+        if keyboard_input.just_pressed(KeyCode::J) && dude.lift_cooldown.finished() && !dude.target.is_some() {
+            dude.target = None;
+            dude.queued_movement = None;
+            lift_holdable_event_writer.send(holdable::LiftHoldableEvent(entity, dude.facing));
             dude.lift_cooldown.reset();
-            match dude.holding {
-                Some(held_entity) => {
-                    println!("Dropping box {} {} {}", dude_position.x, dude_position.y, dude_position.z);
-                    commands.entity(held_entity)
-                            .remove::<environment::BeingHeld>();
+            continue;
+        }
 
-                    if let Ok((_block, mut transform, mut position)) = blocks.q0_mut().get_mut(held_entity) {
-                        let drop_point = dude_transform.translation.as_i32();
-                        transform.translation = drop_point.as_f32();
-                        level.set_with_vec(transform.translation, Some(GameObject::new(held_entity, EntityType::Block)));
-                        position.x = drop_point.x;
-                        position.y = drop_point.y;
-                        position.z = drop_point.z;
-                    }
+        let mut move_dir = None;
+        if keyboard_input.just_pressed(KeyCode::W) {
+            move_dir = Some(Direction::Up); 
+        }
+        if keyboard_input.just_pressed(KeyCode::S) {
+            move_dir = Some(Direction::Down); 
+        }
+        if keyboard_input.just_pressed(KeyCode::A) {
+            move_dir = Some(Direction::Left); 
+        }
+        if keyboard_input.just_pressed(KeyCode::D) {
+            move_dir = Some(Direction::Right); 
+        }
 
-                    dude_transform.translation.y += 1.0;
-                    dude_position.x = dude_transform.translation.x as i32;
-                    dude_position.y = dude_transform.translation.y as i32;
-                    dude_position.z = dude_transform.translation.z as i32;
-                    level.set_with_vec(dude_transform.translation, Some(GameObject::new(dude_entity, EntityType::Dude)));
-                    dude.holding = None;
-                },
-                None => {
-                    let (x, y, z) = match dude.facing {
-                                        Direction::Up => (dude_position.x + 1, dude_position.y, dude_position.z),
-                                        Direction::Down => (dude_position.x - 1, dude_position.y, dude_position.z),
-                                        Direction::Right => (dude_position.x, dude_position.y, dude_position.z + 1),
-                                        Direction::Left => (dude_position.x, dude_position.y, dude_position.z - 1),
-                                    };
-                    if level.is_type(x, y, z, Some(EntityType::Block)) {
-                        if let Some(block) = level.get(x, y, z) {
-                            println!("Picking up box {} {} {}", dude_position.x, dude_position.y, dude_position.z);
-                            commands.entity(block.entity)
-                                    .insert(environment::BeingHeld { held_by: dude_entity });
-                            if let Ok((_block, transform, mut position)) = blocks.q1_mut().get_mut(block.entity) {
-                                level.set_with_vec(transform.translation, None);
-                                *position = Position { x: -1, y: -1, z: -1 };
-                            }
-                            dude.holding = Some(block.entity);
-                        }
-                    }
-                }
+        if let Some(move_dir) = move_dir {
+            if !dude.target.is_some() && dude.lift_cooldown.finished()  {
+                dude.target = move_direction(&mut position, level.width, level.length, move_dir);
+                dude.lift_cooldown.reset();
+            } else {
+                dude.queued_movement = Some(move_dir);
             }
         }
     }
@@ -220,6 +213,7 @@ fn push_box(
                                 Direction::Down => (position.x - 1, position.y, position.z),
                                 Direction::Right => (position.x, position.y, position.z + 1),
                                 Direction::Left => (position.x, position.y, position.z - 1),
+                                _ => (position.x, position.y, position.z),
                             };
 
             if level.is_type(x, y, z, Some(EntityType::Block)) {
@@ -234,41 +228,10 @@ fn push_box(
     }
 }
 
-fn move_dude(
-    keyboard_input: Res<Input<KeyCode>>,
-    level: Res<Level>,
-    mut dudes: Query<(Entity, &mut Dude, &mut Position)>, 
-) {
-    for (_entity, mut dude, mut position) in dudes.iter_mut() {
-        let mut move_dir = None;
-        if keyboard_input.just_pressed(KeyCode::W) {
-            move_dir = Some(Direction::Up); 
-        }
-        if keyboard_input.just_pressed(KeyCode::S) {
-            move_dir = Some(Direction::Down); 
-        }
-        if keyboard_input.just_pressed(KeyCode::A) {
-            move_dir = Some(Direction::Left); 
-        }
-        if keyboard_input.just_pressed(KeyCode::D) {
-            move_dir = Some(Direction::Right); 
-        }
-
-        if let Some(move_dir) = move_dir {
-            if !dude.target.is_some() {
-                dude.target = move_direction(&mut position, level.width, level.length, move_dir);
-            } else {
-                dude.queued_movement = Some(move_dir);
-            }
-        }
-    }
-}
-
 struct Dude {
     facing: Direction,
     target: Option::<(Vec3, Direction)>,
     queued_movement: Option::<Direction>,
-    holding: Option::<Entity>,
     lift_cooldown: Timer,
 }
 
@@ -299,6 +262,7 @@ fn move_direction(position: &mut Position, width: i32, length: i32, direction: D
                 result = Some((target, direction))
             }
         }
+        _ => ()
     }
 
     result

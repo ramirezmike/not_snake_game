@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
-use crate::level::Level;
-use crate::{Position, Direction, EntityType, GameObject};
+use crate::{level::Level, Position, Direction, 
+            EntityType, GameObject, holdable};
 
 pub struct EnvironmentPlugin;
 impl Plugin for EnvironmentPlugin {
@@ -13,6 +13,8 @@ impl Plugin for EnvironmentPlugin {
                game_objects: vec![vec![vec![None; 12]; 12]; 6],
            })
            .add_startup_system(create_environment.system())
+           .add_event::<holdable::LiftHoldableEvent>()
+           .add_system(holdable::lift_holdable.system())
            .add_system(update_held_blocks.system())
            .add_system(update_box.system())
            .add_system(crate::level::sync_level.system());
@@ -61,6 +63,7 @@ pub fn create_environment(
             });
         })
         .insert(EntityType::Block)
+        .insert(holdable::Holdable {})
         .insert(Position { x: 2, y: 0, z: 5 })
         .insert(BoxObject { target: None })
         .id();
@@ -80,10 +83,31 @@ pub fn create_environment(
             });
         })
         .insert(EntityType::Block)
+        .insert(holdable::Holdable {})
         .insert(Position { x: 1, y: 0, z: 5 })
         .insert(BoxObject { target: None })
         .id();
     level.set(1, 0, 5, Some(GameObject::new(block_entity, EntityType::Block)));
+
+    let block_entity =
+        commands.spawn_bundle(PbrBundle {
+          transform: Transform::from_xyz(1.0, 0.0, 6.0),
+          ..Default::default()
+        })
+        .with_children(|parent| {
+            parent.spawn_bundle(PbrBundle {
+                mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
+                material: materials.add(Color::hex(crate::COLOR_BOX).unwrap().into()),
+                transform: Transform::from_xyz(0.0, 0.5, 0.0),
+                ..Default::default()
+            });
+        })
+        .insert(EntityType::Block)
+        .insert(holdable::Holdable {})
+        .insert(Position { x: 1, y: 0, z: 6 })
+        .insert(BoxObject { target: None })
+        .id();
+    level.set(1, 0, 6, Some(GameObject::new(block_entity, EntityType::Block)));
 }
 
 pub struct BoxObject { 
@@ -113,10 +137,32 @@ fn update_box(
     time: Res<Time>, 
 ) {
     for (entity, mut box_object, mut position, mut transform) in boxes.iter_mut() {
-        if !box_object.target.is_some() { continue; }
+        if level.is_type(position.x, position.y - 1, position.z, None) {
+            println!("FALLLLLLLLLLL");
+            box_object.target = Some(Direction::Beneath);
+        }
+
+        if !box_object.target.is_some() { 
+            // this is a terrible hack to handle when
+            // a box ends up stuck in a spot that doesn't match
+            // it's current position. This is a concurrency problem that
+            // should be addresed. 
+            transform.translation = Vec3::new(position.x as f32, 
+                                              position.y as f32, 
+                                              position.z as f32);
+            continue; 
+        }
 
         let current = transform.translation;
         let target_translation = match box_object.target.unwrap() {
+                                     Direction::Beneath
+                                         => Transform::from_xyz(current.x, 
+                                                                current.y - 1.0, 
+                                                                current.z),
+                                     Direction::Above
+                                         => Transform::from_xyz(current.x, 
+                                                                current.y + 1.0, 
+                                                                current.z),
                                      Direction::Up 
                                          => Transform::from_xyz(current.x + 1.0, 
                                                                 current.y, 
@@ -138,7 +184,7 @@ fn update_box(
         if level.is_type_with_vec(target_translation, None) 
             || level.is_with_vec(target_translation, Some(GameObject::new(entity, EntityType::Block))) {
             let target_position = Vec3::new(target_translation.x - transform.translation.x,
-                                            0.0,
+                                            target_translation.y - transform.translation.y,
                                             target_translation.z - transform.translation.z).normalize();
              
             level.set(position.x, position.y, position.z, None);

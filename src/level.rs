@@ -13,6 +13,10 @@ impl Level {
         self.set(position.x as i32, position.y as i32, position.z as i32, game_object);
     }
 
+    pub fn set_with_position(&mut self, position: Position, game_object: Option::<GameObject>) {
+        self.set(position.x, position.y, position.z, game_object);
+    }
+
     pub fn set(&mut self, x: i32, y: i32, z: i32, game_object: Option::<GameObject>) {
         if x < 0 || y < 0 || z < 0 { return; }
 
@@ -26,6 +30,10 @@ impl Level {
 
     pub fn get_with_vec(&self, position: Vec3) -> Option::<GameObject> {
         self.get(position.x as i32, position.y as i32, position.z as i32)
+    }
+
+    pub fn get_with_position(&self, position: Position) -> Option::<GameObject> {
+        self.get(position.x, position.y, position.z)
     }
 
     pub fn get(&self, x: i32, y: i32, z: i32) -> Option::<GameObject> {
@@ -63,6 +71,10 @@ impl Level {
         }
 
         false
+    }
+
+    pub fn is_position_type(&self, position: Position, entity_type: Option::<EntityType>) -> bool {
+        self.is_type(position.x, position.y, position.z, entity_type)
     }
 
     pub fn is_type(&self, x: i32, y: i32, z: i32, entity_type: Option::<EntityType>) -> bool {

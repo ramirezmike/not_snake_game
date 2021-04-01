@@ -5,6 +5,7 @@ use bevy::app::Events;
 mod camera;
 pub mod environment;
 pub mod level;
+pub mod holdable;
 mod dude;
 
 use camera::*;
@@ -53,14 +54,17 @@ pub enum EntityType {
     Dude,
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Direction {
-    Up, Down, Left, Right 
+    Up, Down, Left, Right, Beneath, Above
 }
 
 #[derive(Copy, Clone, Debug)]
 pub struct Position { pub x: i32, pub y: i32, pub z: i32 }
 impl Position {
+    pub fn to_vec(&self) -> Vec3 {
+        Vec3::new(self.x as f32, self.y as f32, self.z as f32)
+    }
     pub fn matches(&self, v: Vec3) -> bool {
         v.x as i32 == self.x && v.y as i32 == self.y && v.z as i32 == self.z
     }
