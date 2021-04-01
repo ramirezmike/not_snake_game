@@ -89,8 +89,13 @@ impl Level {
 pub fn sync_level(mut level: ResMut<Level>, positions: Query<(Entity, &Position, &EntityType)>) {
     level.game_objects = vec![vec![vec![None; 12]; 12]; 6];
 
+    println!("==========================================================================================");
+    println!("");
+    println!("");
     for (entity, position, entity_type) in positions.iter() {
         level.set(position.x, position.y, position.z, Some(GameObject::new(entity, *entity_type)));
         println!("{:?} {:?}", position, entity_type);
     }
+    println!("");
+    println!("");
 }

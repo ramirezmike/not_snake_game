@@ -65,6 +65,25 @@ pub fn create_environment(
         .insert(BoxObject { target: None })
         .id();
     level.set(2, 0, 5, Some(GameObject::new(block_entity, EntityType::Block)));
+
+    let block_entity =
+        commands.spawn_bundle(PbrBundle {
+          transform: Transform::from_xyz(1.0, 0.0, 5.0),
+          ..Default::default()
+        })
+        .with_children(|parent| {
+            parent.spawn_bundle(PbrBundle {
+                mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
+                material: materials.add(Color::hex(crate::COLOR_BOX).unwrap().into()),
+                transform: Transform::from_xyz(0.0, 0.5, 0.0),
+                ..Default::default()
+            });
+        })
+        .insert(EntityType::Block)
+        .insert(Position { x: 1, y: 0, z: 5 })
+        .insert(BoxObject { target: None })
+        .id();
+    level.set(1, 0, 5, Some(GameObject::new(block_entity, EntityType::Block)));
 }
 
 pub struct BoxObject { 

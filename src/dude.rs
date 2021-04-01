@@ -92,7 +92,15 @@ fn update_dude(
 
         if !dude.target.is_some() { continue; }
 
-        let (target_translation, target_rotation) = dude.target.unwrap();
+        let (mut target_translation, target_rotation) = dude.target.unwrap();
+
+        let i32_target_translation = target_translation.as_i32();
+        if level.is_type_with_vec(target_translation, Some(EntityType::Block)) 
+           && level.is_type(dude_position.x, dude_position.y + 1, dude_position.z, None) 
+           && level.is_type(i32_target_translation.x, i32_target_translation.y + 1, i32_target_translation.z, None) {
+            target_translation.y += 1.0;
+            dude.target = Some((target_translation, target_rotation));
+        }
 
         if target_translation == dude_transform.translation || target_translation.distance(dude_transform.translation) < 0.1 {
             dude_transform.translation = target_translation;
@@ -132,9 +140,9 @@ fn update_dude(
             dude_position.y = dude_transform.translation.y as i32;
             dude_position.z = dude_transform.translation.z as i32;
             continue;
-        } else {
-            dude_transform.translation += target_position * 0.01 * time.delta().subsec_millis() as f32;
-        }
+        } 
+
+        dude_transform.translation += target_position * 0.01 * time.delta().subsec_millis() as f32;
     }
 }
 
