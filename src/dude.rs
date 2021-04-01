@@ -56,6 +56,7 @@ fn spawn_dude(
             .insert(Dude {
                 facing: Direction::Left,
                 target: None,
+                is_jumping: false,
                 queued_movement: None,
                 lift_cooldown: Timer::from_seconds(0.1, false),
             })
@@ -101,8 +102,11 @@ fn update_dude(
            && level.is_type(dude_position.x, dude_position.y + 1, dude_position.z, None) 
            && level.is_type(i32_target_translation.x, i32_target_translation.y + 1, i32_target_translation.z, None) 
            && dude.facing == target_rotation {
+            let above_dude = Vec3::new(dude_transform.translation.x, dude_transform.translation.y + 1.0, dude_transform.translation.z);
             target_translation.y += 1.0;
-            dude.target = Some((target_translation, target_rotation));
+            dude.target = Some((above_dude, target_rotation));
+            dude.queued_movement = Some(target_rotation);
+            dude.is_jumping = true;
         }
 
         if target_translation == dude_transform.translation || target_translation.distance(dude_transform.translation) < 0.1 {
@@ -115,10 +119,12 @@ fn update_dude(
             dude_position.z = dude_transform.translation.z as i32;
             level.set(dude_position.x, dude_position.y, dude_position.z, Some(GameObject::new(entity, EntityType::Dude)));
 
-            if level.is_type(dude_position.x, dude_position.y - 1, dude_position.z, None) {
+            if level.is_type(dude_position.x, dude_position.y - 1, dude_position.z, None) && !dude.is_jumping {
                 let target = Vec3::new(dude_position.x as f32, dude_position.y as f32 - 1.0, dude_position.z as f32);
                 dude.target = Some((target, target_rotation));
             }
+
+            dude.is_jumping = false;
 
             continue;
         }
@@ -232,6 +238,7 @@ struct Dude {
     facing: Direction,
     target: Option::<(Vec3, Direction)>,
     queued_movement: Option::<Direction>,
+    is_jumping: bool,
     lift_cooldown: Timer,
 }
 
