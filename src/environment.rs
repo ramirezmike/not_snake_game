@@ -1,117 +1,21 @@
 use bevy::prelude::*;
 
+use crate::level::Level;
+use crate::{Position, Direction, EntityType, GameObject};
+
 pub struct EnvironmentPlugin;
 impl Plugin for EnvironmentPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.insert_resource(Level {
                width: 6,
                length: 12,
-               game_objects: vec![vec![vec![None; 12]; 1]; 6],
+               height: 12,
+               game_objects: vec![vec![vec![None; 12]; 12]; 6],
            })
            .add_startup_system(create_environment.system())
-           .add_system(update_box.system());
-    }
-}
-
-pub struct Level {
-    pub width: i32,
-    pub length: i32,
-    pub game_objects: Vec::<Vec::<Vec::<Option::<GameObject>>>>
-}
-
-impl Level {
-    pub fn set_with_vec(&mut self, position: Vec3, game_object: Option::<GameObject>) {
-        self.set(position.x as i32, position.y as i32, position.z as i32, game_object);
-    }
-
-    pub fn set(&mut self, x: i32, y: i32, z: i32, game_object: Option::<GameObject>) {
-        if x < 0 || y < 0 || z < 0 { return; }
-
-        let (x, y, z) = (x as usize, y as usize, z as usize);
-        if x < self.game_objects.len()
-        && y < self.game_objects[x].len()
-        && z < self.game_objects[x][y].len() { 
-            self.game_objects[x][y][z] = game_object;
-        }
-    }
-
-    pub fn get(&self, x: i32, y: i32, z: i32) -> Option::<GameObject> {
-        self.game_objects[x as usize][y as usize][z as usize]
-    }
-
-    pub fn is_type_with_vec(&self, position: Vec3, entity_type: Option::<EntityType>) -> bool {
-        self.is_type(position.x as i32, position.y as i32, position.z as i32, entity_type)
-    }
-
-    pub fn is_with_vec(&self, position: Vec3, game_object: Option::<GameObject>) -> bool {
-        self.is(position.x as i32, position.y as i32, position.z as i32, game_object)
-    }
-
-    pub fn is(&self, x: i32, y: i32, z: i32, game_object: Option::<GameObject>) -> bool {
-        if x < 0 || y < 0 || z < 0 { return false; }
-
-        let (x, y, z) = (x as usize, y as usize, z as usize);
-
-        if let Some(x_objects) = self.game_objects.get(x) {
-            if let Some(y_objects) = x_objects.get(y) {
-                if let Some(stored_game_object) = y_objects.get(z) {
-                    return *stored_game_object == game_object;
-                }
-            }
-        }
-
-        false
-    }
-
-    pub fn is_type(&self, x: i32, y: i32, z: i32, entity_type: Option::<EntityType>) -> bool {
-        if x < 0 || y < 0 || z < 0 { return false; }
-
-        let (x, y, z) = (x as usize, y as usize, z as usize);
-
-        if let Some(x_objects) = self.game_objects.get(x) {
-            if let Some(y_objects) = x_objects.get(y) {
-                if let Some(game_object) = y_objects.get(z) {
-                    return match (game_object, entity_type) {
-                        (None, None) => true,
-                        (None, _) | (_, None) => false,
-                        _ => game_object.unwrap().entity_type == entity_type.unwrap()
-                    }
-                }
-            }
-        }
-
-        false
-    }
-}
-
-#[derive(Copy, Clone, PartialEq)]
-pub struct GameObject {
-    pub entity: Entity,
-    pub entity_type: EntityType
-}
-
-impl GameObject {
-    pub fn new(entity: Entity, entity_type: EntityType) -> Self {
-        GameObject { entity, entity_type }
-    }
-}
-
-#[derive(Copy, Clone, PartialEq)]
-pub enum EntityType {
-    Block,
-    Dude,
-}
-
-#[derive(Copy, Clone, Debug)]
-pub enum Direction {
-    Up, Down, Left, Right 
-}
-
-#[derive(Copy, Clone)]
-pub struct Position { pub x: i32, pub y: i32, pub z: i32 }
-impl Position {
-    pub fn matches(&self, v: Vec3) -> bool {
-        v.x as i32 == self.x && v.y as i32 == self.y && v.z as i32 == self.z
+           .add_system(update_held_blocks.system())
+           .add_system(update_box.system())
+           .add_system(crate::level::sync_level.system());
     }
 }
 
@@ -145,11 +49,18 @@ pub fn create_environment(
 
     let block_entity =
         commands.spawn_bundle(PbrBundle {
-          mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-          material: materials.add(Color::hex(crate::COLOR_BOX).unwrap().into()),
-          transform: Transform::from_xyz(2.0, 0.5, 5.0),
+          transform: Transform::from_xyz(2.0, 0.0, 5.0),
           ..Default::default()
         })
+        .with_children(|parent| {
+            parent.spawn_bundle(PbrBundle {
+                mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
+                material: materials.add(Color::hex(crate::COLOR_BOX).unwrap().into()),
+                transform: Transform::from_xyz(0.0, 0.5, 0.0),
+                ..Default::default()
+            });
+        })
+        .insert(EntityType::Block)
         .insert(Position { x: 2, y: 0, z: 5 })
         .insert(BoxObject { target: None })
         .id();
@@ -160,8 +71,25 @@ pub struct BoxObject {
     pub target: Option::<Direction>,
 }
 
+pub struct BeingHeld {
+    pub held_by: Entity
+}
+
+fn update_held_blocks(
+    mut boxes: Query<(&BoxObject, &mut Transform, &BeingHeld)>, 
+    holders: Query<(Entity, &Transform), Without<BeingHeld>>
+) {
+    for (_box_object, mut box_transform, being_held) in boxes.iter_mut() {
+        if let Ok((_entity, transform)) = holders.get(being_held.held_by) {
+            box_transform.translation.x = transform.translation.x;
+            box_transform.translation.y = transform.translation.y + 1.0;
+            box_transform.translation.z = transform.translation.z;
+        }
+    }
+}
+
 fn update_box(
-    mut boxes: Query<(Entity, &mut BoxObject, &mut Position, &mut Transform)>, 
+    mut boxes: Query<(Entity, &mut BoxObject, &mut Position, &mut Transform), Without<BeingHeld>>, 
     mut level: ResMut<Level>,
     time: Res<Time>, 
 ) {
@@ -203,7 +131,7 @@ fn update_box(
             position.x = transform.translation.x as i32;
             position.y = transform.translation.y as i32;
             position.z = transform.translation.z as i32;
-            transform.translation = Vec3::new(position.x as f32, position.y as f32 + 0.5, position.z as f32);
+            transform.translation = Vec3::new(position.x as f32, position.y as f32, position.z as f32);
             level.set(position.x, position.y, position.z, Some(GameObject::new(entity, EntityType::Block)));
         }
     }
