@@ -16,8 +16,6 @@ impl Plugin for DudePlugin {
            .add_startup_system(setup_dude.system())
            .add_system(spawn_dude.system())
            .add_system(player_input.system())
-
-
            .add_system(push_box.system())
            .add_system(update_dude.system());
     }
@@ -83,6 +81,7 @@ fn update_dude(
     mut dudes: Query<(Entity, &mut Dude, &mut Transform, &mut Position)>, 
     mut level: ResMut<Level>,
     time: Res<Time>, 
+    mut game_over_event_writer: EventWriter<environment::GameOverEvent>,
 ) {
     for (entity, mut dude, mut dude_transform, mut dude_position) in dudes.iter_mut() {
 //        println!("{} {} {}", dude.x, dude.y, dude.z);
@@ -149,7 +148,9 @@ fn update_dude(
 
         dude.facing = target_rotation;
 
-        if !level.is_type_with_vec(target_translation, None) || is_target_cliff_player_isnt_facing {
+        let target_is_win_flag = level.is_type_with_vec(target_translation, Some(EntityType::WinFlag));
+        if !(level.is_type_with_vec(target_translation, None) || target_is_win_flag)
+            || is_target_cliff_player_isnt_facing {
             // can't move here
             println!("NO! {:?} is here", level.get_with_vec(target_translation));
             dude.target = None;
@@ -158,6 +159,10 @@ fn update_dude(
             dude_position.z = dude_transform.translation.z as i32;
             continue;
         } 
+
+        if target_is_win_flag {
+            game_over_event_writer.send(environment::GameOverEvent {});
+        }
 
         dude_transform.translation += target_position * 0.01 * time.delta().subsec_millis() as f32;
     }

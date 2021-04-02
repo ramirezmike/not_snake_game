@@ -17,6 +17,7 @@ pub static COLOR_BASE: &str = "343f56";
 pub static COLOR_GROUND_1: &str = "387c6d";
 pub static COLOR_GROUND_2: &str = "f8f5f1";
 pub static COLOR_BOX: &str = "e9896a";
+pub static COLOR_FLAG: &str = "80E895"; //"92DB56"; //40DBB7
 
 fn main() {
     App::build()
@@ -54,6 +55,7 @@ pub enum EntityType {
     Block,
     Dude,
     Platform,
+    WinFlag,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]

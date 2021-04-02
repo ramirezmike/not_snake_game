@@ -4,6 +4,60 @@ use crate::{level::Level, Position, Direction,
             EntityType, GameObject, holdable,
             fallable};
 
+pub struct GameOverEvent {}
+
+pub fn setup_game_over_screen(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+) {
+    commands.spawn_bundle(UiCameraBundle::default());
+    commands
+        .spawn_bundle(TextBundle {
+            style: Style {
+                // center button
+                margin: Rect::all(Val::Auto),
+                // horizontally center child text
+                justify_content: JustifyContent::Center,
+                // vertically center child text
+                align_items: AlignItems::Center,
+                position_type: PositionType::Absolute,
+                position: Rect {
+                    top: Val::Percent(30.0),
+                    left: Val::Percent(10.0),
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
+            // Use the `Text::with_section` constructor
+            text: Text::with_section(
+                // Accepts a `String` or any type that converts into a `String`, such as `&str`
+                "",
+                TextStyle {
+                    font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                    font_size: 500.0,
+                    color: Color::WHITE,
+                },
+                // Note: You can use `Default::default()` in place of the `TextAlignment`
+                TextAlignment {
+                    ..Default::default()
+                },
+            ),
+            ..Default::default()
+        });
+}
+pub fn game_over_check(
+    mut game_over_events: EventReader<GameOverEvent>,
+    mut query: Query<&mut Text>,
+) {
+    for _game_over in game_over_events.iter() {
+        println!("YAY YOU DID IT");
+        for mut text in query.iter_mut() {
+            println!("Changing text!");
+            text.sections[0].value = "YOU WIN!".to_string();
+        }
+    }
+}
+
 pub struct EnvironmentPlugin;
 impl Plugin for EnvironmentPlugin {
     fn build(&self, app: &mut AppBuilder) {
@@ -15,10 +69,14 @@ impl Plugin for EnvironmentPlugin {
            })
            .add_startup_system(create_environment.system())
            .add_event::<holdable::LiftHoldableEvent>()
+           .add_event::<GameOverEvent>()
            .add_system(holdable::lift_holdable.system())
            .add_system(update_held_blocks.system())
            .add_system(update_box.system())
+           .add_system(update_flag.system())
            .add_system(fallable::update_fallables.system())
+           .add_startup_system(setup_game_over_screen.system())
+           .add_system(game_over_check.system())
            .add_system(crate::level::sync_level.system());
     }
 }
@@ -50,7 +108,7 @@ pub fn create_environment(
         for j in ((level.length / 2) + (level.length / 4))..level.length {
             let block_entity =
             commands.spawn_bundle(PbrBundle {
-                transform: Transform::from_translation(Vec3::new(i as f32, 3.0, j as f32)),
+                transform: Transform::from_translation(Vec3::new(i as f32, 2.0, j as f32)),
                 ..Default::default()
             })
             .with_children(|parent| {
@@ -66,9 +124,9 @@ pub fn create_environment(
                 });
             })
             .insert(EntityType::Block)
-            .insert(Position { x: i, y: 3, z: j })
+            .insert(Position { x: i, y: 2, z: j })
             .id();
-            level.set(i, 3, j, Some(GameObject::new(block_entity, EntityType::Block)));
+            level.set(i, 2, j, Some(GameObject::new(block_entity, EntityType::Block)));
         }
     }
 
@@ -77,27 +135,102 @@ pub fn create_environment(
         ..Default::default()
     });
 
-    for i in 0..12 {
-        let block_entity =
-            commands.spawn_bundle(PbrBundle {
-              transform: Transform::from_xyz(2.0, 0.0, i as f32),
-              ..Default::default()
+    let i = 3;
+    let block_entity =
+        commands.spawn_bundle(PbrBundle {
+          transform: Transform::from_xyz(1.0, 0.0, i as f32),
+          ..Default::default()
+        })
+        .with_children(|parent| {
+            parent.spawn_bundle(PbrBundle {
+                mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
+                material: materials.add(Color::hex(crate::COLOR_BOX).unwrap().into()),
+                transform: Transform::from_xyz(0.0, 0.5, 0.0),
+                ..Default::default()
+            });
+        })
+        .insert(EntityType::Block)
+        .insert(holdable::Holdable {})
+        .insert(fallable::Fallable {})
+        .insert(Position { x: 1, y: 0, z: i })
+        .insert(BoxObject { target: None })
+        .id();
+    let i = 8;
+    let block_entity =
+        commands.spawn_bundle(PbrBundle {
+          transform: Transform::from_xyz(2.0, 0.0, i as f32),
+          ..Default::default()
+        })
+        .with_children(|parent| {
+            parent.spawn_bundle(PbrBundle {
+                mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
+                material: materials.add(Color::hex(crate::COLOR_BOX).unwrap().into()),
+                transform: Transform::from_xyz(0.0, 0.5, 0.0),
+                ..Default::default()
+            });
+        })
+        .insert(EntityType::Block)
+        .insert(holdable::Holdable {})
+        .insert(fallable::Fallable {})
+        .insert(Position { x: 2, y: 0, z: i })
+        .insert(BoxObject { target: None })
+        .id();
+    level.set(2, 0, i, Some(GameObject::new(block_entity, EntityType::Block)));
+    let block_entity =
+        commands.spawn_bundle(PbrBundle {
+          transform: Transform::from_xyz(2.0, 1.0, i as f32),
+          ..Default::default()
+        })
+        .with_children(|parent| {
+            parent.spawn_bundle(PbrBundle {
+                mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
+                material: materials.add(Color::hex(crate::COLOR_BOX).unwrap().into()),
+                transform: Transform::from_xyz(0.0, 0.5, 0.0),
+                ..Default::default()
+            });
+        })
+        .insert(EntityType::Block)
+        .insert(holdable::Holdable {})
+        .insert(fallable::Fallable {})
+        .insert(Position { x: 2, y: 1, z: i })
+        .insert(BoxObject { target: None })
+        .id();
+    level.set(2, 1, i, Some(GameObject::new(block_entity, EntityType::Block)));
+    
+
+    let flag_color = Color::hex(crate::COLOR_FLAG).unwrap();
+    let flag_color = Color::rgba(flag_color.r(), flag_color.g(), flag_color.b(), 0.1);
+    let win_flag =
+        commands.spawn_bundle(PbrBundle {
+          transform: Transform::from_xyz(((level.width - 1) / 2) as f32, 3.0, (level.length - 1) as f32),
+          ..Default::default()
+        })
+        .with_children(|parent| {
+            parent.spawn_bundle(PbrBundle {
+                mesh: meshes.add(Mesh::from(shape::Icosphere { radius: 0.25, subdivisions: 0 })),
+                material: materials.add(flag_color.into()),
+                transform: Transform::from_xyz(0.0, 0.5, 0.0),
+                ..Default::default()
             })
-            .with_children(|parent| {
-                parent.spawn_bundle(PbrBundle {
-                    mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-                    material: materials.add(Color::hex(crate::COLOR_BOX).unwrap().into()),
-                    transform: Transform::from_xyz(0.0, 0.5, 0.0),
-                    ..Default::default()
-                });
-            })
-            .insert(EntityType::Block)
-            .insert(holdable::Holdable {})
-            .insert(fallable::Fallable {})
-            .insert(Position { x: 2, y: 0, z: i })
-            .insert(BoxObject { target: None })
-            .id();
-        level.set(2, 0, i, Some(GameObject::new(block_entity, EntityType::Block)));
+            .insert(WinFlagInnerMesh {});
+        })
+        .insert(EntityType::WinFlag)
+        .insert(Position { x:((level.width - 1) / 2), y: 3, z: level.length - 1 })
+        .id();
+}
+
+pub struct WinFlag { }
+pub struct WinFlagInnerMesh { }
+
+fn update_flag(
+    mut flags: Query<(&WinFlagInnerMesh, &mut Transform)>,
+    time: Res<Time>,
+) {
+    for (_flag, mut transform) in flags.iter_mut() {
+        transform.translation.y = 0.5 + (0.2 * time.seconds_since_startup().sin() as f32);
+        transform.rotate(Quat::from_rotation_y(time.delta_seconds()));
+        transform.rotate(Quat::from_rotation_z(time.delta_seconds()));
+        transform.rotate(Quat::from_rotation_x(time.delta_seconds()));
     }
 }
 
