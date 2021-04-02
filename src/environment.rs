@@ -1,7 +1,8 @@
 use bevy::prelude::*;
 
 use crate::{level::Level, Position, Direction, 
-            EntityType, GameObject, holdable};
+            EntityType, GameObject, holdable,
+            fallable};
 
 pub struct EnvironmentPlugin;
 impl Plugin for EnvironmentPlugin {
@@ -17,6 +18,7 @@ impl Plugin for EnvironmentPlugin {
            .add_system(holdable::lift_holdable.system())
            .add_system(update_held_blocks.system())
            .add_system(update_box.system())
+           .add_system(fallable::update_fallables.system())
            .add_system(crate::level::sync_level.system());
     }
 }
@@ -44,70 +46,59 @@ pub fn create_environment(
         }
     }
 
+    for i in 0..level.width {
+        for j in ((level.length / 2) + (level.length / 4))..level.length {
+            let block_entity =
+            commands.spawn_bundle(PbrBundle {
+                transform: Transform::from_translation(Vec3::new(i as f32, 3.0, j as f32)),
+                ..Default::default()
+            })
+            .with_children(|parent| {
+                parent.spawn_bundle(PbrBundle {
+                    mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
+                    material: if (i + j + 1) % 2 == 0 { 
+                                  materials.add(Color::hex(crate::COLOR_GROUND_1).unwrap().into())
+                              } else {
+                                  materials.add(Color::hex(crate::COLOR_GROUND_2).unwrap().into())
+                              },
+                    transform: Transform::from_xyz(0.0, 0.5, 0.0),
+                    ..Default::default()
+                });
+            })
+            .insert(EntityType::Block)
+            .insert(Position { x: i, y: 3, z: j })
+            .id();
+            level.set(i, 3, j, Some(GameObject::new(block_entity, EntityType::Block)));
+        }
+    }
+
     commands.spawn_bundle(LightBundle {
         transform: Transform::from_xyz(4.0, 8.0, 4.0),
         ..Default::default()
     });
 
-    let block_entity =
-        commands.spawn_bundle(PbrBundle {
-          transform: Transform::from_xyz(2.0, 0.0, 5.0),
-          ..Default::default()
-        })
-        .with_children(|parent| {
-            parent.spawn_bundle(PbrBundle {
-                mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-                material: materials.add(Color::hex(crate::COLOR_BOX).unwrap().into()),
-                transform: Transform::from_xyz(0.0, 0.5, 0.0),
-                ..Default::default()
-            });
-        })
-        .insert(EntityType::Block)
-        .insert(holdable::Holdable {})
-        .insert(Position { x: 2, y: 0, z: 5 })
-        .insert(BoxObject { target: None })
-        .id();
-    level.set(2, 0, 5, Some(GameObject::new(block_entity, EntityType::Block)));
-
-    let block_entity =
-        commands.spawn_bundle(PbrBundle {
-          transform: Transform::from_xyz(1.0, 0.0, 5.0),
-          ..Default::default()
-        })
-        .with_children(|parent| {
-            parent.spawn_bundle(PbrBundle {
-                mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-                material: materials.add(Color::hex(crate::COLOR_BOX).unwrap().into()),
-                transform: Transform::from_xyz(0.0, 0.5, 0.0),
-                ..Default::default()
-            });
-        })
-        .insert(EntityType::Block)
-        .insert(holdable::Holdable {})
-        .insert(Position { x: 1, y: 0, z: 5 })
-        .insert(BoxObject { target: None })
-        .id();
-    level.set(1, 0, 5, Some(GameObject::new(block_entity, EntityType::Block)));
-
-    let block_entity =
-        commands.spawn_bundle(PbrBundle {
-          transform: Transform::from_xyz(1.0, 0.0, 6.0),
-          ..Default::default()
-        })
-        .with_children(|parent| {
-            parent.spawn_bundle(PbrBundle {
-                mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-                material: materials.add(Color::hex(crate::COLOR_BOX).unwrap().into()),
-                transform: Transform::from_xyz(0.0, 0.5, 0.0),
-                ..Default::default()
-            });
-        })
-        .insert(EntityType::Block)
-        .insert(holdable::Holdable {})
-        .insert(Position { x: 1, y: 0, z: 6 })
-        .insert(BoxObject { target: None })
-        .id();
-    level.set(1, 0, 6, Some(GameObject::new(block_entity, EntityType::Block)));
+    for i in 0..12 {
+        let block_entity =
+            commands.spawn_bundle(PbrBundle {
+              transform: Transform::from_xyz(2.0, 0.0, i as f32),
+              ..Default::default()
+            })
+            .with_children(|parent| {
+                parent.spawn_bundle(PbrBundle {
+                    mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
+                    material: materials.add(Color::hex(crate::COLOR_BOX).unwrap().into()),
+                    transform: Transform::from_xyz(0.0, 0.5, 0.0),
+                    ..Default::default()
+                });
+            })
+            .insert(EntityType::Block)
+            .insert(holdable::Holdable {})
+            .insert(fallable::Fallable {})
+            .insert(Position { x: 2, y: 0, z: i })
+            .insert(BoxObject { target: None })
+            .id();
+        level.set(2, 0, i, Some(GameObject::new(block_entity, EntityType::Block)));
+    }
 }
 
 pub struct BoxObject { 
@@ -137,11 +128,6 @@ fn update_box(
     time: Res<Time>, 
 ) {
     for (entity, mut box_object, mut position, mut transform) in boxes.iter_mut() {
-        if level.is_type(position.x, position.y - 1, position.z, None) {
-            println!("FALLLLLLLLLLL");
-            box_object.target = Some(Direction::Beneath);
-        }
-
         if !box_object.target.is_some() { 
             // this is a terrible hack to handle when
             // a box ends up stuck in a spot that doesn't match

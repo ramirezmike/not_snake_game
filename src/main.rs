@@ -6,6 +6,7 @@ mod camera;
 pub mod environment;
 pub mod level;
 pub mod holdable;
+pub mod fallable;
 mod dude;
 
 use camera::*;
@@ -52,6 +53,7 @@ impl GameObject {
 pub enum EntityType {
     Block,
     Dude,
+    Platform,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
