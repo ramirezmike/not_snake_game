@@ -45,6 +45,7 @@ pub fn setup_game_over_screen(
             ..Default::default()
         });
 }
+
 pub fn game_over_check(
     mut game_over_events: EventReader<GameOverEvent>,
     mut query: Query<&mut Text>,
@@ -67,17 +68,23 @@ impl Plugin for EnvironmentPlugin {
                height: 12,
                game_objects: vec![vec![vec![None; 12]; 12]; 6],
            })
-           .add_startup_system(create_environment.system())
            .add_event::<holdable::LiftHoldableEvent>()
            .add_event::<GameOverEvent>()
-           .add_system(holdable::lift_holdable.system())
-           .add_system(update_held_blocks.system())
-           .add_system(update_box.system())
-           .add_system(update_flag.system())
-           .add_system(fallable::update_fallables.system())
-           .add_startup_system(setup_game_over_screen.system())
-           .add_system(game_over_check.system())
-           .add_system(crate::level::sync_level.system());
+           .add_system_set(
+               SystemSet::on_enter(crate::AppState::InGame)
+                         .with_system(create_environment.system())
+                         .with_system(setup_game_over_screen.system())
+           )
+           .add_system_set(
+               SystemSet::on_update(crate::AppState::InGame)
+               .with_system(holdable::lift_holdable.system())
+               .with_system(update_held_blocks.system())
+               .with_system(update_box.system())
+               .with_system(update_flag.system())
+               .with_system(fallable::update_fallables.system())
+               .with_system(game_over_check.system())
+               .with_system(crate::level::sync_level.system())
+           );
     }
 }
 

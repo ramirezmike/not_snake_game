@@ -12,12 +12,18 @@ impl Plugin for DudePlugin {
            .init_resource::<AssetsLoading>()
            .init_resource::<Loaded>()
            .init_resource::<Spawned>()
-           .add_system(check_assets_ready.system())
-           .add_startup_system(setup_dude.system())
-           .add_system(spawn_dude.system())
-           .add_system(player_input.system())
-           .add_system(push_box.system())
-           .add_system(update_dude.system());
+           .add_system_set(
+               SystemSet::on_enter(crate::AppState::InGame)
+                   .with_system(setup_dude.system())
+           )
+           .add_system_set(
+               SystemSet::on_update(crate::AppState::InGame)
+                   .with_system(check_assets_ready.system())
+                   .with_system(spawn_dude.system())
+                   .with_system(player_input.system())
+                   .with_system(push_box.system())
+                   .with_system(update_dude.system())
+           );
     }
 }
 
