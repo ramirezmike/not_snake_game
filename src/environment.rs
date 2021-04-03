@@ -1,9 +1,8 @@
 use bevy::prelude::*;
 
-use crate::{level::Level, Position, Direction, 
-            EntityType, GameObject, holdable, Collectable,
-            level_over, credits, level, block,
-            fallable, camera, dude};
+use crate::{level::Level, Position, collectable,
+            EntityType, GameObject, holdable, win_flag,
+            level_over, credits, level, block, fallable, camera};
 
 pub struct EnvironmentPlugin;
 impl Plugin for EnvironmentPlugin {
@@ -32,8 +31,8 @@ impl Plugin for EnvironmentPlugin {
                .with_system(holdable::update_held.system())
                .with_system(block::update_block.system())
                .with_system(fallable::update_fallables.system())
-               .with_system(update_flag.system())
-               .with_system(check_collected.system())
+               .with_system(win_flag::update_flag.system())
+               .with_system(collectable::check_collected.system())
                .with_system(level_over::level_over_check.system())
                .with_system(level::sync_level.system())
            );
@@ -145,58 +144,22 @@ pub fn load_level(
     }
 
     let flag_color = Color::hex(crate::COLOR_FLAG).unwrap();
-    let flag_color = Color::rgba(flag_color.r(), flag_color.g(), flag_color.b(), 0.1);
-    let win_flag =
-        commands.spawn_bundle(PbrBundle {
-          transform: Transform::from_xyz(((level.width - 1) / 2) as f32, 3.0, (level.length - 1) as f32),
-          ..Default::default()
+    let flag_color = Color::rgba(flag_color.r(), flag_color.g(), flag_color.b(), 0.5);
+    commands.spawn_bundle(PbrBundle {
+      transform: Transform::from_xyz(((level.width - 1) / 2) as f32, 3.0, (level.length - 1) as f32),
+      ..Default::default()
+    })
+    .with_children(|parent| {
+        parent.spawn_bundle(PbrBundle {
+            mesh: meshes.add(Mesh::from(shape::Icosphere { radius: 0.25, subdivisions: 0 })),
+            material: materials.add(flag_color.into()),
+            transform: Transform::from_xyz(0.0, 0.5, 0.0),
+            ..Default::default()
         })
-        .with_children(|parent| {
-            parent.spawn_bundle(PbrBundle {
-                mesh: meshes.add(Mesh::from(shape::Icosphere { radius: 0.25, subdivisions: 0 })),
-                material: materials.add(flag_color.into()),
-                transform: Transform::from_xyz(0.0, 0.5, 0.0),
-                ..Default::default()
-            })
-            .insert(WinFlagInnerMesh {});
-        })
-        .insert(Collectable { collected: false }) 
-        .insert(WinFlag {})
-        .insert(EntityType::WinFlag)
-        .insert(Position { x:((level.width - 1) / 2), y: 3, z: level.length - 1 })
-        .id();
+        .insert(win_flag::WinFlagInnerMesh {});
+    })
+    .insert(collectable::Collectable { collected: false }) 
+    .insert(win_flag::WinFlag {})
+    .insert(EntityType::WinFlag)
+    .insert(Position { x:((level.width - 1) / 2), y: 3, z: level.length - 1 });
 }
-
-pub struct WinFlag { }
-pub struct WinFlagInnerMesh { }
-
-fn check_collected(
-    mut collectables: Query<(&mut Collectable, &Position, &EntityType)>,
-    dudes: Query<(&dude::Dude, &Position)>,
-    mut level_over_event_writer: EventWriter<level_over::LevelOverEvent>,
-) {
-    for (mut collectable, collectable_position, collectable_entity_type) in collectables.iter_mut().filter(|x| !x.0.collected) {
-        for (_dude, dude_position) in dudes.iter() {
-            if collectable_position == dude_position {
-                collectable.collected = true;
-                match collectable_entity_type {
-                    EntityType::WinFlag => level_over_event_writer.send(level_over::LevelOverEvent {}),
-                    _ => ()
-                }
-            }
-        }
-    }
-}
-
-fn update_flag(
-    mut flags: Query<(&WinFlagInnerMesh, &mut Transform)>,
-    time: Res<Time>,
-) {
-    for (_flag, mut transform) in flags.iter_mut() {
-        transform.translation.y = 0.5 + (0.2 * time.seconds_since_startup().sin() as f32);
-        transform.rotate(Quat::from_rotation_y(time.delta_seconds()));
-        transform.rotate(Quat::from_rotation_z(time.delta_seconds()));
-        transform.rotate(Quat::from_rotation_x(time.delta_seconds()));
-    }
-}
-

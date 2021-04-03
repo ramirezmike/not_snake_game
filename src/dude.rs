@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use crate::{environment, Direction, EntityType, GameObject, level::Level, Position, holdable, block};
+use crate::{Direction, EntityType, GameObject, level::Level, Position, holdable, block};
 
 #[derive(Default)]
 struct Loaded(bool);

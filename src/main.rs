@@ -11,6 +11,8 @@ pub mod dude;
 pub mod level_over;
 pub mod credits;
 pub mod block;
+pub mod collectable;
+pub mod win_flag;
 mod menu;
 
 use camera::*;
@@ -60,7 +62,6 @@ fn exit(keys: Res<Input<KeyCode>>, mut exit: ResMut<Events<AppExit>>) {
     }
 }
 
-
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct GameObject {
     pub entity: Entity,
@@ -79,10 +80,6 @@ pub enum EntityType {
     Dude,
     Platform,
     WinFlag,
-}
-
-pub struct Collectable { 
-    collected: bool 
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
