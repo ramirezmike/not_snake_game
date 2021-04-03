@@ -1,76 +1,9 @@
 use bevy::prelude::*;
 
 use crate::{level::Level, Position, Direction, 
-            EntityType, GameObject, holdable,
-            fallable};
-
-pub struct GameOverEvent {}
-pub struct GameIsOver(bool);
-pub struct GameOverText {}
-pub struct CreditsDelay(Timer);
-
-pub fn setup_game_over_screen(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-) {
-    commands.spawn_bundle(UiCameraBundle::default());
-    commands
-        .spawn_bundle(TextBundle {
-            style: Style {
-                // center button
-                margin: Rect::all(Val::Auto),
-                // horizontally center child text
-                justify_content: JustifyContent::Center,
-                // vertically center child text
-                align_items: AlignItems::Center,
-                position_type: PositionType::Absolute,
-                position: Rect {
-                    top: Val::Percent(30.0),
-                    left: Val::Percent(10.0),
-                    ..Default::default()
-                },
-                ..Default::default()
-            },
-            // Use the `Text::with_section` constructor
-            text: Text::with_section(
-                // Accepts a `String` or any type that converts into a `String`, such as `&str`
-                "",
-                TextStyle {
-                    font: asset_server.load("fonts/FiraSans-Bold.ttf"),
-                    font_size: 500.0,
-                    color: Color::WHITE,
-                },
-                // Note: You can use `Default::default()` in place of the `TextAlignment`
-                TextAlignment {
-                    ..Default::default()
-                },
-            ),
-            ..Default::default()
-        })
-    .insert(GameOverText {});
-}
-
-pub fn game_over_check(
-    mut game_over_events: EventReader<GameOverEvent>,
-    mut query: Query<&mut Text>,
-    mut game_is_over: ResMut<GameIsOver>,
-    time: Res<Time>, 
-    mut credits_delay: ResMut<CreditsDelay>,
-    mut credits_event_writer: EventWriter<crate::credits::CreditsEvent>
-) {
-    for _game_over in game_over_events.iter() {
-        for mut text in query.iter_mut() {
-            println!("Changing text!");
-            text.sections[0].value = "YOU WIN!".to_string();
-            game_is_over.0 = true;
-            credits_delay.0.reset();
-        }
-    }
-
-    if game_is_over.0 && credits_delay.0.tick(time.delta()).finished() {
-        credits_event_writer.send(crate::credits::CreditsEvent {});
-    }
-}
+            EntityType, GameObject, holdable, Collectable,
+            level_over, credits, level, block,
+            fallable, camera, dude};
 
 pub struct EnvironmentPlugin;
 impl Plugin for EnvironmentPlugin {
@@ -81,25 +14,28 @@ impl Plugin for EnvironmentPlugin {
                height: 12,
                game_objects: vec![vec![vec![None; 12]; 12]; 6],
            })
+
+           .add_plugin(camera::CameraPlugin)
            .add_event::<holdable::LiftHoldableEvent>()
-           .add_event::<GameOverEvent>()
+           .add_event::<level_over::LevelOverEvent>()
            .add_system_set(
                SystemSet::on_enter(crate::AppState::InGame)
-                         .with_system(create_environment.system())
-                         .with_system(setup_game_over_screen.system())
+                         .with_system(load_level.system())
+                         .with_system(level_over::setup_level_over_screen.system())
            )
 
-           .insert_resource(CreditsDelay(Timer::from_seconds(1.5, false)))
-           .insert_resource(GameIsOver(false))
+           .insert_resource(credits::CreditsDelay(Timer::from_seconds(1.5, false)))
+           .insert_resource(level_over::LevelIsOver(false))
            .add_system_set(
                SystemSet::on_update(crate::AppState::InGame)
                .with_system(holdable::lift_holdable.system())
-               .with_system(update_held_blocks.system())
-               .with_system(update_box.system())
-               .with_system(update_flag.system())
+               .with_system(holdable::update_held.system())
+               .with_system(block::update_block.system())
                .with_system(fallable::update_fallables.system())
-               .with_system(game_over_check.system())
-               .with_system(crate::level::sync_level.system())
+               .with_system(update_flag.system())
+               .with_system(check_collected.system())
+               .with_system(level_over::level_over_check.system())
+               .with_system(level::sync_level.system())
            );
     }
 }
@@ -107,7 +43,7 @@ impl Plugin for EnvironmentPlugin {
 pub fn cleanup_environment(
     mut commands: Commands, 
     entities: Query<(Entity, &EntityType)>,
-    game_over_text: Query<(Entity, &GameOverText)>,
+    level_over_text: Query<(Entity, &level_over::LevelOverText)>,
 ) {
     for (entity, entity_type) in entities.iter() {
         println!("Despawning... {:?}", entity_type);
@@ -119,12 +55,12 @@ pub fn cleanup_environment(
         }
     }
 
-    for (entity, _text) in game_over_text.iter() {
+    for (entity, _text) in level_over_text.iter() {
         commands.entity(entity).despawn();
     }
 }
 
-pub fn create_environment(
+pub fn load_level(
     mut commands: Commands,
     mut level: ResMut<Level>,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -167,7 +103,7 @@ pub fn create_environment(
                     ..Default::default()
                 });
             })
-            .insert(EntityType::Block)
+            .insert(EntityType::Block) // TODO: this should be platform at some point. Dude can't climb platforms, just blocks
             .insert(Position { x: i, y: 2, z: j })
             .id();
             level.set(i, 2, j, Some(GameObject::new(block_entity, EntityType::Block)));
@@ -179,68 +115,34 @@ pub fn create_environment(
         ..Default::default()
     });
 
-    let i = 3;
-    let block_entity =
-        commands.spawn_bundle(PbrBundle {
-          transform: Transform::from_xyz(1.0, 0.0, i as f32),
-          ..Default::default()
-        })
-        .with_children(|parent| {
-            parent.spawn_bundle(PbrBundle {
-                mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-                material: materials.add(Color::hex(crate::COLOR_BOX).unwrap().into()),
-                transform: Transform::from_xyz(0.0, 0.5, 0.0),
-                ..Default::default()
-            });
-        })
-        .insert(EntityType::Block)
-        .insert(holdable::Holdable {})
-        .insert(fallable::Fallable {})
-        .insert(Position { x: 1, y: 0, z: i })
-        .insert(BoxObject { target: None })
-        .id();
-    let i = 8;
-    let block_entity =
-        commands.spawn_bundle(PbrBundle {
-          transform: Transform::from_xyz(2.0, 0.0, i as f32),
-          ..Default::default()
-        })
-        .with_children(|parent| {
-            parent.spawn_bundle(PbrBundle {
-                mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-                material: materials.add(Color::hex(crate::COLOR_BOX).unwrap().into()),
-                transform: Transform::from_xyz(0.0, 0.5, 0.0),
-                ..Default::default()
-            });
-        })
-        .insert(EntityType::Block)
-        .insert(holdable::Holdable {})
-        .insert(fallable::Fallable {})
-        .insert(Position { x: 2, y: 0, z: i })
-        .insert(BoxObject { target: None })
-        .id();
-    level.set(2, 0, i, Some(GameObject::new(block_entity, EntityType::Block)));
-    let block_entity =
-        commands.spawn_bundle(PbrBundle {
-          transform: Transform::from_xyz(2.0, 1.0, i as f32),
-          ..Default::default()
-        })
-        .with_children(|parent| {
-            parent.spawn_bundle(PbrBundle {
-                mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-                material: materials.add(Color::hex(crate::COLOR_BOX).unwrap().into()),
-                transform: Transform::from_xyz(0.0, 0.5, 0.0),
-                ..Default::default()
-            });
-        })
-        .insert(EntityType::Block)
-        .insert(holdable::Holdable {})
-        .insert(fallable::Fallable {})
-        .insert(Position { x: 2, y: 1, z: i })
-        .insert(BoxObject { target: None })
-        .id();
-    level.set(2, 1, i, Some(GameObject::new(block_entity, EntityType::Block)));
-    
+    let block_positions = vec!(
+        (1.0, 0.0, 3.0),
+        (2.0, 0.0, 8.0),
+        (2.0, 1.0, 8.0),
+    );
+
+    for block in block_positions.iter() {
+        let block_entity =
+            commands.spawn_bundle(PbrBundle {
+              transform: Transform::from_xyz(block.0, block.1, block.2),
+              ..Default::default()
+            })
+            .with_children(|parent| {
+                parent.spawn_bundle(PbrBundle {
+                    mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
+                    material: materials.add(Color::hex(crate::COLOR_BLOCK).unwrap().into()),
+                    transform: Transform::from_xyz(0.0, 0.5, 0.0),
+                    ..Default::default()
+                });
+            })
+            .insert(EntityType::Block)
+            .insert(holdable::Holdable {})
+            .insert(fallable::Fallable {})
+            .insert(Position { x: block.0 as i32, y: block.1 as i32, z: block.2 as i32 })
+            .insert(block::BlockObject { target: None })
+            .id();
+        level.set(block.0 as i32, block.1 as i32, block.2 as i32, Some(GameObject::new(block_entity, EntityType::Block)));
+    }
 
     let flag_color = Color::hex(crate::COLOR_FLAG).unwrap();
     let flag_color = Color::rgba(flag_color.r(), flag_color.g(), flag_color.b(), 0.1);
@@ -258,6 +160,8 @@ pub fn create_environment(
             })
             .insert(WinFlagInnerMesh {});
         })
+        .insert(Collectable { collected: false }) 
+        .insert(WinFlag {})
         .insert(EntityType::WinFlag)
         .insert(Position { x:((level.width - 1) / 2), y: 3, z: level.length - 1 })
         .id();
@@ -265,6 +169,24 @@ pub fn create_environment(
 
 pub struct WinFlag { }
 pub struct WinFlagInnerMesh { }
+
+fn check_collected(
+    mut collectables: Query<(&mut Collectable, &Position, &EntityType)>,
+    dudes: Query<(&dude::Dude, &Position)>,
+    mut level_over_event_writer: EventWriter<level_over::LevelOverEvent>,
+) {
+    for (mut collectable, collectable_position, collectable_entity_type) in collectables.iter_mut().filter(|x| !x.0.collected) {
+        for (_dude, dude_position) in dudes.iter() {
+            if collectable_position == dude_position {
+                collectable.collected = true;
+                match collectable_entity_type {
+                    EntityType::WinFlag => level_over_event_writer.send(level_over::LevelOverEvent {}),
+                    _ => ()
+                }
+            }
+        }
+    }
+}
 
 fn update_flag(
     mut flags: Query<(&WinFlagInnerMesh, &mut Transform)>,
@@ -278,93 +200,3 @@ fn update_flag(
     }
 }
 
-pub struct BoxObject { 
-    pub target: Option::<Direction>,
-}
-
-pub struct BeingHeld {
-    pub held_by: Entity
-}
-
-fn update_held_blocks(
-    mut boxes: Query<(&BoxObject, &mut Transform, &BeingHeld)>, 
-    holders: Query<(Entity, &Transform), Without<BeingHeld>>
-) {
-    for (_box_object, mut box_transform, being_held) in boxes.iter_mut() {
-        if let Ok((_entity, transform)) = holders.get(being_held.held_by) {
-            box_transform.translation.x = transform.translation.x;
-            box_transform.translation.y = transform.translation.y + 1.0;
-            box_transform.translation.z = transform.translation.z;
-        }
-    }
-}
-
-fn update_box(
-    mut boxes: Query<(Entity, &mut BoxObject, &mut Position, &mut Transform), Without<BeingHeld>>, 
-    mut level: ResMut<Level>,
-    time: Res<Time>, 
-) {
-    for (entity, mut box_object, mut position, mut transform) in boxes.iter_mut() {
-        if !box_object.target.is_some() { 
-            // this is a terrible hack to handle when
-            // a box ends up stuck in a spot that doesn't match
-            // it's current position. This is a concurrency problem that
-            // should be addresed. 
-            transform.translation = Vec3::new(position.x as f32, 
-                                              position.y as f32, 
-                                              position.z as f32);
-            continue; 
-        }
-
-        let current = transform.translation;
-        let target_translation = match box_object.target.unwrap() {
-                                     Direction::Beneath
-                                         => Transform::from_xyz(current.x, 
-                                                                current.y - 1.0, 
-                                                                current.z),
-                                     Direction::Above
-                                         => Transform::from_xyz(current.x, 
-                                                                current.y + 1.0, 
-                                                                current.z),
-                                     Direction::Up 
-                                         => Transform::from_xyz(current.x + 1.0, 
-                                                                current.y, 
-                                                                current.z),
-                                     Direction::Down 
-                                         => Transform::from_xyz(current.x - 1.0, 
-                                                                current.y, 
-                                                                current.z),
-                                     Direction::Right 
-                                         => Transform::from_xyz(current.x, 
-                                                                current.y, 
-                                                                current.z + 1.0),
-                                     Direction::Left 
-                                         => Transform::from_xyz(current.x, 
-                                                                current.y, 
-                                                                current.z - 1.0),
-                                 }.translation;
-
-        if !position.matches(target_translation) {
-            level.set(position.x, position.y, position.z, None);
-        }
-
-        if level.is_type_with_vec(target_translation, None) 
-            || level.is_with_vec(target_translation, Some(GameObject::new(entity, EntityType::Block))) {
-            let target_position = Vec3::new(target_translation.x - transform.translation.x,
-                                            target_translation.y - transform.translation.y,
-                                            target_translation.z - transform.translation.z).normalize();
-             
-            level.set_with_vec(target_position, Some(GameObject::new(entity, EntityType::Block)));
-            transform.translation += target_position * 0.01 * time.delta().subsec_millis() as f32;
-        } else {
-            println!("Can't move!");
-            box_object.target = None;
-            transform.translation = Vec3::new(position.x as f32, position.y as f32, position.z as f32);
-            level.set(position.x, position.y, position.z, Some(GameObject::new(entity, EntityType::Block)));
-        }
-
-        position.x = transform.translation.x as i32;
-        position.y = transform.translation.y as i32;
-        position.z = transform.translation.z as i32;
-    }
-}

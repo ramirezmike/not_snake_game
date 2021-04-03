@@ -3,6 +3,7 @@ use bevy::app::AppExit;
 use bevy::app::Events;
 
 pub struct CreditsEvent {}
+pub struct CreditsDelay(pub Timer);
 
 pub fn setup_credits(
     mut commands: Commands,

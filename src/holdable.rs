@@ -1,9 +1,12 @@
 use bevy::prelude::*;
-use crate::{environment, level::Level, Position, Direction, EntityType, GameObject, };
+use crate::{level::Level, Position, Direction, EntityType, GameObject, };
 
 pub struct Holdable { }
 pub struct Holder {
     pub holding: Option::<Entity>
+}
+pub struct BeingHeld {
+    pub held_by: Entity
 }
 pub struct LiftHoldableEvent(pub Entity, pub Direction);
 
@@ -21,7 +24,7 @@ pub fn lift_holdable(
                 Some(held_entity) => {
                     let mut drop_successful = false;
                     commands.entity(held_entity)
-                            .remove::<environment::BeingHeld>();
+                            .remove::<BeingHeld>();
                     match (transforms.get_mut(held_entity), positions.get_mut(*entity)) {
                         (Ok(mut transform), Ok(position)) => {
                             transform.translation = position.to_vec();
@@ -63,7 +66,7 @@ pub fn lift_holdable(
                             if let Some(holdable) = level.get_with_position(holdee_position) {
                                 println!("Picking up item {} {} {}", holder_position.x, holder_position.y, holder_position.z);
                                 commands.entity(holdable.entity)
-                                        .insert(environment::BeingHeld { held_by: *entity });
+                                        .insert(BeingHeld { held_by: *entity });
                                 level.set_with_position(holdee_position, None);
                                 commands.entity(holdable.entity).remove::<Position>();
                                 holder.holding = Some(holdable.entity);
@@ -72,6 +75,19 @@ pub fn lift_holdable(
                     }
                 }
             }
+        }
+    }
+}
+
+pub fn update_held(
+    mut holdables: Query<(&mut Transform, &BeingHeld)>, 
+    holders: Query<(Entity, &Transform), Without<BeingHeld>>
+) {
+    for (mut holdable_transform, being_held) in holdables.iter_mut() {
+        if let Ok((_entity, transform)) = holders.get(being_held.held_by) {
+            holdable_transform.translation.x = transform.translation.x;
+            holdable_transform.translation.y = transform.translation.y + 1.0;
+            holdable_transform.translation.z = transform.translation.z;
         }
     }
 }

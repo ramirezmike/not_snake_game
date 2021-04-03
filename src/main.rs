@@ -7,9 +7,11 @@ pub mod environment;
 pub mod level;
 pub mod holdable;
 pub mod fallable;
-mod dude;
+pub mod dude;
+pub mod level_over;
+pub mod credits;
+pub mod block;
 mod menu;
-mod credits;
 
 use camera::*;
 use environment::*;
@@ -19,7 +21,7 @@ pub static COLOR_BLACK: &str = "000000";
 pub static COLOR_BASE: &str = "343f56";
 pub static COLOR_GROUND_1: &str = "387c6d";
 pub static COLOR_GROUND_2: &str = "f8f5f1";
-pub static COLOR_BOX: &str = "e9896a";
+pub static COLOR_BLOCK: &str = "e9896a";
 pub static COLOR_FLAG: &str = "80E895"; //"92DB56"; //40DBB7
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -48,15 +50,8 @@ fn main() {
         .add_plugin(EnvironmentPlugin)
         .add_plugin(DudePlugin)
         .add_system(exit.system())
-        .add_startup_system(enter_game.system())
         .add_plugin(CameraPlugin)
         .run();
-}
-
-fn enter_game(mut app_state: ResMut<State<AppState>>) {
-//    app_state.set(AppState::MainMenu).unwrap();
-    // ^ this can fail if we are already in the target state
-    // or if another state change is already queued
 }
 
 fn exit(keys: Res<Input<KeyCode>>, mut exit: ResMut<Events<AppExit>>) {
@@ -86,12 +81,16 @@ pub enum EntityType {
     WinFlag,
 }
 
+pub struct Collectable { 
+    collected: bool 
+}
+
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Direction {
     Up, Down, Left, Right, Beneath, Above
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Position { pub x: i32, pub y: i32, pub z: i32 }
 impl Position {
     pub fn to_vec(&self) -> Vec3 {

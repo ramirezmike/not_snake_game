@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use crate::{environment, Direction, EntityType, GameObject, level::Level, Position, holdable};
+use crate::{environment, Direction, EntityType, GameObject, level::Level, Position, holdable, block};
 
 #[derive(Default)]
 struct Loaded(bool);
@@ -21,7 +21,7 @@ impl Plugin for DudePlugin {
                    .with_system(check_assets_ready.system())
                    .with_system(spawn_dude.system())
                    .with_system(player_input.system())
-                   .with_system(push_box.system())
+                   .with_system(push_block.system())
                    .with_system(update_dude.system())
            );
     }
@@ -35,7 +35,7 @@ fn setup_dude(
     mut loading: ResMut<AssetsLoading>,
 ) {
     meshes.step1 = asset_server.load("models/dude.glb#Mesh0/Primitive0");
-    meshes.material = materials.add(Color::hex(crate::COLOR_BOX).unwrap().into());
+    meshes.material = materials.add(Color::hex(crate::COLOR_BLOCK).unwrap().into());
 
     loading.0.push(meshes.step1.clone_untyped());
 }
@@ -51,7 +51,7 @@ fn spawn_dude(
 
     let mut transform = Transform::from_translation(Vec3::new(0.0, 0.0, 0.0));
     transform.apply_non_uniform_scale(Vec3::new(0.25, 0.25, 0.25)); 
-    transform.rotate(Quat::from_axis_angle(Vec3::new(0.0, 1.0, 0.0), 0.0));
+    transform.rotate(Quat::from_axis_angle(Vec3::new(0.0, 1.0, 0.0), std::f32::consts::PI));
     let player_entity = 
     commands.spawn_bundle(PbrBundle {
                 transform,
@@ -62,7 +62,7 @@ fn spawn_dude(
                 target: None,
                 is_jumping: false,
                 queued_movement: None,
-                lift_cooldown: Timer::from_seconds(0.1, false),
+                action_cooldown: Timer::from_seconds(0.1, false),
                 current_movement_time: 0.0
             })
             .insert(Position { x: 0, y: 0, z: 0 })
@@ -88,11 +88,9 @@ fn update_dude(
     mut dudes: Query<(Entity, &mut Dude, &mut Transform, &mut Position)>, 
     mut level: ResMut<Level>,
     time: Res<Time>, 
-    mut game_over_event_writer: EventWriter<environment::GameOverEvent>,
 ) {
     let dude_movement_time = 0.10;
     for (entity, mut dude, mut dude_transform, mut dude_position) in dudes.iter_mut() {
-//        println!("{} {} {}", dude.x, dude.y, dude.z);
         if !dude.target.is_some() && dude.queued_movement.is_some() {
             let queued_movement = dude.queued_movement.take().unwrap();
             dude.target = move_direction(&mut dude_position, level.width, level.length, queued_movement);
@@ -118,7 +116,6 @@ fn update_dude(
         }
 
         if dude.current_movement_time > dude_movement_time {
-            println!("WE MADE IT");
             dude_transform.translation = target_translation;
             dude.target = None;
 
@@ -155,8 +152,8 @@ fn update_dude(
 
         dude.facing = target_rotation;
 
-        let target_is_win_flag = level.is_type_with_vec(target_translation, Some(EntityType::WinFlag));
-        if !(level.is_type_with_vec(target_translation, None) || target_is_win_flag)
+        
+        if !(level.is_type_with_vec(target_translation, None) || level.is_collectable_with_vec(target_translation))
             || is_target_cliff_player_isnt_facing {
             // can't move here
             println!("NO! {:?} is here", level.get_with_vec(target_translation));
@@ -167,12 +164,6 @@ fn update_dude(
             continue;
         } 
 
-        if target_is_win_flag {
-            game_over_event_writer.send(environment::GameOverEvent {});
-        }
-
-        println!("DUDE: {:?}", dude_transform.translation);
-        println!("Curent: {:?}", dude.current_movement_time);
         dude.current_movement_time += time.delta_seconds();
         let new_translation = dude_transform.translation.lerp(target_translation, dude.current_movement_time / dude_movement_time);
         if !new_translation.is_nan() {
@@ -189,8 +180,8 @@ fn player_input(
     mut dudes: Query<(Entity, &mut Dude, &mut Position)>, 
 ) {
     for (entity, mut dude, mut position) in dudes.iter_mut() {
-        dude.lift_cooldown.tick(time.delta());
-        if !dude.lift_cooldown.finished() {
+        dude.action_cooldown.tick(time.delta());
+        if !dude.action_cooldown.finished() {
             continue;
         }
 
@@ -198,7 +189,7 @@ fn player_input(
             dude.target = None;
             dude.queued_movement = None;
             lift_holdable_event_writer.send(holdable::LiftHoldableEvent(entity, dude.facing));
-            dude.lift_cooldown.reset();
+            dude.action_cooldown.reset();
             continue;
         }
 
@@ -220,19 +211,17 @@ fn player_input(
             if !dude.target.is_some()   {
                 dude.target = move_direction(&mut position, level.width, level.length, move_dir);
                 dude.current_movement_time = 0.0;
-                dude.lift_cooldown.reset();
-            } else {
-                //dude.queued_movement = Some(move_dir);
+                dude.action_cooldown.reset();
             }
         }
     }
 }
 
-fn push_box(
+fn push_block(
     keyboard_input: Res<Input<KeyCode>>,
     level: Res<Level>,
     dudes: Query<(&Dude, &Transform, &Position)>, 
-    mut blocks: Query<&mut environment::BoxObject>,
+    mut blocks: Query<&mut block::BlockObject>,
 ) { 
     for (dude, _transform, position) in dudes.iter() {
         if keyboard_input.just_pressed(KeyCode::K) {
@@ -248,7 +237,7 @@ fn push_box(
                 if let Some(block) = level.get(x, y, z) {
                     if let Ok(mut block) = blocks.get_mut(block.entity) {
                         block.target = Some(dude.facing);
-                        println!("Pushed box {:?}", block.target);
+                        println!("Pushed block {:?}", block.target);
                     }
                 }
             }
@@ -256,12 +245,12 @@ fn push_box(
     }
 }
 
-struct Dude {
+pub struct Dude {
     facing: Direction,
     target: Option::<(Vec3, Direction)>,
     queued_movement: Option::<Direction>,
     is_jumping: bool,
-    lift_cooldown: Timer,
+    action_cooldown: Timer,
     current_movement_time: f32
 }
 

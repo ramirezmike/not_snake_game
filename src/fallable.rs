@@ -1,15 +1,15 @@
 use bevy::prelude::*;
-use crate::{level::Level, Position, Direction, BoxObject};
+use crate::{level::Level, Position, block::BlockObject};
 
 pub struct Fallable { }
 
 pub fn update_fallables(
-    mut fallables: Query<(&mut BoxObject, &Fallable, &Position)>,
+    mut fallables: Query<(&mut BlockObject, &Fallable, &Position)>,
     level: Res<Level>,
 ) {
-    for (mut box_object, _fallable, position) in fallables.iter_mut() {
+    for (mut block_object, _fallable, position) in fallables.iter_mut() {
         if level.is_type(position.x, position.y - 1, position.z, None) {
-            box_object.target = Some(Direction::Beneath);
+            block_object.target = Some(crate::Direction::Beneath);
         }
     }
 }

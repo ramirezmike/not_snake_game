@@ -1,5 +1,5 @@
 use bevy::{prelude::*,};
-use crate::{GameObject, EntityType, Position};
+use crate::{GameObject, EntityType, Position, environment};
 
 pub struct Level {
     pub width: i32,
@@ -46,6 +46,22 @@ impl Level {
             self.game_objects[x as usize][y as usize][z as usize]
         } else {
             None
+        }
+    }
+
+    pub fn is_collectable_with_vec(&self, position: Vec3) -> bool {
+        self.is_collectable(position.x as i32, position.y as i32, position.z as i32)
+    }
+
+    pub fn is_collectable(&self, x: i32, y: i32, z: i32) -> bool {
+        match self.get(x, y, z) {
+            Some(game_object) => {
+                match game_object.entity_type {
+                    EntityType::WinFlag => true,
+                    _ => false
+                }
+            }
+            _ => false
         }
     }
 
@@ -98,9 +114,10 @@ impl Level {
     }
 }
 
-pub fn sync_level(mut level: ResMut<Level>, positions: Query<(Entity, &Position, &EntityType)>) {
+pub fn sync_level(
+    mut level: ResMut<Level>, positions: Query<(Entity, &Position, &EntityType)>
+) {
     level.game_objects = vec![vec![vec![None; 12]; 12]; 6];
-
 //  println!("==========================================================================================");
 //  println!("");
 //  println!("");

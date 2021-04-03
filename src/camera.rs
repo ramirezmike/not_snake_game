@@ -13,8 +13,13 @@ pub struct CameraPlugin;
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app//.add_plugin(PickingPlugin)
-           .add_plugin(FlyCameraPlugin)
-           .add_startup_system(create_camera.system())
+
+           .add_system_set(
+               SystemSet::on_enter(crate::AppState::InGame)
+                         .with_system(create_camera.system())
+           )
+//           .add_plugin(FlyCameraPlugin)
+           
 //           .add_system(update_camera.system())
            //.add_system(toggle_fly.system())
            //.add_system(update_camera_collisions.system());
