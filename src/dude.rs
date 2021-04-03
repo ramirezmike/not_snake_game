@@ -63,6 +63,7 @@ fn spawn_dude(
                 is_jumping: false,
                 queued_movement: None,
                 lift_cooldown: Timer::from_seconds(0.1, false),
+                current_movement_time: 0.0
             })
             .insert(Position { x: 0, y: 0, z: 0 })
             .insert(EntityType::Dude)
@@ -89,11 +90,13 @@ fn update_dude(
     time: Res<Time>, 
     mut game_over_event_writer: EventWriter<environment::GameOverEvent>,
 ) {
+    let dude_movement_time = 0.10;
     for (entity, mut dude, mut dude_transform, mut dude_position) in dudes.iter_mut() {
 //        println!("{} {} {}", dude.x, dude.y, dude.z);
         if !dude.target.is_some() && dude.queued_movement.is_some() {
             let queued_movement = dude.queued_movement.take().unwrap();
             dude.target = move_direction(&mut dude_position, level.width, level.length, queued_movement);
+            dude.current_movement_time = 0.0;
         }
 
         if !dude.target.is_some() { continue; }
@@ -114,7 +117,8 @@ fn update_dude(
             dude.is_jumping = true;
         }
 
-        if target_translation == dude_transform.translation || target_translation.distance(dude_transform.translation) < 0.1 {
+        if dude.current_movement_time > dude_movement_time {
+            println!("WE MADE IT");
             dude_transform.translation = target_translation;
             dude.target = None;
 
@@ -125,18 +129,16 @@ fn update_dude(
             level.set(dude_position.x, dude_position.y, dude_position.z, Some(GameObject::new(entity, EntityType::Dude)));
 
             if level.is_type(dude_position.x, dude_position.y - 1, dude_position.z, None) && !dude.is_jumping {
+                // dude is falling
                 let target = Vec3::new(dude_position.x as f32, dude_position.y as f32 - 1.0, dude_position.z as f32);
                 dude.target = Some((target, target_rotation));
+                dude.current_movement_time = 0.0;
             }
 
             dude.is_jumping = false;
 
             continue;
         }
-
-        let target_position = Vec3::new(target_translation.x - dude_transform.translation.x,
-                                        target_translation.y - dude_transform.translation.y,
-                                        target_translation.z - dude_transform.translation.z).normalize();
 
         dude_transform.rotation = match target_rotation {
                                       Direction::Up => Quat::from_axis_angle(Vec3::Y, -std::f32::consts::FRAC_PI_2),
@@ -150,7 +152,6 @@ fn update_dude(
                 level.is_type_with_vec(target_translation, None)
              && level.is_type(i32_target_translation.x, i32_target_translation.y - 1, i32_target_translation.z, None) 
              && dude.facing != target_rotation;
-        
 
         dude.facing = target_rotation;
 
@@ -170,7 +171,13 @@ fn update_dude(
             game_over_event_writer.send(environment::GameOverEvent {});
         }
 
-        dude_transform.translation += target_position * 0.01 * time.delta().subsec_millis() as f32;
+        println!("DUDE: {:?}", dude_transform.translation);
+        println!("Curent: {:?}", dude.current_movement_time);
+        dude.current_movement_time += time.delta_seconds();
+        let new_translation = dude_transform.translation.lerp(target_translation, dude.current_movement_time / dude_movement_time);
+        if !new_translation.is_nan() {
+            dude_transform.translation = new_translation;
+        }
     }
 }
 
@@ -183,8 +190,11 @@ fn player_input(
 ) {
     for (entity, mut dude, mut position) in dudes.iter_mut() {
         dude.lift_cooldown.tick(time.delta());
+        if !dude.lift_cooldown.finished() {
+            continue;
+        }
 
-        if keyboard_input.just_pressed(KeyCode::J) && dude.lift_cooldown.finished() && !dude.target.is_some() {
+        if keyboard_input.just_pressed(KeyCode::J) && !dude.target.is_some() {
             dude.target = None;
             dude.queued_movement = None;
             lift_holdable_event_writer.send(holdable::LiftHoldableEvent(entity, dude.facing));
@@ -193,25 +203,26 @@ fn player_input(
         }
 
         let mut move_dir = None;
-        if keyboard_input.just_pressed(KeyCode::W) {
+        if keyboard_input.pressed(KeyCode::W) {
             move_dir = Some(Direction::Up); 
         }
-        if keyboard_input.just_pressed(KeyCode::S) {
+        if keyboard_input.pressed(KeyCode::S) {
             move_dir = Some(Direction::Down); 
         }
-        if keyboard_input.just_pressed(KeyCode::A) {
+        if keyboard_input.pressed(KeyCode::A) {
             move_dir = Some(Direction::Left); 
         }
-        if keyboard_input.just_pressed(KeyCode::D) {
+        if keyboard_input.pressed(KeyCode::D) {
             move_dir = Some(Direction::Right); 
         }
 
         if let Some(move_dir) = move_dir {
-            if !dude.target.is_some() && dude.lift_cooldown.finished()  {
+            if !dude.target.is_some()   {
                 dude.target = move_direction(&mut position, level.width, level.length, move_dir);
+                dude.current_movement_time = 0.0;
                 dude.lift_cooldown.reset();
             } else {
-                dude.queued_movement = Some(move_dir);
+                //dude.queued_movement = Some(move_dir);
             }
         }
     }
@@ -224,7 +235,7 @@ fn push_box(
     mut blocks: Query<&mut environment::BoxObject>,
 ) { 
     for (dude, _transform, position) in dudes.iter() {
-        if keyboard_input.just_pressed(KeyCode::H) {
+        if keyboard_input.just_pressed(KeyCode::K) {
             let (x, y, z) = match dude.facing {
                                 Direction::Up => (position.x + 1, position.y, position.z),
                                 Direction::Down => (position.x - 1, position.y, position.z),
@@ -251,6 +262,7 @@ struct Dude {
     queued_movement: Option::<Direction>,
     is_jumping: bool,
     lift_cooldown: Timer,
+    current_movement_time: f32
 }
 
 fn move_direction(position: &mut Position, width: i32, length: i32, direction: Direction) -> Option::<(Vec3, Direction)> {
