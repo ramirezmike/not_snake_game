@@ -7,6 +7,41 @@ pub fn setup_menu(
 ) {
     // ui camera
     commands.spawn_bundle(UiCameraBundle::default());
+
+    let title_text_entity = 
+    commands
+        .spawn_bundle(TextBundle {
+            style: Style {
+                // center button
+                margin: Rect::all(Val::Auto),
+                // horizontally center child text
+                justify_content: JustifyContent::Center,
+                // vertically center child text
+                align_items: AlignItems::Center,
+                position_type: PositionType::Absolute,
+                position: Rect {
+                    top: Val::Percent(10.0),
+                    left: Val::Percent(15.0),
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
+            // Use the `Text::with_section` constructor
+            text: Text::with_section(
+                // Accepts a `String` or any type that converts into a `String`, such as `&str`
+                "Blocks and Stuff \nor whatever idk.",
+                TextStyle {
+                    font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                    font_size: 300.0,
+                    color: Color::WHITE,
+                },
+                // Note: You can use `Default::default()` in place of the `TextAlignment`
+                TextAlignment {
+                    ..Default::default()
+                },
+            ),
+            ..Default::default()
+        }).id();
     let button_entity = commands
         .spawn_bundle(ButtonBundle {
             style: Style {
@@ -17,6 +52,12 @@ pub fn setup_menu(
                 justify_content: JustifyContent::Center,
                 // vertically center child text
                 align_items: AlignItems::Center,
+                position_type: PositionType::Absolute,
+                position: Rect {
+                    bottom: Val::Percent(10.0),
+                    left: Val::Percent(45.0),
+                    ..Default::default()
+                },
                 ..Default::default()
             },
             material: button_materials.normal.clone(),
@@ -25,7 +66,7 @@ pub fn setup_menu(
         .with_children(|parent| {
             parent.spawn_bundle(TextBundle {
                 text: Text::with_section(
-                    "Play",
+                    "Start",
                     TextStyle {
                         font: asset_server.load("fonts/FiraSans-Bold.ttf"),
                         font_size: 40.0,
@@ -37,16 +78,17 @@ pub fn setup_menu(
             });
         })
         .id();
-    commands.insert_resource(MenuData { button_entity });
+    commands.insert_resource(MenuData { button_entity, title_text_entity  });
 }
-
 
 pub struct MenuData {
     button_entity: Entity,
+    title_text_entity: Entity,
 }
 
 pub fn cleanup_menu(mut commands: Commands, menu_data: Res<MenuData>) {
     commands.entity(menu_data.button_entity).despawn_recursive();
+    commands.entity(menu_data.title_text_entity).despawn_recursive();
 }
 
 pub fn menu(

@@ -5,6 +5,9 @@ use crate::{level::Level, Position, Direction,
             fallable};
 
 pub struct GameOverEvent {}
+pub struct GameIsOver(bool);
+pub struct GameOverText {}
+pub struct CreditsDelay(Timer);
 
 pub fn setup_game_over_screen(
     mut commands: Commands,
@@ -43,19 +46,29 @@ pub fn setup_game_over_screen(
                 },
             ),
             ..Default::default()
-        });
+        })
+    .insert(GameOverText {});
 }
 
 pub fn game_over_check(
     mut game_over_events: EventReader<GameOverEvent>,
     mut query: Query<&mut Text>,
+    mut game_is_over: ResMut<GameIsOver>,
+    time: Res<Time>, 
+    mut credits_delay: ResMut<CreditsDelay>,
+    mut credits_event_writer: EventWriter<crate::credits::CreditsEvent>
 ) {
     for _game_over in game_over_events.iter() {
-        println!("YAY YOU DID IT");
         for mut text in query.iter_mut() {
             println!("Changing text!");
             text.sections[0].value = "YOU WIN!".to_string();
+            game_is_over.0 = true;
+            credits_delay.0.reset();
         }
+    }
+
+    if game_is_over.0 && credits_delay.0.tick(time.delta()).finished() {
+        credits_event_writer.send(crate::credits::CreditsEvent {});
     }
 }
 
@@ -75,6 +88,9 @@ impl Plugin for EnvironmentPlugin {
                          .with_system(create_environment.system())
                          .with_system(setup_game_over_screen.system())
            )
+
+           .insert_resource(CreditsDelay(Timer::from_seconds(1.5, false)))
+           .insert_resource(GameIsOver(false))
            .add_system_set(
                SystemSet::on_update(crate::AppState::InGame)
                .with_system(holdable::lift_holdable.system())
@@ -85,6 +101,26 @@ impl Plugin for EnvironmentPlugin {
                .with_system(game_over_check.system())
                .with_system(crate::level::sync_level.system())
            );
+    }
+}
+
+pub fn cleanup_environment(
+    mut commands: Commands, 
+    entities: Query<(Entity, &EntityType)>,
+    game_over_text: Query<(Entity, &GameOverText)>,
+) {
+    for (entity, entity_type) in entities.iter() {
+        println!("Despawning... {:?}", entity_type);
+        match entity_type {
+            EntityType::Dude | EntityType::Block | EntityType::WinFlag | EntityType::Platform => {
+                commands.entity(entity).despawn_recursive();
+            }
+            _ => commands.entity(entity).despawn()
+        }
+    }
+
+    for (entity, _text) in game_over_text.iter() {
+        commands.entity(entity).despawn();
     }
 }
 
@@ -107,7 +143,8 @@ pub fn create_environment(
                           },
                 transform: Transform::from_translation(Vec3::new(i as f32, 0.0, j as f32)),
                 ..Default::default()
-            });
+            })
+            .insert(EntityType::Platform);
         }
     }
 

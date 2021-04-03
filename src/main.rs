@@ -9,11 +9,13 @@ pub mod holdable;
 pub mod fallable;
 mod dude;
 mod menu;
+mod credits;
 
 use camera::*;
 use environment::*;
 use dude::*;
 
+pub static COLOR_BLACK: &str = "000000";
 pub static COLOR_BASE: &str = "343f56";
 pub static COLOR_GROUND_1: &str = "387c6d";
 pub static COLOR_GROUND_2: &str = "f8f5f1";
@@ -24,18 +26,24 @@ pub static COLOR_FLAG: &str = "80E895"; //"92DB56"; //40DBB7
 pub enum AppState {
     MainMenu,
     InGame,
+    Credits,
 }
 
 fn main() {
     App::build()
         .add_plugins(DefaultPlugins)
-//        .insert_resource(Msaa { samples: 4 })
+        .insert_resource(Msaa { samples: 1 })
         .insert_resource(ClearColor(Color::hex(COLOR_BASE).unwrap()))
         .init_resource::<menu::ButtonMaterials>()
+        .add_event::<credits::CreditsEvent>()
         .add_state(AppState::MainMenu)
         .add_system_set(SystemSet::on_enter(AppState::MainMenu).with_system(menu::setup_menu.system()))
         .add_system_set(SystemSet::on_update(AppState::MainMenu).with_system(menu::menu.system()))
         .add_system_set(SystemSet::on_exit(AppState::MainMenu).with_system(menu::cleanup_menu.system()))
+        .add_system_set(SystemSet::on_enter(AppState::Credits).with_system(credits::setup_credits.system()))
+        .add_system_set(SystemSet::on_update(AppState::Credits).with_system(credits::update_credits.system()))
+        .add_system_set(SystemSet::on_update(AppState::InGame).with_system(credits::show_credits.system()))
+        .add_system_set(SystemSet::on_exit(AppState::InGame).with_system(environment::cleanup_environment.system()))
         .add_plugin(EnvironmentPlugin)
         .add_plugin(DudePlugin)
         .add_system(exit.system())
