@@ -344,23 +344,27 @@ fn update_box(
                                                                 current.z - 1.0),
                                  }.translation;
 
+        if !position.matches(target_translation) {
+            level.set(position.x, position.y, position.z, None);
+        }
+
         if level.is_type_with_vec(target_translation, None) 
             || level.is_with_vec(target_translation, Some(GameObject::new(entity, EntityType::Block))) {
             let target_position = Vec3::new(target_translation.x - transform.translation.x,
                                             target_translation.y - transform.translation.y,
                                             target_translation.z - transform.translation.z).normalize();
              
-            level.set(position.x, position.y, position.z, None);
             level.set_with_vec(target_position, Some(GameObject::new(entity, EntityType::Block)));
             transform.translation += target_position * 0.01 * time.delta().subsec_millis() as f32;
         } else {
             println!("Can't move!");
             box_object.target = None;
-            position.x = transform.translation.x as i32;
-            position.y = transform.translation.y as i32;
-            position.z = transform.translation.z as i32;
             transform.translation = Vec3::new(position.x as f32, position.y as f32, position.z as f32);
             level.set(position.x, position.y, position.z, Some(GameObject::new(entity, EntityType::Block)));
         }
+
+        position.x = transform.translation.x as i32;
+        position.y = transform.translation.y as i32;
+        position.z = transform.translation.z as i32;
     }
 }
