@@ -246,7 +246,7 @@ fn push_block(
 
 pub struct Dude {
     pub facing: Direction,
-    target: Option::<(Vec3, Direction)>,
+    pub target: Option::<(Vec3, Direction)>,
     queued_movement: Option::<Direction>,
     is_jumping: bool,
     action_cooldown: Timer,
