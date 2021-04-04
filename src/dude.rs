@@ -151,7 +151,6 @@ fn update_dude(
              && dude.facing != target_rotation;
 
         dude.facing = target_rotation;
-
         
         if !(level.is_type_with_vec(target_translation, None) || level.is_collectable_with_vec(target_translation))
             || is_target_cliff_player_isnt_facing {
@@ -246,7 +245,7 @@ fn push_block(
 }
 
 pub struct Dude {
-    facing: Direction,
+    pub facing: Direction,
     target: Option::<(Vec3, Direction)>,
     queued_movement: Option::<Direction>,
     is_jumping: bool,

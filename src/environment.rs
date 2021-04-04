@@ -144,7 +144,7 @@ pub fn load_level(
     }
 
     let flag_color = Color::hex(crate::COLOR_FLAG).unwrap();
-    let flag_color = Color::rgba(flag_color.r(), flag_color.g(), flag_color.b(), 0.5);
+    let flag_color = Color::rgba(flag_color.r(), flag_color.g(), flag_color.b(), 0.8);
     commands.spawn_bundle(PbrBundle {
       transform: Transform::from_xyz(((level.width - 1) / 2) as f32, 3.0, (level.length - 1) as f32),
       ..Default::default()

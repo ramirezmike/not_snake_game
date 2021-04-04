@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use crate::{level::Level, Position, Direction, EntityType, GameObject, };
+use crate::{level::Level, Position, Direction, EntityType, GameObject, Dude};
 
 pub struct Holdable { }
 pub struct Holder {
@@ -14,14 +14,54 @@ pub fn lift_holdable(
     mut commands: Commands, 
     mut level: ResMut<Level>,
     mut lift_event: EventReader<LiftHoldableEvent>,
-    mut holders: Query<(Entity, &mut Holder)>,
+    mut holders: Query<(Entity, &mut Holder, Option::<&mut Dude>)>,
     mut positions: Query<&mut Position>,
     mut transforms: Query<&mut Transform>,
 ) {
-    for LiftHoldableEvent(entity, direction) in lift_event.iter() {
-        if let Ok((_e, mut holder)) = holders.get_mut(*entity) {
+    for LiftHoldableEvent(entity, mut direction) in lift_event.iter() {
+        if let Ok((_e, mut holder, mut maybe_dude)) = holders.get_mut(*entity) {
             match holder.holding {
                 Some(held_entity) => {
+                    let mut new_holder_position: Option<Position> = None;
+                    let mut new_holder_rotation: Option<Quat> = None;
+                    if let (Ok(_transform), Ok(position)) = (transforms.get_mut(*entity), positions.get_mut(*entity)) {
+                        let mut directions_to_try = vec!(Direction::Right, Direction::Left, Direction::Up, Direction::Down);
+                        directions_to_try.sort_by_key(|d| if *d == direction { 0 } else { 1 });
+
+                        for direction_to_try in directions_to_try {
+                            new_holder_position = 
+                                match direction_to_try {
+                                    Direction::Right => Some(Position { x: position.x, y: position.y, z: position.z - 1 }),
+                                    Direction::Left => Some(Position { x: position.x, y: position.y, z: position.z + 1 }),
+                                    Direction::Up => Some(Position { x: position.x - 1, y: position.y, z: position.z }),
+                                    Direction::Down => Some(Position { x: position.x + 1, y: position.y, z: position.z }),
+                                    _ => None
+                                };
+
+                            if let Some(potential_holder_position) = new_holder_position {
+                                if level.is_position_type(potential_holder_position, None) 
+                                || level.is_position_collectable(potential_holder_position) {
+                                    new_holder_rotation = 
+                                        match direction_to_try {
+                                            Direction::Up => Some(Quat::from_axis_angle(Vec3::Y, -std::f32::consts::FRAC_PI_2)),
+                                            Direction::Down => Some(Quat::from_axis_angle(Vec3::Y, std::f32::consts::FRAC_PI_2)),
+                                            Direction::Right => Some(Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI)),
+                                            Direction::Left => Some(Quat::from_axis_angle(Vec3::Y, 0.0)),
+                                            _ => None
+                                        };
+                                    direction = direction_to_try; 
+                                    break; // we good
+                                } else {
+                                    new_holder_position = None; // try again
+                                }
+                            }
+                        }
+                    } 
+
+                    if new_holder_position.is_none() {
+                        continue;
+                    }
+
                     let mut drop_successful = false;
                     commands.entity(held_entity)
                             .remove::<BeingHeld>();
@@ -38,8 +78,17 @@ pub fn lift_holdable(
                     if drop_successful {
                         if let (Ok(mut transform), Ok(mut position)) = (transforms.get_mut(*entity), positions.get_mut(*entity)) {
                             println!("Dropping object {} {} {}", position.x, position.y, position.z);
-                            position.y += 1;
-                            transform.translation.y += 1.0;
+                            *position = new_holder_position.unwrap();
+                            transform.translation.x = position.x as f32;
+                            transform.translation.y = position.y as f32;
+                            transform.translation.z = position.z as f32;
+                            transform.rotation = new_holder_rotation.unwrap();
+                            level.set_with_vec(transform.translation, Some(GameObject::new(held_entity, EntityType::Block)));
+                            
+                            if let Some(mut maybe_dude) = maybe_dude {
+                                maybe_dude.facing = direction; 
+                            }
+
                             holder.holding = None;
                         }
                     }

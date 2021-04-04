@@ -49,6 +49,10 @@ impl Level {
         }
     }
 
+    pub fn is_position_collectable(&self, position: Position) -> bool {
+        self.is_collectable(position.x, position.y, position.z)
+    }
+
     pub fn is_collectable_with_vec(&self, position: Vec3) -> bool {
         self.is_collectable(position.x as i32, position.y as i32, position.z as i32)
     }

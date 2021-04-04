@@ -51,8 +51,8 @@ fn main() {
         .add_system_set(SystemSet::on_exit(AppState::InGame).with_system(environment::cleanup_environment.system()))
         .add_plugin(EnvironmentPlugin)
         .add_plugin(DudePlugin)
-        .add_system(exit.system())
         .add_plugin(CameraPlugin)
+        .add_system(exit.system())
         .run();
 }
 
