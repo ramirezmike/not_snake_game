@@ -7,6 +7,8 @@ pub mod environment;
 pub mod level;
 pub mod holdable;
 pub mod fallable;
+pub mod moveable;
+pub mod facing;
 pub mod dude;
 pub mod level_over;
 pub mod credits;
@@ -20,9 +22,10 @@ use environment::*;
 use dude::*;
 
 pub static COLOR_BLACK: &str = "000000";
-pub static COLOR_BASE: &str = "343f56";
+pub static COLOR_BASE: &str = "343f56";//"";
 pub static COLOR_GROUND_1: &str = "387c6d";
-pub static COLOR_GROUND_2: &str = "f8f5f1";
+pub static COLOR_GROUND_2: &str = "214A41";//"f8f5f1";
+pub static COLOR_DUDE: &str = "f8f5f1";
 pub static COLOR_BLOCK: &str = "e9896a";
 pub static COLOR_FLAG: &str = "80E895"; //"92DB56"; //40DBB7
 
@@ -92,6 +95,11 @@ pub struct Position { pub x: i32, pub y: i32, pub z: i32 }
 impl Position {
     pub fn to_vec(&self) -> Vec3 {
         Vec3::new(self.x as f32, self.y as f32, self.z as f32)
+    }
+    pub fn from_vec(&mut self, v: Vec3) {
+        self.x = v.x as i32;
+        self.y = v.y as i32;
+        self.z = v.z as i32;
     }
     pub fn matches(&self, v: Vec3) -> bool {
         v.x as i32 == self.x && v.y as i32 == self.y && v.z as i32 == self.z

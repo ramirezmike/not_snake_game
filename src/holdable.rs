@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use crate::{level::Level, Position, Direction, EntityType, GameObject, Dude};
+use crate::{level::Level, Position, Direction, EntityType, GameObject, facing::Facing};
 
 pub struct Holdable { }
 pub struct Holder {
@@ -14,12 +14,12 @@ pub fn lift_holdable(
     mut commands: Commands, 
     mut level: ResMut<Level>,
     mut lift_event: EventReader<LiftHoldableEvent>,
-    mut holders: Query<(Entity, &mut Holder, Option::<&mut Dude>)>,
+    mut holders: Query<(Entity, &mut Holder, Option::<&mut Facing>)>,
     mut positions: Query<&mut Position>,
     mut transforms: Query<&mut Transform>,
 ) {
     for LiftHoldableEvent(entity, mut direction) in lift_event.iter() {
-        if let Ok((_e, mut holder, maybe_dude)) = holders.get_mut(*entity) {
+        if let Ok((_e, mut holder, maybe_facing)) = holders.get_mut(*entity) {
             match holder.holding {
                 Some(held_entity) => {
                     let mut new_holder_position: Option<Position> = None;
@@ -85,9 +85,10 @@ pub fn lift_holdable(
                             transform.rotation = new_holder_rotation.unwrap();
                             level.set_with_vec(transform.translation, Some(GameObject::new(held_entity, EntityType::Block)));
                             
-                            if let Some(mut maybe_dude) = maybe_dude {
-                                maybe_dude.facing = direction; 
-                                maybe_dude.target = Some((transform.translation, direction)); 
+                            if let Some(mut facing) = maybe_facing {
+                                facing.direction = direction; 
+                                // this doesn't work
+                                //maybe_dude.target = Some((transform.translation, direction)); 
                             }
 
                             holder.holding = None;

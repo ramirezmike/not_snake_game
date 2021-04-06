@@ -1,5 +1,5 @@
 use bevy::{prelude::*,};
-use crate::{GameObject, EntityType, Position, environment};
+use crate::{GameObject, EntityType, Position, environment, moveable::Moveable};
 
 pub struct Level {
     pub width: i32,
@@ -69,6 +69,18 @@ impl Level {
         }
     }
 
+    pub fn is_enterable_with_vec(&self, position: Vec3) -> bool {
+        self.is_type_with_vec(position, None) || self.is_collectable_with_vec(position)
+    }
+
+    pub fn is_position_enterable(&self, position: Position) -> bool {
+        self.is_position_type(position, None) || self.is_position_collectable(position)
+    }
+
+    pub fn is_enterable(&self, x: i32, y: i32, z: i32) -> bool {
+        self.is_type(x, y, z, None) || self.is_collectable(x, y, z)
+    }
+
     pub fn is_type_with_vec(&self, position: Vec3, entity_type: Option::<EntityType>) -> bool {
         self.is_type(position.x as i32, position.y as i32, position.z as i32, entity_type)
     }
@@ -116,19 +128,4 @@ impl Level {
 
         false
     }
-}
-
-pub fn sync_level(
-    mut level: ResMut<Level>, positions: Query<(Entity, &Position, &EntityType)>
-) {
-    level.game_objects = vec![vec![vec![None; 12]; 12]; 6];
-//  println!("==========================================================================================");
-//  println!("");
-//  println!("");
-    for (entity, position, entity_type) in positions.iter() {
-        level.set(position.x, position.y, position.z, Some(GameObject::new(entity, *entity_type)));
-//      println!("{:?} {:?}", position, entity_type);
-    }
-//  println!("");
-//  println!("");
 }

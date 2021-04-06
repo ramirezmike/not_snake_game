@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 
 use crate::{level::Level, Position, collectable,
-            EntityType, GameObject, holdable, win_flag,
-            level_over, credits, level, block, fallable, camera};
+            EntityType, GameObject, holdable, win_flag, moveable,
+            level_over, credits, level, block, camera};
 
 pub struct EnvironmentPlugin;
 impl Plugin for EnvironmentPlugin {
@@ -30,11 +30,10 @@ impl Plugin for EnvironmentPlugin {
                .with_system(holdable::lift_holdable.system())
                .with_system(holdable::update_held.system())
                .with_system(block::update_block.system())
-               .with_system(fallable::update_fallables.system())
+               .with_system(moveable::update_moveable.system())
                .with_system(win_flag::update_flag.system())
                .with_system(collectable::check_collected.system())
                .with_system(level_over::level_over_check.system())
-               .with_system(level::sync_level.system())
            );
     }
 }
@@ -138,15 +137,15 @@ pub fn load_level(
             })
             .insert(EntityType::Block)
             .insert(holdable::Holdable {})
-            .insert(fallable::Fallable {})
             .insert(Position { x: block.0 as i32, y: block.1 as i32, z: block.2 as i32 })
-            .insert(block::BlockObject { target: None })
+            .insert(block::BlockObject { })
+            .insert(moveable::Moveable::new(true, false, 0.1))
             .id();
         level.set(block.0 as i32, block.1 as i32, block.2 as i32, Some(GameObject::new(block_entity, EntityType::Block)));
     }
 
     let flag_color = Color::hex(crate::COLOR_FLAG).unwrap();
-    let flag_color = Color::rgba(flag_color.r(), flag_color.g(), flag_color.b(), 0.8);
+    let flag_color = Color::rgba(flag_color.r(), flag_color.g(), flag_color.b(), 1.0);
     commands.spawn_bundle(PbrBundle {
       transform: Transform::from_xyz(((level.width - 1) / 2) as f32, 3.0, (level.length - 1) as f32),
       ..Default::default()
