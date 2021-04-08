@@ -82,7 +82,7 @@ pub fn update_moveable(
             }
             // need to update level here
             level.set_with_vec(transform.translation, Some(GameObject::new(entity, *entity_type)));
-            position.from_vec(transform.translation);
+            position.update_from_vec(transform.translation);
 
             // at the end here we should check that the target is still valid and
             // if not then re-set what the target should be? this should check distance

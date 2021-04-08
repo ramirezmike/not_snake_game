@@ -15,6 +15,7 @@ pub mod credits;
 pub mod block;
 pub mod collectable;
 pub mod win_flag;
+pub mod path_find;
 mod menu;
 
 use camera::*;
@@ -32,6 +33,7 @@ pub static COLOR_FLAG: &str = "80E895"; //"92DB56"; //40DBB7
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum AppState {
     MainMenu,
+    Loading,
     InGame,
     Credits,
 }
@@ -44,7 +46,8 @@ fn main() {
         .init_resource::<menu::ButtonMaterials>()
         .add_event::<credits::CreditsEvent>()
 //        .add_state(AppState::MainMenu)
-        .add_state(AppState::InGame)
+//        .add_state(AppState::InGame)
+        .add_state(AppState::Loading)
         .add_system_set(SystemSet::on_enter(AppState::MainMenu).with_system(menu::setup_menu.system()))
         .add_system_set(SystemSet::on_update(AppState::MainMenu).with_system(menu::menu.system()))
         .add_system_set(SystemSet::on_exit(AppState::MainMenu).with_system(menu::cleanup_menu.system()))
@@ -81,6 +84,7 @@ impl GameObject {
 pub enum EntityType {
     Block,
     Dude,
+    Enemy,
     Platform,
     WinFlag,
 }
@@ -93,10 +97,17 @@ pub enum Direction {
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Position { pub x: i32, pub y: i32, pub z: i32 }
 impl Position {
+    pub fn from_vec(v: Vec3) -> Position {
+        Position {
+            x: v.x as i32,
+            y: v.y as i32,
+            z: v.z as i32,
+        }
+    }
     pub fn to_vec(&self) -> Vec3 {
         Vec3::new(self.x as f32, self.y as f32, self.z as f32)
     }
-    pub fn from_vec(&mut self, v: Vec3) {
+    pub fn update_from_vec(&mut self, v: Vec3) {
         self.x = v.x as i32;
         self.y = v.y as i32;
         self.z = v.z as i32;

@@ -2,40 +2,67 @@ use bevy::prelude::*;
 use crate::{Direction, EntityType, GameObject, level::Level, 
             Position, holdable, block, moveable, facing::Facing};
 
-#[derive(Default)]
-struct Loaded(bool);
-#[derive(Default)]
-struct Spawned(bool);
 pub struct DudePlugin;
 impl Plugin for DudePlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.init_resource::<DudeMeshes>()
-           .init_resource::<AssetsLoading>()
-           .init_resource::<Loaded>()
-           .init_resource::<Spawned>()
-           .add_system_set(
+        app.add_system_set(
                SystemSet::on_enter(crate::AppState::InGame)
-                   .with_system(load_dude.system())
+                   .with_system(spawn_player.system())
+                   .with_system(spawn_enemy.system())
            )
            .add_system_set(
                SystemSet::on_update(crate::AppState::InGame)
-                   .with_system(check_assets_ready.system())
-                   .with_system(spawn_dude.system())
                    .with_system(player_input.system())
                    .with_system(push_block.system())
            );
     }
 }
 
-fn spawn_dude( 
+#[derive(Default)]
+pub struct DudeMeshes {
+    pub step1: Handle<Mesh>,
+    pub material: Handle<StandardMaterial>,
+}
+
+fn spawn_enemy(
     mut commands: Commands, 
     meshes: Res<DudeMeshes>, 
-    loaded: Res<Loaded>,
-    mut spawned: ResMut<Spawned>,
     mut level: ResMut<Level>,
 ) {
-    if !loaded.0 || spawned.0 { return; }
+    let position = Vec3::new(0.0, 0.0, 11.0);
+    let mut transform = Transform::from_translation(position);
+    transform.apply_non_uniform_scale(Vec3::new(0.25, 0.25, 0.25)); 
+    transform.rotate(Quat::from_axis_angle(Vec3::new(0.0, 1.0, 0.0), std::f32::consts::PI));
+    let enemy_entity = 
+    commands.spawn_bundle(PbrBundle {
+                transform,
+                ..Default::default()
+            })
+            .insert(Position { x: position.x as i32, y: position.y as i32, z: position.z as i32 })
+            .insert(EntityType::Enemy)
+            .insert(holdable::Holder { holding: None })
+            .insert(moveable::Moveable::new(true, true, 0.1))
+            .insert(Facing::new(Direction::Left))
+            .with_children(|parent|  {
+                parent.spawn_bundle(PbrBundle {
+                    mesh: meshes.step1.clone(),
+                    material: meshes.material.clone(),
+                    transform: {
+                        let mut transform = Transform::from_rotation(Quat::from_axis_angle(Vec3::new(0.0, 1.0, 0.0), 1.57079632679));
+                        transform.translation = Vec3::new(0.0, 0.5, 0.0);
+                        transform
+                    },
+                    ..Default::default()
+                });
+            }).id();
+    level.set(position.x as i32, position.y as i32, position.z as i32, Some(GameObject::new(enemy_entity, EntityType::Enemy)));
+}
 
+fn spawn_player(
+    mut commands: Commands, 
+    meshes: Res<DudeMeshes>, 
+    mut level: ResMut<Level>,
+) {
     let mut transform = Transform::from_translation(Vec3::new(0.0, 0.0, 0.0));
     transform.apply_non_uniform_scale(Vec3::new(0.25, 0.25, 0.25)); 
     transform.rotate(Quat::from_axis_angle(Vec3::new(0.0, 1.0, 0.0), std::f32::consts::PI));
@@ -64,7 +91,6 @@ fn spawn_dude(
                     ..Default::default()
                 });
             }).id();
-    spawned.0 = true;
     level.set(0, 0, 0, Some(GameObject::new(player_entity, EntityType::Dude)));
 }
 
@@ -141,51 +167,4 @@ pub struct Dude {
     action_cooldown: Timer,
 }
 
-fn load_dude(
-    mut _commands: Commands,
-    asset_server: Res<AssetServer>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-    mut meshes: ResMut<DudeMeshes>,
-    mut loading: ResMut<AssetsLoading>,
-) {
-    meshes.step1 = asset_server.load("models/dude.glb#Mesh0/Primitive0");
-    meshes.material = materials.add(Color::hex(crate::COLOR_DUDE).unwrap().into());
 
-    loading.0.push(meshes.step1.clone_untyped());
-}
-
-
-#[derive(Default)]
-struct DudeMeshes {
-    step1: Handle<Mesh>,
-    material: Handle<StandardMaterial>,
-}
-
-#[derive(Default)]
-struct AssetsLoading(Vec<HandleUntyped>);
-fn check_assets_ready(
-    server: Res<AssetServer>,
-    loading: Res<AssetsLoading>,
-    mut loaded: ResMut<Loaded>,
-) {
-    if loaded.0 { return; }
-
-    use bevy::asset::LoadState;
-
-    let mut ready = true;
-
-    for handle in loading.0.iter() {
-        match server.get_load_state(handle) {
-            LoadState::Failed => {
-                // one of our assets had an error
-            }
-            LoadState::Loaded => {
-            }
-            _ => {
-                ready = false;
-            }
-        }
-    }
-
-    loaded.0 = ready;
-}

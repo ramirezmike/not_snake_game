@@ -2,9 +2,9 @@ use bevy::{prelude::*,};
 use crate::{GameObject, EntityType, Position, environment, moveable::Moveable};
 
 pub struct Level {
-    pub width: i32,
-    pub length: i32,
-    pub height: i32,
+    pub width: usize,
+    pub length: usize,
+    pub height: usize,
     pub game_objects: Vec::<Vec::<Vec::<Option::<GameObject>>>>
 }
 

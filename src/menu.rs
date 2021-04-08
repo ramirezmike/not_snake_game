@@ -101,13 +101,13 @@ pub fn menu(
     >,
 ) {
     if keyboard_input.just_pressed(KeyCode::Return) || keyboard_input.just_pressed(KeyCode::Space) {
-        state.set(crate::AppState::InGame).unwrap();
+        state.set(crate::AppState::Loading).unwrap();
     }
     for (interaction, mut material) in interaction_query.iter_mut() {
         match *interaction {
             Interaction::Clicked => {
                 *material = button_materials.pressed.clone();
-                state.set(crate::AppState::InGame).unwrap();
+                state.set(crate::AppState::Loading).unwrap();
             }
             Interaction::Hovered => {
                 *material = button_materials.hovered.clone();
