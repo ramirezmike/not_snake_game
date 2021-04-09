@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use crate::{Direction, EntityType, GameObject, level::Level, 
+use crate::{Direction, EntityType, GameObject, level::Level, path_find::PathFinder,
             Position, holdable, block, moveable, facing::Facing};
 
 pub struct DudePlugin;
@@ -13,6 +13,7 @@ impl Plugin for DudePlugin {
            .add_system_set(
                SystemSet::on_update(crate::AppState::InGame)
                    .with_system(player_input.system())
+                   .with_system(update_enemy.system())
                    .with_system(push_block.system())
            );
     }
@@ -24,6 +25,9 @@ pub struct DudeMeshes {
     pub material: Handle<StandardMaterial>,
 }
 
+pub struct Enemy {
+    action_cooldown: Timer, 
+}
 fn spawn_enemy(
     mut commands: Commands, 
     meshes: Res<DudeMeshes>, 
@@ -40,6 +44,9 @@ fn spawn_enemy(
             })
             .insert(Position { x: position.x as i32, y: position.y as i32, z: position.z as i32 })
             .insert(EntityType::Enemy)
+            .insert(Enemy {
+                action_cooldown: Timer::from_seconds(1.0, true),
+            })
             .insert(holdable::Holder { holding: None })
             .insert(moveable::Moveable::new(true, true, 0.1))
             .insert(Facing::new(Direction::Left))
@@ -56,6 +63,49 @@ fn spawn_enemy(
                 });
             }).id();
     level.set(position.x as i32, position.y as i32, position.z as i32, Some(GameObject::new(enemy_entity, EntityType::Enemy)));
+}
+
+fn update_enemy(
+    time: Res<Time>,
+    mut enemies: Query<(&mut Enemy, &Transform, &mut moveable::Moveable)>,
+    path_find: Res<PathFinder>
+) {
+    for (mut enemy, transform, mut moveable) in enemies.iter_mut() {
+        if enemy.action_cooldown.tick(time.delta()).finished() {
+            let (_, path) = path_find.get_path();
+            let mut found_next = false;
+            let mut new_target = None;
+
+            for p in path.iter() {
+                if found_next {
+                    new_target = Some(p);
+                    break;
+                }
+
+                if path_find.get_position(*p).matches(transform.translation) {
+                    found_next = true;
+                }
+            }
+
+            if let Some(target) = new_target {
+                let target = path_find.get_position(*target);
+                let current = transform.translation.as_i32();
+                if target.z > current.z {
+                    println!("Going right");
+                    moveable.set_movement(Direction::Right, moveable::MovementType::Step);
+                } else if target.z < current.z {
+                    println!("Going left");
+                    moveable.set_movement(Direction::Left, moveable::MovementType::Step);
+                } else if target.x > current.x {
+                    println!("Going up");
+                    moveable.set_movement(Direction::Up, moveable::MovementType::Step);
+                } else if target.x < current.x {
+                    println!("Going down");
+                    moveable.set_movement(Direction::Down, moveable::MovementType::Step);
+                }
+            }
+        }
+    }
 }
 
 fn spawn_player(
@@ -140,7 +190,7 @@ fn push_block(
     level: Res<Level>,
     dudes: Query<(&Transform, &Position, &Facing)>, 
     mut blocks: Query<(&block::BlockObject, &mut moveable::Moveable)>,
-) { 
+) {
     for (_transform, position, facing) in dudes.iter() {
         if keyboard_input.just_pressed(KeyCode::K) {
             let (x, y, z) = match facing.direction {
@@ -166,5 +216,3 @@ fn push_block(
 pub struct Dude {
     action_cooldown: Timer,
 }
-
-

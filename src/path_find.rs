@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use crate::{level::Level, environment::DisplayText, Position, dude::Dude, win_flag::WinFlag, };
+use crate::{level::Level, environment::DisplayText, Position, dude::Enemy, win_flag::WinFlag, };
 use petgraph::{Graph, graph::NodeIndex};
 use petgraph::algo::astar;
 
@@ -54,6 +54,22 @@ impl PathFinder {
         *self.graph.node_weight(self.indices[position.x as usize][position.z as usize])
                    .expect("Node doesn't exist")
     }
+
+    pub fn get_position(&self, index: NodeIndex<u32>) -> Position {
+        for i in 0..self.indices.len() {
+            for j in 0..self.indices[i as usize].len() {
+                if index == self.indices[i as usize][j as usize] {
+                    return Position { x: i as i32, y: 0, z: j as i32 };
+                }
+            }
+        }
+
+        Position { x: 0, y: 0, z: 0 }
+    }
+
+    pub fn get_path(&self) -> (u32, Vec<NodeIndex<u32>>) {
+        self.current_path.clone().unwrap_or((0, vec!()))
+    }
 }
 
 pub fn show_path(
@@ -77,7 +93,7 @@ pub fn update_path(
     mut time: Local<f32>,
     timer: Res<Time>,
     mut path_find: ResMut<PathFinder>,
-    dude: Query<(&Dude, &Position)>,
+    dude: Query<(&Enemy, &Position)>,
     win_flag: Query<(&WinFlag, &Position)>,
 ) {
     *time += timer.delta_seconds();
