@@ -18,10 +18,13 @@ impl Plugin for CameraPlugin {
                SystemSet::on_enter(crate::AppState::InGame)
                          .with_system(create_camera.system())
            )
-//           .add_plugin(FlyCameraPlugin)
+           .add_system_set(
+               SystemSet::on_update(crate::AppState::InGame)
+                         .with_system(toggle_fly.system())
+           )
+           .add_plugin(FlyCameraPlugin)
            
 //           .add_system(update_camera.system())
-           //.add_system(toggle_fly.system())
            //.add_system(update_camera_collisions.system());
            ;
     }
@@ -47,7 +50,6 @@ fn create_camera(
             ..Default::default()
         })
         .insert(Camera)
-//        .insert(FlyCamera::default())
         .with_children(|_parent|  {
 //          parent.spawn(Player)
 //                .with(ColliderBuilder::cuboid(1.0, 2.0, 1.0))
@@ -66,29 +68,49 @@ struct Player { }
 
 pub struct Camera;
 
-/*
-fn toggle_fly(commands: &mut Commands, keys: Res<Input<KeyCode>>, 
+fn toggle_fly(
+    mut commands: Commands, 
+    keys: Res<Input<KeyCode>>, 
     mut windows: ResMut<Windows>,
-    mut camera: Query<(Entity, &mut Camera, Option<&FlyCamera>)>) {
+    mut camera: Query<(Entity, &mut Camera, Option<&FlyCamera>, &mut Transform)>,
+    mut cooldown: Local<f32>,
+    timer: Res<Time>,
+) {
+    *cooldown += timer.delta_seconds();
+
+    if *cooldown < 2.0 {
+        return;
+    }
+
     if keys.just_pressed(KeyCode::F) {
+        println!("PRESSED F");
         let window = windows.get_primary_mut().unwrap();
-        for (e, _, f) in camera.iter_mut() {
+        for (e, _, f, mut t) in camera.iter_mut() {
             match f {
                 Some(_) => {
-                    commands.remove_one::<FlyCamera>(e);
+                    commands.entity(e).remove::<FlyCamera>();
                     window.set_cursor_lock_mode(false);
                     window.set_cursor_visibility(true);
                 },
                 None => {
-                    commands.insert_one(e, FlyCamera::default());
+                    let mut fly_camera = FlyCamera::default();
+                    fly_camera.key_forward = KeyCode::Up; 
+                    fly_camera.key_backward = KeyCode::Down; 
+                    fly_camera.key_left = KeyCode::Left; 
+                    fly_camera.key_right = KeyCode::Right; 
+                    commands.entity(e).insert(fly_camera);
+                    t.translation = Vec3::new(-6.867214, 5.8081317, 5.4974184);
+                    t.rotation = Quat::from_xyzw(-0.14680715, -0.6914177, -0.14668213, 0.692007);
                     window.set_cursor_lock_mode(true);
                     window.set_cursor_visibility(false);
-                }
+                },
             }
         }
+
+        *cooldown = 0.0;
     }
 }
-
+/*
 fn update_camera_collisions(
     mut camera: Query<(&mut Camera, &mut Children, &Transform)>,
     mut rigid_body_handles: Query<(Entity, &mut RigidBodyHandleComponent)>,

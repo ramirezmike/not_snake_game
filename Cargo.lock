@@ -705,6 +705,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_prototype_debug_lines"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dc59f1818744a80e8e6a66640ee764996bfd0da6ed109e8442ab7f0b81fedc9f"
+dependencies = [
+ "bevy 0.5.0",
+]
+
+[[package]]
 name = "bevy_rapier3d"
 version = "0.8.0"
 source = "git+https://github.com/alec-deason/bevy_rapier?rev=9bbfb4f#9bbfb4f08193a46bd26960cee9dea4f8bcb49a53"
@@ -1215,6 +1224,7 @@ dependencies = [
  "bevy 0.5.0",
  "bevy_mod_picking",
  "bevy_mod_raycast 0.1.1 (git+https://github.com/aevyrie/bevy_mod_raycast?rev=68626b7)",
+ "bevy_prototype_debug_lines",
  "bevy_rapier3d",
  "petgraph",
 ]

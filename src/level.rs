@@ -1,14 +1,29 @@
 use bevy::{prelude::*,};
 use crate::{GameObject, EntityType, Position, environment, moveable::Moveable};
+use std::collections::HashMap;
+
+
+#[derive(Debug)]
+pub struct PositionChangeEvent(pub Position, pub Option::<GameObject>);
 
 pub struct Level {
     pub width: usize,
     pub length: usize,
     pub height: usize,
-    pub game_objects: Vec::<Vec::<Vec::<Option::<GameObject>>>>
+    pub game_objects: Vec::<Vec::<Vec::<Option::<GameObject>>>>,
+    frame_updates: Vec::<(usize, usize, usize)>
 }
 
 impl Level {
+    pub fn new(width: usize, length: usize, height: usize) -> Self {
+        Level { 
+            width,
+            length,
+            height,
+            game_objects: vec![vec![vec![None; length]; height]; width],
+            frame_updates: vec!()
+        }
+    }
     pub fn set_with_vec(&mut self, position: Vec3, game_object: Option::<GameObject>) {
         self.set(position.x as i32, position.y as i32, position.z as i32, game_object);
     }
@@ -25,6 +40,7 @@ impl Level {
         && y < self.game_objects[x].len()
         && z < self.game_objects[x][y].len() { 
             self.game_objects[x][y][z] = game_object;
+            self.frame_updates.push((x, y, z));
         }
     }
 
@@ -127,5 +143,29 @@ impl Level {
         }
 
         false
+    }
+
+    pub fn drain_frame_updates(&mut self) -> Vec::<(Position, Option::<GameObject>)> {
+        use std::mem;
+
+        self.frame_updates.sort_unstable();
+        self.frame_updates.dedup();
+        let mut frame_updates = vec!();
+        mem::swap(&mut self.frame_updates, &mut frame_updates);
+
+        frame_updates
+            .into_iter()
+            .map(|(x, y, z)| (Position { x: x as i32, y: y as i32, z: z as i32 }, self.game_objects[x][y][z]))
+            .collect()
+    }
+}
+
+pub fn broadcast_changes(
+    mut event_writer: EventWriter<PositionChangeEvent>,
+    mut level: ResMut<Level>,
+) {
+    for (position, game_object) in level.drain_frame_updates().iter() {
+        println!("position changed!");
+        event_writer.send(PositionChangeEvent(*position, *game_object));
     }
 }

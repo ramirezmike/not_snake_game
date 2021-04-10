@@ -15,6 +15,7 @@ pub fn lift_holdable(
     mut level: ResMut<Level>,
     mut lift_event: EventReader<LiftHoldableEvent>,
     mut holders: Query<(Entity, &mut Holder, Option::<&mut Facing>)>,
+    entity_types: Query<&EntityType>,
     mut positions: Query<&mut Position>,
     mut transforms: Query<&mut Transform>,
 ) {
@@ -83,7 +84,10 @@ pub fn lift_holdable(
                             transform.translation.y = position.y as f32;
                             transform.translation.z = position.z as f32;
                             transform.rotation = new_holder_rotation.unwrap();
-                            level.set_with_vec(transform.translation, Some(GameObject::new(held_entity, EntityType::Block)));
+
+                            if let Ok(entity_type) = entity_types.get(*entity) {
+                                level.set_with_vec(transform.translation, Some(GameObject::new(*entity, *entity_type)));
+                            }
                             
                             if let Some(mut facing) = maybe_facing {
                                 facing.direction = direction; 

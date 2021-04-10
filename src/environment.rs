@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy::render::camera::Camera;
 
-use crate::{level::Level, Position, collectable, dude::DudeMeshes,
+use crate::{level::Level, Position, collectable, dude::DudeMeshes, level,
             EntityType, GameObject, holdable, win_flag, moveable,
             level_over, credits, block, camera, path_find, path_find::PathFinder};
 
@@ -11,17 +11,13 @@ impl Plugin for EnvironmentPlugin {
         let width = 6;
         let length = 12;
         let height = 12;
-        app.insert_resource(Level {
-               width,
-               length,
-               height,
-               game_objects: vec![vec![vec![None; length]; height]; width],
-           })
+        app.insert_resource(Level::new(width, length, height))
            .insert_resource(PathFinder::new(width, length, height))
            .init_resource::<DudeMeshes>()
            .init_resource::<AssetsLoading>()
            .add_plugin(camera::CameraPlugin)
            .add_event::<holdable::LiftHoldableEvent>()
+           .add_event::<level::PositionChangeEvent>()
            .add_event::<level_over::LevelOverEvent>()
            .add_system_set(
                SystemSet::on_enter(crate::AppState::Loading)
@@ -43,13 +39,16 @@ impl Plugin for EnvironmentPlugin {
                SystemSet::on_update(crate::AppState::InGame)
                .with_system(holdable::lift_holdable.system().label("handle_lift_events"))
                .with_system(holdable::update_held.system().before("handle_lift_events"))
-               .with_system(moveable::update_moveable.system())
+               .with_system(moveable::update_moveable.system().label("handle_moveables"))
                .with_system(win_flag::update_flag.system())
                .with_system(collectable::check_collected.system())
                .with_system(level_over::level_over_check.system())
                .with_system(path_find::show_path.system())
                .with_system(path_find::update_path.system())
+               .with_system(path_find::update_graph.system())
+               .with_system(path_find::draw_edges.system())
                .with_system(update_text_position.system())
+               .with_system(level::broadcast_changes.system().after("handle_moveables"))
            );
     }
 }
