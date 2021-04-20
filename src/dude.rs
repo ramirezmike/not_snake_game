@@ -23,6 +23,7 @@ impl Plugin for DudePlugin {
 pub struct DudeMeshes {
     pub step1: Handle<Mesh>,
     pub material: Handle<StandardMaterial>,
+    pub enemy_material: Handle<StandardMaterial>,
 }
 
 pub struct Enemy {
@@ -53,7 +54,7 @@ fn spawn_enemy(
             .with_children(|parent|  {
                 parent.spawn_bundle(PbrBundle {
                     mesh: meshes.step1.clone(),
-                    material: meshes.material.clone(),
+                    material: meshes.enemy_material.clone(),
                     transform: {
                         let mut transform = Transform::from_rotation(Quat::from_axis_angle(Vec3::new(0.0, 1.0, 0.0), 1.57079632679));
                         transform.translation = Vec3::new(0.0, 0.5, 0.0);

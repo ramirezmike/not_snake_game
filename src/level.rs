@@ -28,6 +28,13 @@ impl Level {
         self.set(position.x as i32, position.y as i32, position.z as i32, game_object);
     }
 
+    pub fn is_inbounds(&self, x: i32, y: i32, z: i32) -> bool {
+        x >= 0 && y >= 0 && z >= 0 
+        && (x as usize) < self.game_objects.len()
+        && (y as usize) < self.game_objects[0].len()
+        && (z as usize) < self.game_objects[0][0].len()
+    }
+
     pub fn set_with_position(&mut self, position: Position, game_object: Option::<GameObject>) {
         self.set(position.x, position.y, position.z, game_object);
     }
@@ -95,6 +102,31 @@ impl Level {
 
     pub fn is_enterable(&self, x: i32, y: i32, z: i32) -> bool {
         self.is_type(x, y, z, None) || self.is_collectable(x, y, z)
+    }
+
+    pub fn is_position_entity(&self, position: &Position) -> bool {
+        self.is_entity(position.x, position.y, position.z)
+    }
+
+    pub fn is_entity(&self, x: i32, y: i32, z: i32) -> bool {
+        match self.get(x, y, z) {
+            Some(game_object) => {
+                match game_object.entity_type {
+                    EntityType::Dude | EntityType::Enemy => true,
+                    _ => false
+                }
+            }
+            _ => false
+        }
+    }
+
+    pub fn is_standable(&self, x: i32, y: i32, z: i32) -> bool {
+        // this is awful
+        self.is_type(x, y - 1, z, Some(EntityType::Block)) || y - 1 < 0
+    }
+
+    pub fn is_position_standable(&self, position: Position) -> bool {
+        self.is_standable(position.x, position.y, position.z)
     }
 
     pub fn is_type_with_vec(&self, position: Vec3, entity_type: Option::<EntityType>) -> bool {
@@ -165,7 +197,7 @@ pub fn broadcast_changes(
     mut level: ResMut<Level>,
 ) {
     for (position, game_object) in level.drain_frame_updates().iter() {
-        println!("position changed!");
+//        println!("position changed!");
         event_writer.send(PositionChangeEvent(*position, *game_object));
     }
 }

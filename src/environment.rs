@@ -47,7 +47,7 @@ impl Plugin for EnvironmentPlugin {
                .with_system(path_find::update_path.system())
                .with_system(path_find::update_graph.system())
                .with_system(path_find::draw_edges.system())
-               .with_system(update_text_position.system())
+//               .with_system(update_text_position.system())
                .with_system(level::broadcast_changes.system().after("handle_moveables"))
            );
     }
@@ -62,6 +62,7 @@ pub fn load_assets(
 ) {
     meshes.step1 = asset_server.load("models/dude.glb#Mesh0/Primitive0");
     meshes.material = materials.add(Color::hex(crate::COLOR_DUDE).unwrap().into());
+    meshes.enemy_material = materials.add(Color::hex(crate::COLOR_ENEMY).unwrap().into());
 
     loading.0.push(meshes.step1.clone_untyped());
 }
@@ -126,26 +127,25 @@ pub fn load_level(
 ) {
     let mesh = meshes.add(Mesh::from(shape::Plane { size: 1.0 }));
     commands.spawn_bundle(UiCameraBundle::default());
-    let font = asset_server.load("fonts/FiraSans-Bold.ttf");
+//    let font = asset_server.load("fonts/FiraSans-Bold.ttf");
 
     for i in 0..level.width {
         for j in 0..level.length {
-            let entity_id =
-                commands.spawn_bundle(PbrBundle {
-                    mesh: mesh.clone(),
-                    material: if (i + j + 1) % 2 == 0 { 
-                                  materials.add(Color::hex(crate::COLOR_GROUND_1).unwrap().into())
-                              } else {
-                                  materials.add(Color::hex(crate::COLOR_GROUND_2).unwrap().into())
-                              },
-                    transform: Transform::from_translation(Vec3::new(i as f32, 0.0, j as f32)),
-                    ..Default::default()
-                })
-                .insert(EntityType::Platform)
-                .insert(DisplayText(format!("{}", i).to_string()))
-                .id();
-            let follow_text = create_follow_text(entity_id, font.clone());
-            commands.spawn_bundle(follow_text.0).insert(follow_text.1);
+            commands.spawn_bundle(PbrBundle {
+                mesh: mesh.clone(),
+                material: if (i + j + 1) % 2 == 0 { 
+                              materials.add(Color::hex(crate::COLOR_GROUND_1).unwrap().into())
+                          } else {
+                              materials.add(Color::hex(crate::COLOR_GROUND_2).unwrap().into())
+                          },
+                transform: Transform::from_translation(Vec3::new(i as f32, 0.0, j as f32)),
+                ..Default::default()
+            })
+            .insert(EntityType::Platform);
+//                .insert(DisplayText(format!("{}", i).to_string()))
+//                .id();
+//          let follow_text = create_follow_text(entity_id, font.clone());
+//          commands.spawn_bundle(follow_text.0).insert(follow_text.1);
         }
     }
 
@@ -183,6 +183,8 @@ pub fn load_level(
     let block_positions = vec!(
         (1.0, 0.0, 3.0),
         (2.0, 0.0, 8.0),
+        (2.0, 0.0, 7.0),
+        (2.0, 0.0, 6.0),
         (2.0, 1.0, 8.0),
         (3.0, 0.0, 2.0),
         (4.0, 0.0, 1.0),

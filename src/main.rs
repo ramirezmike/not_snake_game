@@ -38,6 +38,7 @@ pub static COLOR_BASE: &str = "142d4c";//"";
 pub static COLOR_GROUND_1: &str = "142d4c";
 pub static COLOR_GROUND_2: &str = "385170";//"f8f5f1";
 pub static COLOR_DUDE: &str = "ececec";
+pub static COLOR_ENEMY: &str = "ee5656";
 pub static COLOR_BLOCK: &str = "9fd3c7";
 pub static COLOR_FLAG: &str = "7A5C57"; //"92DB56"; //40DBB7
 
