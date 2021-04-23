@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use crate::{Direction, EntityType, GameObject, level::Level, path_find::PathFinder,
+use crate::{Direction, EntityType, GameObject, level::Level, 
             Position, holdable, block, moveable, facing::Facing};
 
 pub struct DudePlugin;
@@ -8,12 +8,10 @@ impl Plugin for DudePlugin {
         app.add_system_set(
                SystemSet::on_enter(crate::AppState::InGame)
                    .with_system(spawn_player.system())
-                   .with_system(spawn_enemy.system())
            )
            .add_system_set(
                SystemSet::on_update(crate::AppState::InGame)
                    .with_system(player_input.system())
-                   .with_system(update_enemy.system())
                    .with_system(push_block.system())
            );
     }
@@ -23,90 +21,6 @@ impl Plugin for DudePlugin {
 pub struct DudeMeshes {
     pub step1: Handle<Mesh>,
     pub material: Handle<StandardMaterial>,
-    pub enemy_material: Handle<StandardMaterial>,
-}
-
-pub struct Enemy {
-    action_cooldown: Timer, 
-}
-fn spawn_enemy(
-    mut commands: Commands, 
-    meshes: Res<DudeMeshes>, 
-    mut level: ResMut<Level>,
-) {
-    let position = Vec3::new(0.0, 0.0, 11.0);
-    let mut transform = Transform::from_translation(position);
-    transform.apply_non_uniform_scale(Vec3::new(0.25, 0.25, 0.25)); 
-    transform.rotate(Quat::from_axis_angle(Vec3::new(0.0, 1.0, 0.0), std::f32::consts::PI));
-    let enemy_entity = 
-    commands.spawn_bundle(PbrBundle {
-                transform,
-                ..Default::default()
-            })
-            .insert(Position { x: position.x as i32, y: position.y as i32, z: position.z as i32 })
-            .insert(EntityType::Enemy)
-            .insert(Enemy {
-                action_cooldown: Timer::from_seconds(1.0, true),
-            })
-            .insert(holdable::Holder { holding: None })
-            .insert(moveable::Moveable::new(true, true, 0.1))
-            .insert(Facing::new(Direction::Left))
-            .with_children(|parent|  {
-                parent.spawn_bundle(PbrBundle {
-                    mesh: meshes.step1.clone(),
-                    material: meshes.enemy_material.clone(),
-                    transform: {
-                        let mut transform = Transform::from_rotation(Quat::from_axis_angle(Vec3::new(0.0, 1.0, 0.0), 1.57079632679));
-                        transform.translation = Vec3::new(0.0, 0.5, 0.0);
-                        transform
-                    },
-                    ..Default::default()
-                });
-            }).id();
-    level.set(position.x as i32, position.y as i32, position.z as i32, Some(GameObject::new(enemy_entity, EntityType::Enemy)));
-}
-
-fn update_enemy(
-    time: Res<Time>,
-    mut enemies: Query<(&mut Enemy, &Transform, &mut moveable::Moveable)>,
-    path_find: Res<PathFinder>
-) {
-    for (mut enemy, transform, mut moveable) in enemies.iter_mut() {
-        if enemy.action_cooldown.tick(time.delta()).finished() {
-            let (_, path) = path_find.get_path();
-            let mut found_next = false;
-            let mut new_target = None;
-
-            for p in path.iter() {
-                if found_next {
-                    new_target = Some(p);
-                    break;
-                }
-
-                if path_find.get_position(*p).matches(transform.translation) {
-                    found_next = true;
-                }
-            }
-
-            if let Some(target) = new_target {
-                let target = path_find.get_position(*target);
-                let current = transform.translation.as_i32();
-                if target.z > current.z {
-                    println!("Going right");
-                    moveable.set_movement(Direction::Right, moveable::MovementType::Step);
-                } else if target.z < current.z {
-                    println!("Going left");
-                    moveable.set_movement(Direction::Left, moveable::MovementType::Step);
-                } else if target.x > current.x {
-                    println!("Going up");
-                    moveable.set_movement(Direction::Up, moveable::MovementType::Step);
-                } else if target.x < current.x {
-                    println!("Going down");
-                    moveable.set_movement(Direction::Down, moveable::MovementType::Step);
-                }
-            }
-        }
-    }
 }
 
 fn spawn_player(

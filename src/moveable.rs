@@ -12,10 +12,11 @@ pub struct Moveable {
     movement_speed: f32,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum MovementType {
     Step,
-    Slide
+    Slide,
+    Force,
 }
 
 impl Moveable {
@@ -43,6 +44,10 @@ impl Moveable {
         self.target_position.is_some()
     }
 
+    pub fn is_queued(&self) -> bool {
+        self.queued_movement.is_some()
+    }
+
     pub fn get_current_direction(&self) -> Option::<Direction> {
         if let Some(target_position) = &self.target_position {
             Some(target_position.3)
@@ -59,11 +64,20 @@ pub fn update_moveable(
 ) {
     for (entity, mut moveable, mut transform, mut position, entity_type, maybe_facing) in moveables.iter_mut() {
         if let Some(target_position) = &mut moveable.target_position {
-//            println!("{:?} {:?} {:?}",transform.translation, target_position.1, target_position.2);
-            level.set_with_vec(transform.translation, None);
+            println!("{:?} {:?} {:?}",transform.translation, target_position.1, target_position.2);
+
+            // if the spot this object moved from is the same object then clear it
+            if let Some(game_object) = level.get_with_vec(transform.translation) {
+                if game_object.entity == entity {
+                    level.set_with_vec(transform.translation, None);
+                }
+            }
+
+            let is_forced = target_position.5 == MovementType::Force;
+
             if target_position.1 >= target_position.2 {
                 //  check if the target is still valid
-                if level.is_enterable_with_vec(target_position.0) {
+                if level.is_enterable_with_vec(target_position.0) || is_forced  {
                     transform.translation = target_position.0;
                 } 
                 moveable.target_position = None;
@@ -131,13 +145,17 @@ pub fn update_moveable(
                                 _ => transform.rotation
                             };
 
-                        // if we're currently not facing a wall/cliff then just turn toward it
-                        let below_target_is_enterable 
-                            = level.is_enterable_with_vec(Vec3::new(target_position.x, target_position.y - 1.0, target_position.z));
+                        if moveable.can_climb {
+                            // if we're currently not facing a wall/cliff then just turn toward it
+                            let below_target_is_enterable 
+                                = level.is_enterable_with_vec(Vec3::new(target_position.x, target_position.y - 1.0, target_position.z));
+                            let is_vertical_movement = queued_movement.0 == Direction::Above || queued_movement.0 == Direction::Beneath;
 
-                        let is_vertical_movement = queued_movement.0 == Direction::Above || queued_movement.0 == Direction::Beneath;
-                        if !is_vertical_movement && previous_facing != queued_movement.0 && (below_target_is_enterable || !target_is_enterable) {
-                            ignore_movement = true; 
+                            if !is_vertical_movement 
+                            && previous_facing != queued_movement.0 
+                            && (below_target_is_enterable || !target_is_enterable) {
+                                ignore_movement = true; 
+                            }
                         }
                     }
 
@@ -164,7 +182,7 @@ pub fn update_moveable(
                         }
                     }
                 },
-                MovementType::Slide=> {
+                MovementType::Slide => {
                 /*
                     if slide then find next invalid position in direction (one that is
                     not empty/collectable) and then set the target to be the position
@@ -196,6 +214,41 @@ pub fn update_moveable(
                         Some((target_position, 0.0, 
                               moveable.movement_speed * number_of_steps as f32, 
                               queued_movement.0, transform.translation, MovementType::Slide));
+                },
+                MovementType::Force => {
+                    let target_position = 
+                        match queued_movement.0 { 
+                            Direction::Up => (position.x + 1, position.y, position.z),
+                            Direction::Down => (position.x - 1, position.y, position.z),
+                            Direction::Right => (position.x, position.y, position.z + 1),
+                            Direction::Left => (position.x, position.y, position.z - 1),
+                            Direction::Beneath => (position.x, position.y - 1, position.z),
+                            Direction::Above => (position.x, position.y + 1, position.z),
+                        };
+                    let target_position = IVec3::new(target_position.0, target_position.1, target_position.2).as_f32();
+
+                    if let Some(mut facing) = maybe_facing {
+                        let previous_facing = facing.direction;
+                        facing.direction = 
+                            match queued_movement.0 {
+                                Direction::Up | Direction::Down |
+                                Direction::Right | Direction::Left => queued_movement.0,
+                                _ => facing.direction
+                            };
+                        transform.rotation = 
+                            match facing.direction {
+                                Direction::Up => Quat::from_axis_angle(Vec3::Y, -std::f32::consts::FRAC_PI_2),
+                                Direction::Down => Quat::from_axis_angle(Vec3::Y, std::f32::consts::FRAC_PI_2),
+                                Direction::Right => Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI),
+                                Direction::Left => Quat::from_axis_angle(Vec3::Y, 0.0),
+                                _ => transform.rotation
+                            };
+                    }
+
+                    moveable.target_position = 
+                        Some((target_position, 0.0, 
+                              moveable.movement_speed, queued_movement.0,
+                              transform.translation, MovementType::Force));
                 }
             }
 

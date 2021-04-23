@@ -123,6 +123,7 @@ impl Level {
     pub fn is_standable(&self, x: i32, y: i32, z: i32) -> bool {
         // this is awful
         self.is_type(x, y - 1, z, Some(EntityType::Block)) || y - 1 < 0
+            || self.is_type(x, y - 1, z, Some(EntityType::Enemy)) 
     }
 
     pub fn is_position_standable(&self, position: Position) -> bool {
@@ -189,6 +190,28 @@ impl Level {
             .into_iter()
             .map(|(x, y, z)| (Position { x: x as i32, y: y as i32, z: z as i32 }, self.game_objects[x][y][z]))
             .collect()
+    }
+}
+
+pub fn print_level(
+    mut time: Local<f32>,
+    timer: Res<Time>,
+    level: Res<Level>,
+) {
+    *time += timer.delta_seconds();
+    if *time > 1.0 {
+        *time = 0.0;
+        println!("--------------------------");
+        for x in 0..level.width {
+            for y in 0..level.height {
+                for z in 0..level.length {
+                    if let Some(game_object) = level.get(x as i32, y as i32, z as i32) {
+                        println!("x: {} y: {} z: {} {:?}", x, y, z, game_object.entity_type);
+                    }
+                }
+            }
+        }
+        println!("--------------------------");
     }
 }
 

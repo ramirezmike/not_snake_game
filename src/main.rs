@@ -11,6 +11,7 @@ pub mod fallable;
 pub mod moveable;
 pub mod facing;
 pub mod dude;
+pub mod snake;
 pub mod level_over;
 pub mod credits;
 pub mod block;

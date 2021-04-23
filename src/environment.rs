@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy::render::camera::Camera;
 
-use crate::{level::Level, Position, collectable, dude::DudeMeshes, level,
+use crate::{level::Level, Position, collectable, dude::DudeMeshes, snake, level,
             EntityType, GameObject, holdable, win_flag, moveable,
             level_over, credits, block, camera, path_find, path_find::PathFinder};
 
@@ -14,11 +14,13 @@ impl Plugin for EnvironmentPlugin {
         app.insert_resource(Level::new(width, length, height))
            .insert_resource(PathFinder::new(width, length, height))
            .init_resource::<DudeMeshes>()
+           .init_resource::<snake::EnemyMeshes>()
            .init_resource::<AssetsLoading>()
            .add_plugin(camera::CameraPlugin)
            .add_event::<holdable::LiftHoldableEvent>()
            .add_event::<level::PositionChangeEvent>()
            .add_event::<level_over::LevelOverEvent>()
+           .add_event::<snake::AddBodyPartEvent>()
            .add_system_set(
                SystemSet::on_enter(crate::AppState::Loading)
                          .with_system(load_assets.system())
@@ -30,6 +32,7 @@ impl Plugin for EnvironmentPlugin {
            .add_system_set(
                SystemSet::on_enter(crate::AppState::InGame)
                          .with_system(load_level.system())
+                         .with_system(snake::spawn_enemy.system())
                          .with_system(level_over::setup_level_over_screen.system())
            )
 
@@ -44,9 +47,14 @@ impl Plugin for EnvironmentPlugin {
                .with_system(collectable::check_collected.system())
                .with_system(level_over::level_over_check.system())
                .with_system(path_find::show_path.system())
+               .with_system(snake::update_enemy.system())
+//              .with_system(snake::add_body_part.system())
+               .with_system(snake::debug_add_body_part.system())
+               .with_system(snake::add_body_parts.system())
                .with_system(path_find::update_path.system())
                .with_system(path_find::update_graph.system())
                .with_system(path_find::draw_edges.system())
+//             .with_system(level::print_level.system())
 //               .with_system(update_text_position.system())
                .with_system(level::broadcast_changes.system().after("handle_moveables"))
            );
@@ -57,14 +65,20 @@ pub fn load_assets(
     mut _commands: Commands,
     asset_server: Res<AssetServer>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    mut meshes: ResMut<DudeMeshes>,
+    mut dude_meshes: ResMut<DudeMeshes>,
+    mut enemy_meshes: ResMut<snake::EnemyMeshes>,
     mut loading: ResMut<AssetsLoading>,
 ) {
-    meshes.step1 = asset_server.load("models/dude.glb#Mesh0/Primitive0");
-    meshes.material = materials.add(Color::hex(crate::COLOR_DUDE).unwrap().into());
-    meshes.enemy_material = materials.add(Color::hex(crate::COLOR_ENEMY).unwrap().into());
+    dude_meshes.step1 = asset_server.load("models/dude.glb#Mesh0/Primitive0");
+    dude_meshes.material = materials.add(Color::hex(crate::COLOR_DUDE).unwrap().into());
 
-    loading.0.push(meshes.step1.clone_untyped());
+    enemy_meshes.head = asset_server.load("models/snake.glb#Mesh0/Primitive0");
+    enemy_meshes.body = asset_server.load("models/snake.glb#Mesh1/Primitive0");
+    enemy_meshes.material = materials.add(Color::hex(crate::COLOR_ENEMY).unwrap().into());
+
+    loading.0.push(dude_meshes.step1.clone_untyped());
+    loading.0.push(enemy_meshes.head.clone_untyped());
+    loading.0.push(enemy_meshes.body.clone_untyped());
 }
 
 
@@ -106,7 +120,7 @@ pub fn cleanup_environment(
     for (entity, entity_type) in entities.iter() {
         println!("Despawning... {:?}", entity_type);
         match entity_type {
-            EntityType::Dude | EntityType::Block | EntityType::WinFlag | EntityType::Platform => {
+            EntityType::Enemy | EntityType::Dude | EntityType::Block | EntityType::WinFlag | EntityType::Platform => {
                 commands.entity(entity).despawn_recursive();
             }
             _ => commands.entity(entity).despawn()
@@ -149,31 +163,31 @@ pub fn load_level(
         }
     }
 
-//  for i in 0..level.width {
-//      for j in ((level.length / 2) + (level.length / 4))..level.length {
-//          let block_entity =
-//          commands.spawn_bundle(PbrBundle {
-//              transform: Transform::from_translation(Vec3::new(i as f32, 2.0, j as f32)),
-//              ..Default::default()
-//          })
-//          .with_children(|parent| {
-//              parent.spawn_bundle(PbrBundle {
-//                  mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-//                  material: if (i + j + 1) % 2 == 0 { 
-//                                materials.add(Color::hex(crate::COLOR_GROUND_1).unwrap().into())
-//                            } else {
-//                                materials.add(Color::hex(crate::COLOR_GROUND_2).unwrap().into())
-//                            },
-//                  transform: Transform::from_xyz(0.0, 0.5, 0.0),
-//                  ..Default::default()
-//              });
-//          })
-//          .insert(EntityType::Block) // TODO: this should be platform at some point. Dude can't climb platforms, just blocks
-//          .insert(Position { x: i, y: 2, z: j })
-//          .id();
-//          level.set(i, 2, j, Some(GameObject::new(block_entity, EntityType::Block)));
-//      }
-//  }
+    for i in 0..level.width {
+        for j in ((level.length / 2) + (level.length / 4))..level.length {
+            let block_entity =
+            commands.spawn_bundle(PbrBundle {
+                transform: Transform::from_translation(Vec3::new(i as f32, 2.0, j as f32)),
+                ..Default::default()
+            })
+            .with_children(|parent| {
+                parent.spawn_bundle(PbrBundle {
+                    mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
+                    material: if (i + j + 1) % 2 == 0 { 
+                                  materials.add(Color::hex(crate::COLOR_GROUND_1).unwrap().into())
+                              } else {
+                                  materials.add(Color::hex(crate::COLOR_GROUND_2).unwrap().into())
+                              },
+                    transform: Transform::from_xyz(0.0, 0.5, 0.0),
+                    ..Default::default()
+                });
+            })
+            .insert(EntityType::Block) // TODO: this should be platform at some point. Dude can't climb platforms, just blocks
+            .insert(Position { x: i as i32, y: 2, z: j as i32})
+            .id();
+            level.set(i as i32, 2, j as i32, Some(GameObject::new(block_entity, EntityType::Block)));
+        }
+    }
 
     commands.spawn_bundle(LightBundle {
         transform: Transform::from_xyz(4.0, 8.0, 4.0),
@@ -182,10 +196,10 @@ pub fn load_level(
 
     let block_positions = vec!(
         (1.0, 0.0, 3.0),
-        (2.0, 0.0, 8.0),
-        (2.0, 0.0, 7.0),
+        (2.0, 0.0, 3.0),
+        (2.0, 0.0, 4.0),
         (2.0, 0.0, 6.0),
-        (2.0, 1.0, 8.0),
+        (2.0, 0.0, 0.0),
         (3.0, 0.0, 2.0),
         (4.0, 0.0, 1.0),
     );
@@ -215,8 +229,10 @@ pub fn load_level(
 
     let flag_color = Color::hex(crate::COLOR_FLAG).unwrap();
     let flag_color = Color::rgba(flag_color.r(), flag_color.g(), flag_color.b(), 1.0);
+    let transform = Transform::from_xyz(level.width as f32 / 2.0 - 1.0, 3.0, (level.length - 1)as f32);
+    let position = Position::from_vec(transform.translation);
     commands.spawn_bundle(PbrBundle {
-      transform: Transform::from_xyz(level.width as f32 - 1.0, 0.0, level.length as f32 / 2.0),
+      transform,
       ..Default::default()
     })
     .with_children(|parent| {
@@ -231,7 +247,7 @@ pub fn load_level(
     .insert(collectable::Collectable { collected: false }) 
     .insert(win_flag::WinFlag {})
     .insert(EntityType::WinFlag)
-    .insert(Position { x:level.width as i32 - 1, y: 0, z: level.length as i32 / 2 });
+    .insert(position);
 }
 
 pub struct DisplayText(pub String);

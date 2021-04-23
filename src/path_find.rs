@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use crate::{level::Level, level::PositionChangeEvent, EntityType, dude::Dude, camera::Camera,
-            Position, dude::Enemy, win_flag::WinFlag, GameObject};
+            Position, snake::Enemy, win_flag::WinFlag, GameObject};
 use petgraph::{Graph, graph::NodeIndex, graph::EdgeIndex};
 use petgraph::algo::astar;
 use bevy_prototype_debug_lines::*; 
@@ -98,43 +98,84 @@ impl PathFinder {
         let mut handle_general_case = || {
             if level.is_position_enterable(*position) || level.is_position_entity(position) {
                 if level.is_position_standable(*position) {
+                    // up
+                    if level.is_inbounds(position.x + 1, position.y, position.z)
+                    && (level.is_enterable(position.x + 1, position.y, position.z) 
+                        || level.is_entity(position.x + 1, position.y, position.z)) {
+                        self.graph.update_edge(self.indices[x + 1][y][z], self.indices[x][y][z], 1);
+                    }
+                    // down
+                    if level.is_inbounds(position.x - 1, position.y, position.z) 
+                    && (level.is_enterable(position.x - 1, position.y, position.z) 
+                        || level.is_entity(position.x - 1, position.y, position.z)) {
+                        self.graph.update_edge(self.indices[x - 1][y][z], self.indices[x][y][z], 1);
+                    }
+                    // left  
+                    if level.is_inbounds(position.x, position.y, position.z - 1) 
+                    && (level.is_enterable(position.x, position.y, position.z - 1) 
+                        || level.is_entity(position.x, position.y, position.z - 1)) {
+                        self.graph.update_edge(self.indices[x][y][z - 1], self.indices[x][y][z], 1);
+                    }
+                    // right
+                    if level.is_inbounds(position.x, position.y, position.z + 1) 
+                    && (level.is_enterable(position.x, position.y, position.z + 1) 
+                        || level.is_entity(position.x, position.y, position.z + 1)) {
+                        self.graph.update_edge(self.indices[x][y][z + 1], self.indices[x][y][z], 1);
+                    }
+
+                    // need to add this if enemy or something
                     // Below
-                    if level.is_inbounds(position.x, position.y - 1, position.z) { 
+                    if level.is_inbounds(position.x, position.y - 1, position.z) 
+                    && level.is_type(position.x, position.y - 1, position.z, Some(EntityType::Enemy)) { 
                         self.graph.update_edge(self.indices[x][y - 1][z], self.indices[x][y][z], 1);
                     }
-                } 
+                } else {
+                    let up_is_standable = level.is_standable(position.x + 1, position.y, position.z);
+                    let down_is_standable = level.is_standable(position.x - 1, position.y, position.z);
+                    let left_is_standable = level.is_standable(position.x, position.y, position.z - 1);
+                    let right_is_standable = level.is_standable(position.x, position.y, position.z + 1);
 
-                // up
-                if level.is_inbounds(position.x + 1, position.y, position.z)
-                && (level.is_enterable(position.x + 1, position.y, position.z) 
-                    || level.is_entity(position.x + 1, position.y, position.z))
-                && level.is_standable(position.x + 1, position.y, position.z) {
-                    self.graph.update_edge(self.indices[x + 1][y][z], self.indices[x][y][z], 1);
-                }
-                // down
-                if level.is_inbounds(position.x - 1, position.y, position.z) 
-                && (level.is_enterable(position.x - 1, position.y, position.z) 
-                    || level.is_entity(position.x - 1, position.y, position.z))
-                && level.is_standable(position.x - 1, position.y, position.z) {
-                    self.graph.update_edge(self.indices[x - 1][y][z], self.indices[x][y][z], 1);
-                }
-                // left  
-                if level.is_inbounds(position.x, position.y, position.z - 1) 
-                && (level.is_enterable(position.x, position.y, position.z - 1) 
-                    || level.is_entity(position.x, position.y, position.z - 1))
-                && level.is_standable(position.x, position.y, position.z - 1) {
-                    self.graph.update_edge(self.indices[x][y][z - 1], self.indices[x][y][z], 1);
-                }
-                // right
-                if level.is_inbounds(position.x, position.y, position.z + 1) 
-                && (level.is_enterable(position.x, position.y, position.z + 1) 
-                    || level.is_entity(position.x, position.y, position.z + 1))
-                && level.is_standable(position.x, position.y, position.z + 1) {
-                    self.graph.update_edge(self.indices[x][y][z + 1], self.indices[x][y][z], 1);
+                    // Below
+                    if level.is_inbounds(position.x, position.y - 1, position.z) 
+                    && (up_is_standable || down_is_standable || right_is_standable || left_is_standable) { 
+                        self.graph.update_edge(self.indices[x][y - 1][z], self.indices[x][y][z], 1);
+                    }
+
+                    // need to make connections to up/down/left/right if any of those are standable
+
+                    // up
+                    if level.is_inbounds(position.x + 1, position.y, position.z)
+                    && up_is_standable 
+                    && (level.is_enterable(position.x + 1, position.y, position.z) 
+                        || level.is_entity(position.x + 1, position.y, position.z)) {
+                        self.graph.update_edge(self.indices[x + 1][y][z], self.indices[x][y][z], 1);
+                    }
+                    // down
+                    if level.is_inbounds(position.x - 1, position.y, position.z) 
+                    && down_is_standable 
+                    && (level.is_enterable(position.x - 1, position.y, position.z) 
+                        || level.is_entity(position.x - 1, position.y, position.z)) {
+                        self.graph.update_edge(self.indices[x - 1][y][z], self.indices[x][y][z], 1);
+                    }
+                    // left  
+                    if level.is_inbounds(position.x, position.y, position.z - 1) 
+                    && left_is_standable 
+                    && (level.is_enterable(position.x, position.y, position.z - 1) 
+                        || level.is_entity(position.x, position.y, position.z - 1)) {
+                        self.graph.update_edge(self.indices[x][y][z - 1], self.indices[x][y][z], 1);
+                    }
+                    // right
+                    if level.is_inbounds(position.x, position.y, position.z + 1) 
+                    && right_is_standable 
+                    && (level.is_enterable(position.x, position.y, position.z + 1) 
+                        || level.is_entity(position.x, position.y, position.z + 1)) {
+                        self.graph.update_edge(self.indices[x][y][z + 1], self.indices[x][y][z], 1);
+                    }
                 }
 
                 // Above
-                if level.is_enterable(position.x, position.y + 1, position.z) {
+                if level.is_enterable(position.x, position.y + 1, position.z) 
+                || level.is_entity(position.x, position.y + 1, position.z) {
                     self.graph.update_edge(self.indices[x][y + 1][z], self.indices[x][y][z], 1);
                 }
             }
@@ -142,7 +183,7 @@ impl PathFinder {
         
         if let Some(object) = level.get_with_position(*position) {
             match object.entity_type {
-                EntityType::Dude | EntityType::Enemy => {
+                EntityType::Dude => {
                     // up
                     if level.is_inbounds(position.x + 1, position.y, position.z) {
                         self.graph.update_edge(self.indices[x + 1][y][z], self.indices[x][y][z], 1);
@@ -168,49 +209,7 @@ impl PathFinder {
                         self.graph.update_edge(self.indices[x][y - 1][z], self.indices[x][y][z], 1);
                     }
                 },
-                EntityType::Block => {
-                    if level.is_enterable(position.x, position.y + 1, position.z) 
-                    || level.is_entity(position.x, position.y + 1, position.z) { 
-                        // set UpDownLeftRight to be able to enter if above is empty
-                        // up
-                        if level.is_inbounds(position.x + 1, position.y, position.z)
-                        && (level.is_enterable(position.x + 1, position.y, position.z) 
-                            || level.is_entity(position.x + 1, position.y, position.z))
-                        && level.is_standable(position.x + 1, position.y, position.z) {
-                            self.graph.update_edge(self.indices[x + 1][y][z], self.indices[x][y][z], 1);
-                        }
-                        // down
-                        if level.is_inbounds(position.x - 1, position.y, position.z) 
-                        && (level.is_enterable(position.x - 1, position.y, position.z) 
-                            || level.is_entity(position.x - 1, position.y, position.z))
-                        && level.is_standable(position.x - 1, position.y, position.z) {
-                            self.graph.update_edge(self.indices[x - 1][y][z], self.indices[x][y][z], 1);
-                        }
-                        // left  
-                        if level.is_inbounds(position.x, position.y, position.z - 1) 
-                        && (level.is_enterable(position.x, position.y, position.z - 1) 
-                            || level.is_entity(position.x, position.y, position.z - 1))
-                        && level.is_standable(position.x, position.y, position.z - 1) {
-                            self.graph.update_edge(self.indices[x][y][z - 1], self.indices[x][y][z], 1);
-                        }
-                        // right
-                        if level.is_inbounds(position.x, position.y, position.z + 1) 
-                        && (level.is_enterable(position.x, position.y, position.z + 1) 
-                            || level.is_entity(position.x, position.y, position.z + 1))
-                        && level.is_standable(position.x, position.y, position.z + 1) {
-                            self.graph.update_edge(self.indices[x][y][z + 1], self.indices[x][y][z], 1);
-                        }
-                    }
-
-                    // remove enter from above
-                    if let Some(edge) = self.get_edge(&Position { x: position.x, y: position.y + 1, z: position.z }, &position, &level) {
-                        self.graph.remove_edge(edge);
-                    }
-                    // remove enter from below
-                    if let Some(edge) = self.get_edge(&Position { x: position.x, y: position.y - 1, z: position.z }, &position, &level) {
-                        self.graph.remove_edge(edge);
-                    }
-                },
+                EntityType::Block | EntityType::Enemy => (),
                 _ => handle_general_case()
             }
         } else {
