@@ -64,7 +64,7 @@ pub fn update_moveable(
 ) {
     for (entity, mut moveable, mut transform, mut position, entity_type, maybe_facing) in moveables.iter_mut() {
         if let Some(target_position) = &mut moveable.target_position {
-            println!("{:?} {:?} {:?}",transform.translation, target_position.1, target_position.2);
+//            println!("{:?} {:?} {:?}",transform.translation, target_position.1, target_position.2);
 
             // if the spot this object moved from is the same object then clear it
             if let Some(game_object) = level.get_with_vec(transform.translation) {

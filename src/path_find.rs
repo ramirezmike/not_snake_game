@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use crate::{level::Level, level::PositionChangeEvent, EntityType, dude::Dude, camera::Camera,
-            Position, snake::Enemy, win_flag::WinFlag, GameObject};
+            Position, snake, food::Food, win_flag::WinFlag, GameObject};
 use petgraph::{Graph, graph::NodeIndex, graph::EdgeIndex};
 use petgraph::algo::astar;
 use bevy_prototype_debug_lines::*; 
@@ -95,6 +95,22 @@ impl PathFinder {
             self.graph.remove_edge(edge);
         }
 
+        let weight = match level.get(x as i32, y as i32 - 1, z as i32) {
+                        Some(game_object) => {
+                            match game_object.entity_type {
+                                EntityType::Enemy => 3, // try to prevent snakes from climbing on themselves
+                                _ => 1
+                            }
+                        },
+                        _ => {
+                            if level.is_inbounds(x as i32, y as i32 - 1, z as i32) {
+                                2 // try to prevent snakes from floating over empty spaces
+                            } else {
+                                1 // the position must be the bottom of the map so just return 1
+                            }
+                        }
+                    };
+
         let mut handle_general_case = || {
             if level.is_position_enterable(*position) || level.is_position_entity(position) {
                 if level.is_position_standable(*position) {
@@ -102,32 +118,32 @@ impl PathFinder {
                     if level.is_inbounds(position.x + 1, position.y, position.z)
                     && (level.is_enterable(position.x + 1, position.y, position.z) 
                         || level.is_entity(position.x + 1, position.y, position.z)) {
-                        self.graph.update_edge(self.indices[x + 1][y][z], self.indices[x][y][z], 1);
+                        self.graph.update_edge(self.indices[x + 1][y][z], self.indices[x][y][z], weight);
                     }
                     // down
                     if level.is_inbounds(position.x - 1, position.y, position.z) 
                     && (level.is_enterable(position.x - 1, position.y, position.z) 
                         || level.is_entity(position.x - 1, position.y, position.z)) {
-                        self.graph.update_edge(self.indices[x - 1][y][z], self.indices[x][y][z], 1);
+                        self.graph.update_edge(self.indices[x - 1][y][z], self.indices[x][y][z], weight);
                     }
                     // left  
                     if level.is_inbounds(position.x, position.y, position.z - 1) 
                     && (level.is_enterable(position.x, position.y, position.z - 1) 
                         || level.is_entity(position.x, position.y, position.z - 1)) {
-                        self.graph.update_edge(self.indices[x][y][z - 1], self.indices[x][y][z], 1);
+                        self.graph.update_edge(self.indices[x][y][z - 1], self.indices[x][y][z], weight);
                     }
                     // right
                     if level.is_inbounds(position.x, position.y, position.z + 1) 
                     && (level.is_enterable(position.x, position.y, position.z + 1) 
                         || level.is_entity(position.x, position.y, position.z + 1)) {
-                        self.graph.update_edge(self.indices[x][y][z + 1], self.indices[x][y][z], 1);
+                        self.graph.update_edge(self.indices[x][y][z + 1], self.indices[x][y][z], weight);
                     }
 
                     // need to add this if enemy or something
                     // Below
                     if level.is_inbounds(position.x, position.y - 1, position.z) 
                     && level.is_type(position.x, position.y - 1, position.z, Some(EntityType::Enemy)) { 
-                        self.graph.update_edge(self.indices[x][y - 1][z], self.indices[x][y][z], 1);
+                        self.graph.update_edge(self.indices[x][y - 1][z], self.indices[x][y][z], weight);
                     }
                 } else {
                     let up_is_standable = level.is_standable(position.x + 1, position.y, position.z);
@@ -138,7 +154,7 @@ impl PathFinder {
                     // Below
                     if level.is_inbounds(position.x, position.y - 1, position.z) 
                     && (up_is_standable || down_is_standable || right_is_standable || left_is_standable) { 
-                        self.graph.update_edge(self.indices[x][y - 1][z], self.indices[x][y][z], 1);
+                        self.graph.update_edge(self.indices[x][y - 1][z], self.indices[x][y][z], weight);
                     }
 
                     // need to make connections to up/down/left/right if any of those are standable
@@ -148,35 +164,35 @@ impl PathFinder {
                     && up_is_standable 
                     && (level.is_enterable(position.x + 1, position.y, position.z) 
                         || level.is_entity(position.x + 1, position.y, position.z)) {
-                        self.graph.update_edge(self.indices[x + 1][y][z], self.indices[x][y][z], 1);
+                        self.graph.update_edge(self.indices[x + 1][y][z], self.indices[x][y][z], weight);
                     }
                     // down
                     if level.is_inbounds(position.x - 1, position.y, position.z) 
                     && down_is_standable 
                     && (level.is_enterable(position.x - 1, position.y, position.z) 
                         || level.is_entity(position.x - 1, position.y, position.z)) {
-                        self.graph.update_edge(self.indices[x - 1][y][z], self.indices[x][y][z], 1);
+                        self.graph.update_edge(self.indices[x - 1][y][z], self.indices[x][y][z], weight);
                     }
                     // left  
                     if level.is_inbounds(position.x, position.y, position.z - 1) 
                     && left_is_standable 
                     && (level.is_enterable(position.x, position.y, position.z - 1) 
                         || level.is_entity(position.x, position.y, position.z - 1)) {
-                        self.graph.update_edge(self.indices[x][y][z - 1], self.indices[x][y][z], 1);
+                        self.graph.update_edge(self.indices[x][y][z - 1], self.indices[x][y][z], weight);
                     }
                     // right
                     if level.is_inbounds(position.x, position.y, position.z + 1) 
                     && right_is_standable 
                     && (level.is_enterable(position.x, position.y, position.z + 1) 
                         || level.is_entity(position.x, position.y, position.z + 1)) {
-                        self.graph.update_edge(self.indices[x][y][z + 1], self.indices[x][y][z], 1);
+                        self.graph.update_edge(self.indices[x][y][z + 1], self.indices[x][y][z], weight);
                     }
                 }
 
                 // Above
                 if level.is_enterable(position.x, position.y + 1, position.z) 
                 || level.is_entity(position.x, position.y + 1, position.z) {
-                    self.graph.update_edge(self.indices[x][y + 1][z], self.indices[x][y][z], 1);
+                    self.graph.update_edge(self.indices[x][y + 1][z], self.indices[x][y][z], weight);
                 }
             }
         };
@@ -186,27 +202,27 @@ impl PathFinder {
                 EntityType::Dude => {
                     // up
                     if level.is_inbounds(position.x + 1, position.y, position.z) {
-                        self.graph.update_edge(self.indices[x + 1][y][z], self.indices[x][y][z], 1);
+                        self.graph.update_edge(self.indices[x + 1][y][z], self.indices[x][y][z], weight);
                     }
                     // down
                     if level.is_inbounds(position.x - 1, position.y, position.z) {
-                        self.graph.update_edge(self.indices[x - 1][y][z], self.indices[x][y][z], 1);
+                        self.graph.update_edge(self.indices[x - 1][y][z], self.indices[x][y][z], weight);
                     }
                     // left 
                     if level.is_inbounds(position.x, position.y, position.z - 1) {
-                        self.graph.update_edge(self.indices[x][y][z - 1], self.indices[x][y][z], 1);
+                        self.graph.update_edge(self.indices[x][y][z - 1], self.indices[x][y][z], weight);
                     }
                     // right
                     if level.is_inbounds(position.x, position.y, position.z + 1) {
-                        self.graph.update_edge(self.indices[x][y][z + 1], self.indices[x][y][z], 1);
+                        self.graph.update_edge(self.indices[x][y][z + 1], self.indices[x][y][z], weight);
                     }
                     // above
                     if level.is_inbounds(position.x, position.y + 1, position.z) {
-                        self.graph.update_edge(self.indices[x][y + 1][z], self.indices[x][y][z], 1);
+                        self.graph.update_edge(self.indices[x][y + 1][z], self.indices[x][y][z], weight);
                     }
                     // below
                     if level.is_inbounds(position.x, position.y - 1, position.z) {
-                        self.graph.update_edge(self.indices[x][y - 1][z], self.indices[x][y][z], 1);
+                        self.graph.update_edge(self.indices[x][y - 1][z], self.indices[x][y][z], weight);
                     }
                 },
                 EntityType::Block | EntityType::Enemy => (),
@@ -217,16 +233,35 @@ impl PathFinder {
         }
     }
 
-    pub fn update_path(&mut self, start: &Position, goal: &Position) {
+    pub fn update_path(&mut self,       
+        requesting_entity: Entity, // probably a snake
+        level: &Res<Level>, 
+        start: &Position, 
+        goal: &Position,
+        mut kill_snake_event_writer: EventWriter::<snake::KillSnakeEvent>,
+    ) {
         let start_index = self.indices[start.x as usize][start.y as usize][start.z as usize];
         let goal_index = self.indices[goal.x as usize][goal.y as usize][goal.z as usize];
-        let path = astar(&self.graph, start_index, |finish| finish == goal_index, |e| *e.weight(), |_| 0);
-//       if path.is_none() {
-//          println!("path: {:?}", path);
-//          println!("start: {:?}", start);
-//          println!("end: {:?}", goal);
-//          println!();
-//       }
+        let mut path = astar(&self.graph, start_index, |finish| finish == goal_index, |e| *e.weight(), |_| 0);
+
+        let mut attempts = 0;
+        let max_attempts = 10;
+        // just pick somewhere randomly
+        while path.is_none() && attempts < max_attempts {
+            println!("Trying to find new random spot... {}", attempts);
+            let random_goal = level.get_random_standable();
+            let goal_index = self.indices[random_goal.x as usize][random_goal.y as usize][random_goal.z as usize];
+            path = astar(&self.graph, start_index, |finish| finish == goal_index, |e| *e.weight(), |_| 0);
+            attempts += 1; 
+
+            if attempts >= max_attempts {
+                println!("Sending event");
+                // killing the snake since it's probably stuck
+                kill_snake_event_writer.send(snake::KillSnakeEvent(requesting_entity));
+            }
+        }
+        println!("exited while loop");
+
         self.current_path = path;
     }
 
@@ -355,17 +390,25 @@ pub fn draw_edges(
 
 pub fn update_path(
     mut time: Local<f32>,
+    level: Res<Level>,
     timer: Res<Time>,
     mut path_find: ResMut<PathFinder>,
-    dude: Query<(&Enemy, &Position)>,
-    win_flag: Query<(&Dude, &Position)>,
+    mut snake: Query<(Entity, &mut snake::Enemy, &Position)>,
+    food: Query<(&Food, &Position)>,
+    kill_snake_event_writer: EventWriter::<snake::KillSnakeEvent>,
 ) {
     *time += timer.delta_seconds();
 
     if *time > 0.2 {
-        if let Ok((_dude, dude_position)) = dude.single() {
-            if let Ok((_win_flag, win_flag_position)) = win_flag.single() {
-                path_find.update_path(dude_position, win_flag_position);
+        if let Ok((entity, mut snake, snake_position)) = snake.single_mut() {
+            if !snake.is_dead {
+                if let Ok((_food, food_position)) = food.single() {
+                    path_find.update_path(entity, &level, snake_position, food_position, kill_snake_event_writer);
+
+                    if path_find.current_path.is_none() {
+                        snake.is_dead = true;
+                    }
+                }
             }
         }
 

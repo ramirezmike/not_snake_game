@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy::render::camera::Camera;
 
 use crate::{level::Level, Position, collectable, dude::DudeMeshes, snake, level,
-            EntityType, GameObject, holdable, win_flag, moveable,
+            EntityType, GameObject, holdable, win_flag, moveable, food,
             level_over, credits, block, camera, path_find, path_find::PathFinder};
 
 pub struct EnvironmentPlugin;
@@ -21,6 +21,8 @@ impl Plugin for EnvironmentPlugin {
            .add_event::<level::PositionChangeEvent>()
            .add_event::<level_over::LevelOverEvent>()
            .add_event::<snake::AddBodyPartEvent>()
+           .add_event::<snake::KillSnakeEvent>()
+           .add_event::<food::FoodEatenEvent>()
            .add_system_set(
                SystemSet::on_enter(crate::AppState::Loading)
                          .with_system(load_assets.system())
@@ -48,9 +50,13 @@ impl Plugin for EnvironmentPlugin {
                .with_system(level_over::level_over_check.system())
                .with_system(path_find::show_path.system())
                .with_system(snake::update_enemy.system())
+               .with_system(snake::handle_food_eaten.system())
+               .with_system(food::animate_food.system())
+               .with_system(food::update_food.system())
 //              .with_system(snake::add_body_part.system())
                .with_system(snake::debug_add_body_part.system())
                .with_system(snake::add_body_parts.system())
+               .with_system(snake::handle_kill_snake.system())
                .with_system(path_find::update_path.system())
                .with_system(path_find::update_graph.system())
                .with_system(path_find::draw_edges.system())
@@ -167,7 +173,7 @@ pub fn load_level(
         for j in ((level.length / 2) + (level.length / 4))..level.length {
             let block_entity =
             commands.spawn_bundle(PbrBundle {
-                transform: Transform::from_translation(Vec3::new(i as f32, 2.0, j as f32)),
+                transform: Transform::from_translation(Vec3::new(i as f32, 0.0, j as f32)),
                 ..Default::default()
             })
             .with_children(|parent| {
@@ -183,9 +189,9 @@ pub fn load_level(
                 });
             })
             .insert(EntityType::Block) // TODO: this should be platform at some point. Dude can't climb platforms, just blocks
-            .insert(Position { x: i as i32, y: 2, z: j as i32})
+            .insert(Position { x: i as i32, y: 0, z: j as i32})
             .id();
-            level.set(i as i32, 2, j as i32, Some(GameObject::new(block_entity, EntityType::Block)));
+            level.set(i as i32, 0, j as i32, Some(GameObject::new(block_entity, EntityType::Block)));
         }
     }
 
@@ -248,6 +254,8 @@ pub fn load_level(
     .insert(win_flag::WinFlag {})
     .insert(EntityType::WinFlag)
     .insert(position);
+
+    food::spawn_food(commands, level, meshes, materials);
 }
 
 pub struct DisplayText(pub String);

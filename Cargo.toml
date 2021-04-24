@@ -13,3 +13,4 @@ bevy_mod_picking = { git = "https://github.com/aevyrie/bevy_mod_picking", rev = 
 bevy_rapier3d = { git = "https://github.com/alec-deason/bevy_rapier", rev = "9bbfb4f" }
 petgraph = "0.5.1"
 bevy_prototype_debug_lines = "0.2.2"
+rand = "0.8"

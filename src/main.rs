@@ -17,6 +17,7 @@ pub mod credits;
 pub mod block;
 pub mod collectable;
 pub mod win_flag;
+pub mod food;
 pub mod path_find;
 mod menu;
 
@@ -42,6 +43,7 @@ pub static COLOR_DUDE: &str = "ececec";
 pub static COLOR_ENEMY: &str = "ee5656";
 pub static COLOR_BLOCK: &str = "9fd3c7";
 pub static COLOR_FLAG: &str = "7A5C57"; //"92DB56"; //40DBB7
+pub static COLOR_FOOD: &str = "F6DF2C";
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum AppState {
@@ -100,6 +102,7 @@ pub enum EntityType {
     Enemy,
     Platform,
     WinFlag,
+    Food,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]

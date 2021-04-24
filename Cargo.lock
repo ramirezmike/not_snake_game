@@ -1227,6 +1227,7 @@ dependencies = [
  "bevy_prototype_debug_lines",
  "bevy_rapier3d",
  "petgraph",
+ "rand 0.8.3",
 ]
 
 [[package]]

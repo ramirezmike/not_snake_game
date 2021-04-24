@@ -1,7 +1,7 @@
 use bevy::{prelude::*,};
 use crate::{GameObject, EntityType, Position, environment, moveable::Moveable};
 use std::collections::HashMap;
-
+use rand::seq::SliceRandom;
 
 #[derive(Debug)]
 pub struct PositionChangeEvent(pub Position, pub Option::<GameObject>);
@@ -72,6 +72,26 @@ impl Level {
         }
     }
 
+    pub fn get_random_standable(&self) -> Position {
+        let mut standables = vec!();
+
+        for x in 0..self.width {
+            for y in 0..self.height {
+                for z in 0..self.length {
+                    if self.is_standable(x as i32, y as i32, z as i32) 
+                    && (!self.is_inbounds(x as i32, y as i32 - 1, z as i32)
+                        || !self.is_type(x as i32, y as i32 - 1, z as i32, Some(EntityType::Enemy)))
+                    && self.is_type(x as i32, y as i32, z as i32, None) {
+                        standables.push((x as i32, y as i32, z as i32));
+                    }
+                }
+            }
+        }
+        let (x, y, z) = standables.choose(&mut rand::thread_rng()).expect("Nothing was standable");
+
+        Position { x: *x, y: *y, z: *z }
+    }
+
     pub fn is_position_collectable(&self, position: Position) -> bool {
         self.is_collectable(position.x, position.y, position.z)
     }
@@ -84,7 +104,7 @@ impl Level {
         match self.get(x, y, z) {
             Some(game_object) => {
                 match game_object.entity_type {
-                    EntityType::WinFlag => true,
+                    EntityType::WinFlag | EntityType::Food => true,
                     _ => false
                 }
             }

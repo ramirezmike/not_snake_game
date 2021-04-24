@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use crate::{Direction, EntityType, GameObject, level::Level, path_find::PathFinder, level,
-            Position, holdable, block, moveable, facing::Facing};
+            Position, holdable, moveable, facing::Facing, food::FoodEatenEvent};
 
 #[derive(Default)]
 pub struct EnemyMeshes {
@@ -12,17 +12,19 @@ pub struct EnemyMeshes {
 pub struct Enemy {
     body_parts: Vec::<Entity>,
     action_cooldown: Timer, 
+    pub is_dead: bool,
 }
 
 pub struct Snake;
 pub struct SnakeBody;
+pub struct KillSnakeEvent(pub Entity);
 
 pub fn spawn_enemy(
     mut commands: Commands, 
     meshes: Res<EnemyMeshes>, 
     mut level: ResMut<Level>,
 ) {
-    let position = Vec3::new(0.0, 0.0, 11.0);
+    let position = Vec3::new(0.0, 2.0, 11.0);
     let mut transform = Transform::from_translation(position);
     transform.apply_non_uniform_scale(Vec3::new(0.50, 0.50, 0.50)); 
     transform.rotate(Quat::from_axis_angle(Vec3::new(0.0, 1.0, 0.0), std::f32::consts::PI));
@@ -37,8 +39,8 @@ pub fn spawn_enemy(
             .insert(Enemy {
                 body_parts: vec!(),
                 action_cooldown: Timer::from_seconds(0.5, true),
+                is_dead: false,
             })
-            .insert(holdable::Holder { holding: None })
             .insert(moveable::Moveable::new(false, false, 0.1))
             .insert(Facing::new(Direction::Right))
             .with_children(|parent|  {
@@ -100,9 +102,13 @@ pub fn add_body_parts(
         queued_parts.push(AddBodyPartEvent { snake: event.snake, follow: event.follow, target: event.target });
     }
 
-    let (ready, waiting): (Vec<AddBodyPartEvent>, Vec<AddBodyPartEvent>) 
+    let (alive, _):(Vec<AddBodyPartEvent>, Vec<AddBodyPartEvent>) 
         = queued_parts.iter()
-                      .partition(|x| *snakes.get(x.follow).unwrap() != x.target);
+                      .partition(|x| snakes.get(x.follow).is_ok());
+
+    let (ready, waiting): (Vec<AddBodyPartEvent>, Vec<AddBodyPartEvent>) 
+        = alive.iter()
+               .partition(|x| *snakes.get(x.follow).unwrap() != x.target);
 
     for part_to_add in ready {
         let position = part_to_add.target; 
@@ -110,9 +116,6 @@ pub fn add_body_parts(
         let mut transform = Transform::from_translation(target.translation);
         transform.apply_non_uniform_scale(Vec3::new(0.50, 0.50, 0.50)); 
         let mut snake_enemy = snake_enemies.get_mut(part_to_add.snake).unwrap();
-
-        // TODO: we might not need this and can treat everything as Enemy
-        let entity_type = if snake_enemy.body_parts.len() > 1 { EntityType::Block } else { EntityType::Enemy }; 
 
         let enemy_entity = 
         commands.spawn_bundle(PbrBundle {
@@ -122,7 +125,7 @@ pub fn add_body_parts(
                 .insert(Position { x: transform.translation.x as i32, 
                                    y: transform.translation.y as i32, 
                                    z: transform.translation.z as i32 })
-                .insert(entity_type)
+                .insert(EntityType::Enemy)
                 .insert(SnakeBody)
                 .insert(Snake)
                 .insert(moveable::Moveable::new(false, false, 0.1))
@@ -150,66 +153,6 @@ pub fn add_body_parts(
     *queued_parts = waiting;
 }
 
-pub fn add_body_part(
-    mut enemies: Query<(&mut Enemy, &mut moveable::Moveable)>,
-    body_parts: Query<(&Transform, &SnakeBody)>,
-    mut commands: Commands, 
-    meshes: Res<EnemyMeshes>, 
-    mut level: ResMut<Level>,
-
-    mut position_change_event_reader: EventReader<level::PositionChangeEvent>,
-) {
-    for level::PositionChangeEvent(position, game_object) in position_change_event_reader.iter() {
-        if let Some(game_object) = game_object {
-            match game_object.entity_type {
-                EntityType::Enemy => {
-                    if let Ok((mut enemy, mut moveable)) = enemies.get_mut(game_object.entity) {
-                        let target = if let Some(tail) = enemy.body_parts.last() {
-                            println!("# of parts {} ", body_parts.iter().count());
-                                        body_parts.get(*tail).unwrap().0.clone()
-                                     } else {
-                                        Transform::from_xyz(position.x as f32, position.y as f32, position.z as f32)
-                                     };
-                        let target = Transform::from_xyz(position.x as f32, position.y as f32, position.z as f32);
-                        let mut transform = Transform::from_translation(target.translation);
-                        transform.apply_non_uniform_scale(Vec3::new(0.50, 0.50, 0.50)); 
-                        let enemy_entity = 
-                        commands.spawn_bundle(PbrBundle {
-                                    transform,
-                                    ..Default::default()
-                                })
-                                .insert(Position { x: transform.translation.x as i32, 
-                                                   y: transform.translation.y as i32, 
-                                                   z: transform.translation.z as i32 })
-                                .insert(EntityType::Enemy)
-                                .insert(SnakeBody)
-                                .insert(moveable::Moveable::new(false, false, 0.1))
-                                .with_children(|parent|  {
-                                    parent.spawn_bundle(PbrBundle {
-                                        mesh: meshes.body.clone(),
-                                        material: meshes.material.clone(),
-                                        transform: {
-                                            let mut transform = Transform::from_rotation(Quat::from_axis_angle(Vec3::new(0.0, 1.0, 0.0), 0.0));
-                                            transform.translation = Vec3::new(0.0, 1.0, 0.0);
-                                            transform
-                                        },
-                                        ..Default::default()
-                                    });
-                                }).id();
-                        enemy.body_parts.push(enemy_entity);
-
-                        level.set(transform.translation.x as i32, 
-                                  transform.translation.y as i32, 
-                                  transform.translation.z as i32, 
-                                  Some(GameObject::new(enemy_entity, EntityType::Enemy)));
-                    }
-                }, 
-                _ => ()
-            }
-        }
-    }
-}
-
 pub fn update_enemy(
     time: Res<Time>,
     mut enemies: Query<(&mut Enemy, &Transform, &mut moveable::Moveable), Without<SnakeBody>>,
@@ -227,7 +170,7 @@ pub fn update_enemy(
 
     *timer += time.delta_seconds();
 
-    if *is_active {
+    if !*is_active {
         for (mut enemy, transform, mut moveable) in enemies.iter_mut() {
             if enemy.action_cooldown.tick(time.delta()).finished() {
                 let (_, path) = path_find.get_path();
@@ -291,3 +234,89 @@ pub fn update_enemy(
     }
 }
 
+pub fn handle_food_eaten(
+    mut food_eaten_event_reader: EventReader<FoodEatenEvent>,
+    mut body_part_writer: EventWriter<AddBodyPartEvent>,
+    snakes: Query<(Entity, &Enemy, &Transform), With<Snake>>,
+    body_parts: Query<&Transform, With<SnakeBody>>,
+) {
+    for eater in food_eaten_event_reader.iter() {
+        if let Ok((entity, snake, transform)) = snakes.get(eater.0) {
+            let (follow, target) = match snake.body_parts.last() {
+                                      Some(tail) => (*tail, body_parts.get(*tail).unwrap()),
+                                      _ => (entity, transform)
+                                   };
+            body_part_writer.send(AddBodyPartEvent { snake: entity, follow, target: Position::from_vec(target.translation) });
+        }
+    }
+}
+
+pub fn handle_kill_snake(
+    mut commands: Commands, 
+    mut kill_snake_event_reader: EventReader<KillSnakeEvent>,
+    mut snakes: Query<(&mut Enemy, &mut Transform, &mut Position), With<Snake>>,
+    snake_part_positions: Query<&Position, (With<SnakeBody>, Without<Snake>)>,
+    mut snake_parts: Query<&mut Visible, Or<(With<SnakeBody>, With<Snake>)>>,
+    mut dying_snakes: Local<Vec::<(Entity, u32, Timer)>>, // entity, number of flashes, timer
+    time: Res<Time>,
+    mut level: ResMut<Level>,
+) {
+    let flash_limit = 6;
+    for snake_entity in kill_snake_event_reader.iter() {
+        println!("Received kill event");
+        dying_snakes.push((snake_entity.0, 0, Timer::from_seconds(0.5, true)));
+        for body_part in snakes.get_mut(snake_entity.0).unwrap().0.body_parts.iter() {
+            dying_snakes.push((*body_part, 0, Timer::from_seconds(0.5, true)));
+        }
+    }
+
+    let mut temp_dying_snakes = vec!();
+    std::mem::swap(&mut temp_dying_snakes, &mut dying_snakes);
+
+    let (dead, mut flashing): (Vec<(Entity, u32, Timer)>, Vec<(Entity, u32, Timer)>) 
+        = temp_dying_snakes.into_iter()
+                           .partition(|(_, flash_times, _)| *flash_times > flash_limit);
+
+    for dead_snake in dead {
+        if let Ok((mut snake_head, mut transform, mut position)) = snakes.get_mut(dead_snake.0) {
+            println!("Finding new spot for head");
+            // move the head to a new spot
+            snake_head.body_parts = vec!();
+            let random_standable = level.get_random_standable();
+
+            *position = random_standable;
+            transform.translation.x = random_standable.x as f32;
+            transform.translation.y = random_standable.y as f32;
+            transform.translation.z = random_standable.z as f32;
+            level.set(random_standable.x as i32, 
+                      random_standable.y as i32, 
+                      random_standable.z as i32, 
+                      Some(GameObject::new(dead_snake.0, EntityType::Enemy)));
+            snake_head.is_dead = false;
+        } else {
+            println!("despawning tail");
+            // despawn the tail
+            if let Ok(position) = snake_part_positions.get(dead_snake.0) {
+                level.set(position.x, position.y, position.z, None);
+            }
+            commands.entity(dead_snake.0).despawn_recursive();
+
+        }
+    }
+
+    // make dying snakes flash
+    for mut dying_snake in flashing.iter_mut() {
+        if let Ok(mut snake_part) = snake_parts.get_mut(dying_snake.0) {
+            if dying_snake.2.tick(time.delta()).finished() {
+                println!("flashing entity");
+                snake_part.is_visible = !snake_part.is_visible;
+                dying_snake.1 += 1;
+                dying_snake.2.reset();
+            }
+        } else {
+            dying_snake.1 = flash_limit; // couldn't find the part for some reason so just let it disappear next iteration
+        }
+    }
+
+    *dying_snakes = flashing;
+}
