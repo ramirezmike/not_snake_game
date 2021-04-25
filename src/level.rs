@@ -1,6 +1,5 @@
 use bevy::{prelude::*,};
-use crate::{GameObject, EntityType, Position, environment, moveable::Moveable};
-use std::collections::HashMap;
+use crate::{GameObject, EntityType, Position, };
 use rand::seq::SliceRandom;
 
 #[derive(Debug)]
@@ -21,13 +20,120 @@ pub struct LevelInfo {
     pub width: usize,
     pub length: usize,
     pub height: usize,
+    level: Vec::<Vec::<Vec::<usize>>>,
+    snake_count: usize,
+}
+
+impl LevelInfo {
+    pub fn new(level: Vec::<Vec::<Vec::<usize>>>, snake_count: usize) -> Self {
+        LevelInfo { width: level[0].len(), height: level.len(), length: level[0][0].len(), level, snake_count }
+    }
 }
 
 impl Level {
     pub fn new() -> Self {
+        let empty = 
+                    vec![
+                        vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                        vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                        vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                        vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                        vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                        vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    ];
+        let empty_3 = 
+                    vec![
+                        vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                        vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                        vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    ];
         let level_info = vec!(
-            LevelInfo { width: 6, length: 12, height: 12 },
-            LevelInfo { width: 6, length: 13, height: 12 },
+            // Level 1
+            LevelInfo::new(
+                vec![
+                    empty.clone(),
+                    empty.clone(),
+                    empty.clone(),
+                    empty.clone(),
+                    empty.clone(),
+                    empty.clone(),
+                    empty.clone(),
+                    empty.clone(),
+                    empty.clone(),
+                    empty.clone(),
+                    empty.clone(),
+                    empty.clone(),
+                    vec![
+                        vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                        vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                        vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                        vec![0, 0, 0, 0, 0, 2, 3, 0, 0, 0, 0, 0],
+                        vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                        vec![4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    ],
+                    vec![
+                        vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                        vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                        vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                        vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                        vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                        vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                    ]
+                ],
+                0
+            ),
+            // Level 2
+            LevelInfo::new(
+                vec![
+                    empty.clone(),
+                    empty.clone(),
+                    empty.clone(),
+                    empty.clone(),
+                    empty.clone(),
+                    empty.clone(),
+                    empty.clone(),
+                    empty.clone(),
+                    empty.clone(),
+                    empty.clone(),
+                    empty.clone(),
+                    vec![
+                        vec![4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                        vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                        vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                        vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                        vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                        vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3],
+                    ],
+                    vec![
+                        vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                        vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                        vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                        vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                        vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                        vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                    ]
+                ],
+                1
+            ),
+            // Level 3
+            LevelInfo::new(
+                vec![
+                    empty_3.clone(), 
+                    empty_3.clone(), 
+                    empty_3.clone(), 
+                    vec![
+                        vec![0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                        vec![4, 0, 2, 0, 0, 5, 0, 0, 0, 0, 0, 3],
+                        vec![0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    ],
+                    vec![
+                        vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                        vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                        vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                    ]
+                ],
+                1
+            )
         );
         let current_level = 0;
         let width = level_info[current_level].width;
@@ -43,6 +149,13 @@ impl Level {
             current_level: 0,
             level_info
         }
+    }
+
+    pub fn get_level_info(&self, x: usize, y: usize, z: usize) -> usize {
+        // in order to make writing the levels easier, they're stored weird
+        // y and x are reversed and the vec is stored [y][x][z]
+        let current = &self.level_info[self.current_level];
+        current.level[current.height - y - 1][current.width - x - 1][z]
     }
 
     pub fn is_last_level(&self) -> bool {

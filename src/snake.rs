@@ -20,11 +20,14 @@ pub struct SnakeBody;
 pub struct KillSnakeEvent(pub Entity);
 
 pub fn spawn_enemy(
-    mut commands: Commands, 
-    meshes: Res<EnemyMeshes>, 
-    mut level: ResMut<Level>,
+    commands: &mut Commands, 
+    meshes: &Res<EnemyMeshes>, 
+    level: &mut ResMut<Level>,
+    x: usize,
+    y: usize,
+    z: usize,
 ) {
-    let position = Vec3::new(0.0, 2.0, 11.0);
+    let position = Vec3::new(x as f32, y as f32, z as f32);
     let mut transform = Transform::from_translation(position);
     transform.apply_non_uniform_scale(Vec3::new(0.50, 0.50, 0.50)); 
     transform.rotate(Quat::from_axis_angle(Vec3::new(0.0, 1.0, 0.0), std::f32::consts::PI));

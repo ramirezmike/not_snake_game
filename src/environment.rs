@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy::render::camera::Camera;
 
-use crate::{level::Level, Position, collectable, dude::DudeMeshes, snake, level,
+use crate::{level::Level, Position, collectable, dude, snake, level,
             EntityType, GameObject, holdable, win_flag, moveable, food,
             level_over, credits, block, camera, path_find, path_find::PathFinder};
 
@@ -10,7 +10,7 @@ impl Plugin for EnvironmentPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.insert_resource(Level::new())
            .insert_resource(PathFinder::new())
-           .init_resource::<DudeMeshes>()
+           .init_resource::<dude::DudeMeshes>()
            .init_resource::<snake::EnemyMeshes>()
            .init_resource::<AssetsLoading>()
            .add_plugin(camera::CameraPlugin)
@@ -36,7 +36,6 @@ impl Plugin for EnvironmentPlugin {
            .add_system_set(
                SystemSet::on_enter(crate::AppState::InGame)
                          .with_system(load_level.system())
-                         .with_system(snake::spawn_enemy.system())
                          .with_system(level_over::setup_level_over_screen.system())
            )
 
@@ -77,9 +76,10 @@ pub fn change_level_screen(
     *timer += time.delta_seconds();
 
     println!("changing level...");
-    if *timer > 2.0 {
+    if *timer > 1.0 {
         level.change_to_next_level();
         state.set(crate::AppState::InGame).unwrap();
+        *timer = 0.0; 
     }
 }
 
@@ -87,7 +87,7 @@ pub fn load_assets(
     mut _commands: Commands,
     asset_server: Res<AssetServer>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    mut dude_meshes: ResMut<DudeMeshes>,
+    mut dude_meshes: ResMut<dude::DudeMeshes>,
     mut enemy_meshes: ResMut<snake::EnemyMeshes>,
     mut loading: ResMut<AssetsLoading>,
 ) {
@@ -157,60 +157,95 @@ pub fn cleanup_environment(
 
 pub fn load_level(
     mut commands: Commands,
-    asset_server: Res<AssetServer>,
     mut level: ResMut<Level>,
     mut path_finder: ResMut<PathFinder>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
+    dude_meshes: Res<dude::DudeMeshes>,
+    enemy_meshes: Res<snake::EnemyMeshes>, 
 ) {
     path_finder.load_level(&level);
-    let mesh = meshes.add(Mesh::from(shape::Plane { size: 1.0 }));
+    let plane = meshes.add(Mesh::from(shape::Plane { size: 1.0 }));
+    let cube = meshes.add(Mesh::from(shape::Cube { size: 1.0 }));
+    let ground_1_material = materials.add(Color::hex(crate::COLOR_GROUND_1).unwrap().into());
+    let ground_2_material = materials.add(Color::hex(crate::COLOR_GROUND_2).unwrap().into());
+    let block_material = materials.add(Color::hex(crate::COLOR_BLOCK).unwrap().into());
+    let flag_color = Color::hex(crate::COLOR_FLAG).unwrap();
+    let flag_color = Color::rgba(flag_color.r(), flag_color.g(), flag_color.b(), 1.0);
+                    
     commands.spawn_bundle(UiCameraBundle::default());
-//    let font = asset_server.load("fonts/FiraSans-Bold.ttf");
 
-    for i in 0..level.width {
-        for j in 0..level.length {
-            commands.spawn_bundle(PbrBundle {
-                mesh: mesh.clone(),
-                material: if (i + j + 1) % 2 == 0 { 
-                              materials.add(Color::hex(crate::COLOR_GROUND_1).unwrap().into())
-                          } else {
-                              materials.add(Color::hex(crate::COLOR_GROUND_2).unwrap().into())
-                          },
-                transform: Transform::from_translation(Vec3::new(i as f32, 0.0, j as f32)),
-                ..Default::default()
-            })
-            .insert(EntityType::Platform);
-//                .insert(DisplayText(format!("{}", i).to_string()))
-//                .id();
-//          let follow_text = create_follow_text(entity_id, font.clone());
-//          commands.spawn_bundle(follow_text.0).insert(follow_text.1);
-        }
-    }
+    for x in 0..level.width {
+        for y in 0..level.height {
+            for z in 0..level.length {
+                match level.get_level_info(x, y, z) {
+                    1 => { // platform
+                        let entity =
+                            commands.spawn_bundle(PbrBundle {
+                                mesh: if y == 0 { plane.clone() } else { cube.clone() },
+                                material: if (x + z + 1) % 2 == 0 { ground_1_material.clone() } else { ground_2_material.clone() },
+                                transform: Transform::from_translation(Vec3::new(x as f32, 
+                                                                                 (if y == 0 { y + 1 } else { y }) as f32, 
+                                                                                 z as f32)),
+                                ..Default::default()
+                            })
+                            .insert(EntityType::Block)
+                            .id();
+                        level.set(x as i32, y as i32, z as i32, Some(GameObject::new(entity, EntityType::Block)));
+                    },
+                    2 => { // moveable block
+                        let block_entity =
+                            commands.spawn_bundle(PbrBundle {
+                              transform: Transform::from_xyz(x as f32, y as f32, z as f32),
+                              ..Default::default()
+                            })
+                            .with_children(|parent| {
+                                parent.spawn_bundle(PbrBundle {
+                                    mesh: cube.clone(),
+                                    material: block_material.clone(),
+                                    transform: Transform::from_xyz(0.0, 0.5, 0.0),
+                                    ..Default::default()
+                                });
+                            })
+                            .insert(EntityType::Block)
+                            .insert(holdable::Holdable {})
+                            .insert(Position { x: x as i32, y: y as i32, z: z as i32 })
+                            .insert(block::BlockObject { })
+                            .insert(moveable::Moveable::new(true, false, 0.1))
+                            .id();
+                        level.set(x as i32, y as i32, z as i32, Some(GameObject::new(block_entity, EntityType::Block)));
+                    },
+                    3 => { // win_flag
+                        let transform = Transform::from_xyz(x as f32, y as f32, z as f32);
+                        println!("{} {} {}", x, y, z);
+                        let position = Position::from_vec(transform.translation);
+                        let entity =
+                            commands.spawn_bundle(PbrBundle {
+                              transform,
+                              ..Default::default()
+                            })
+                            .with_children(|parent| {
+                                parent.spawn_bundle(PbrBundle {
+                                    mesh: meshes.add(Mesh::from(shape::Icosphere { radius: 0.25, subdivisions: 0 })),
+                                    material: materials.add(flag_color.into()),
+                                    transform: Transform::from_xyz(0.0, 0.5, 0.0),
+                                    ..Default::default()
+                                })
+                                .insert(win_flag::WinFlagInnerMesh {});
+                            })
+                            .insert(collectable::Collectable { collected: false }) 
+                            .insert(win_flag::WinFlag {})
+                            .insert(EntityType::WinFlag)
+                            .insert(position)
+                            .id();
 
-    for i in 0..level.width {
-        for j in ((level.length / 2) + (level.length / 4))..level.length {
-            let block_entity =
-            commands.spawn_bundle(PbrBundle {
-                transform: Transform::from_translation(Vec3::new(i as f32, 0.0, j as f32)),
-                ..Default::default()
-            })
-            .with_children(|parent| {
-                parent.spawn_bundle(PbrBundle {
-                    mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-                    material: if (i + j + 1) % 2 == 0 { 
-                                  materials.add(Color::hex(crate::COLOR_GROUND_1).unwrap().into())
-                              } else {
-                                  materials.add(Color::hex(crate::COLOR_GROUND_2).unwrap().into())
-                              },
-                    transform: Transform::from_xyz(0.0, 0.5, 0.0),
-                    ..Default::default()
-                });
-            })
-            .insert(EntityType::Block) // TODO: this should be platform at some point. Dude can't climb platforms, just blocks
-            .insert(Position { x: i as i32, y: 0, z: j as i32})
-            .id();
-            level.set(i as i32, 0, j as i32, Some(GameObject::new(block_entity, EntityType::Block)));
+                        level.set(x as i32, y as i32, z as i32, Some(GameObject::new(entity, EntityType::WinFlag)));
+                    },
+                    4 => dude::spawn_player(&mut commands, &dude_meshes, &mut level, x, y, z),
+                    5 => snake::spawn_enemy(&mut commands, &enemy_meshes, &mut level, x, y, z),
+                    _ => ()
+                }
+            }
         }
     }
 
@@ -218,61 +253,6 @@ pub fn load_level(
         transform: Transform::from_xyz(4.0, 8.0, 4.0),
         ..Default::default()
     });
-
-    let block_positions = vec!(
-        (1.0, 0.0, 3.0),
-        (2.0, 0.0, 3.0),
-        (2.0, 0.0, 4.0),
-        (2.0, 0.0, 6.0),
-        (2.0, 0.0, 0.0),
-        (3.0, 0.0, 2.0),
-        (4.0, 0.0, 1.0),
-    );
-
-    for block in block_positions.iter() {
-        let block_entity =
-            commands.spawn_bundle(PbrBundle {
-              transform: Transform::from_xyz(block.0, block.1, block.2),
-              ..Default::default()
-            })
-            .with_children(|parent| {
-                parent.spawn_bundle(PbrBundle {
-                    mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-                    material: materials.add(Color::hex(crate::COLOR_BLOCK).unwrap().into()),
-                    transform: Transform::from_xyz(0.0, 0.5, 0.0),
-                    ..Default::default()
-                });
-            })
-            .insert(EntityType::Block)
-            .insert(holdable::Holdable {})
-            .insert(Position { x: block.0 as i32, y: block.1 as i32, z: block.2 as i32 })
-            .insert(block::BlockObject { })
-            .insert(moveable::Moveable::new(true, false, 0.1))
-            .id();
-        level.set(block.0 as i32, block.1 as i32, block.2 as i32, Some(GameObject::new(block_entity, EntityType::Block)));
-    }
-
-    let flag_color = Color::hex(crate::COLOR_FLAG).unwrap();
-    let flag_color = Color::rgba(flag_color.r(), flag_color.g(), flag_color.b(), 1.0);
-    let transform = Transform::from_xyz(level.width as f32 / 2.0 - 1.0, 3.0, (level.length - 1)as f32);
-    let position = Position::from_vec(transform.translation);
-    commands.spawn_bundle(PbrBundle {
-      transform,
-      ..Default::default()
-    })
-    .with_children(|parent| {
-        parent.spawn_bundle(PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Icosphere { radius: 0.25, subdivisions: 0 })),
-            material: materials.add(flag_color.into()),
-            transform: Transform::from_xyz(0.0, 0.5, 0.0),
-            ..Default::default()
-        })
-        .insert(win_flag::WinFlagInnerMesh {});
-    })
-    .insert(collectable::Collectable { collected: false }) 
-    .insert(win_flag::WinFlag {})
-    .insert(EntityType::WinFlag)
-    .insert(position);
 
     food::spawn_food(commands, level, meshes, materials);
 }

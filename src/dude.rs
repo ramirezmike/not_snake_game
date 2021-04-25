@@ -6,10 +6,6 @@ pub struct DudePlugin;
 impl Plugin for DudePlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_system_set(
-               SystemSet::on_enter(crate::AppState::InGame)
-                   .with_system(spawn_player.system())
-           )
-           .add_system_set(
                SystemSet::on_update(crate::AppState::InGame)
                    .with_system(player_input.system())
                    .with_system(push_block.system())
@@ -23,12 +19,15 @@ pub struct DudeMeshes {
     pub material: Handle<StandardMaterial>,
 }
 
-fn spawn_player(
-    mut commands: Commands, 
-    meshes: Res<DudeMeshes>, 
-    mut level: ResMut<Level>,
+pub fn spawn_player(
+    commands: &mut Commands, 
+    meshes: &Res<DudeMeshes>, 
+    level: &mut ResMut<Level>,
+    x: usize,
+    y: usize,
+    z: usize,
 ) {
-    let mut transform = Transform::from_translation(Vec3::new(0.0, 0.0, 0.0));
+    let mut transform = Transform::from_translation(Vec3::new(x as f32, y as f32, z as f32));
     transform.apply_non_uniform_scale(Vec3::new(0.25, 0.25, 0.25)); 
     transform.rotate(Quat::from_axis_angle(Vec3::new(0.0, 1.0, 0.0), std::f32::consts::PI));
     let player_entity = 
@@ -39,7 +38,7 @@ fn spawn_player(
             .insert(Dude {
                 action_cooldown: Timer::from_seconds(0.15, false),
             })
-            .insert(Position { x: 0, y: 0, z: 0 })
+            .insert(Position { x: x as i32, y: y as i32, z: z as i32 })
             .insert(EntityType::Dude)
             .insert(holdable::Holder { holding: None })
             .insert(moveable::Moveable::new(true, true, 0.1))
@@ -56,7 +55,7 @@ fn spawn_player(
                     ..Default::default()
                 });
             }).id();
-    level.set(0, 0, 0, Some(GameObject::new(player_entity, EntityType::Dude)));
+    level.set(x as i32, y as i32, z as i32, Some(GameObject::new(player_entity, EntityType::Dude)));
 }
 
 fn player_input(
