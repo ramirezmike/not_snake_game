@@ -5,25 +5,58 @@ use rand::seq::SliceRandom;
 
 #[derive(Debug)]
 pub struct PositionChangeEvent(pub Position, pub Option::<GameObject>);
+pub struct NextLevelEvent;
 
 pub struct Level {
     pub width: usize,
     pub length: usize,
     pub height: usize,
     pub game_objects: Vec::<Vec::<Vec::<Option::<GameObject>>>>,
-    frame_updates: Vec::<(usize, usize, usize)>
+    current_level: usize,
+    frame_updates: Vec::<(usize, usize, usize)>,
+    level_info: Vec::<LevelInfo>,
+}
+
+pub struct LevelInfo {
+    pub width: usize,
+    pub length: usize,
+    pub height: usize,
 }
 
 impl Level {
-    pub fn new(width: usize, length: usize, height: usize) -> Self {
+    pub fn new() -> Self {
+        let level_info = vec!(
+            LevelInfo { width: 6, length: 12, height: 12 },
+            LevelInfo { width: 6, length: 13, height: 12 },
+        );
+        let current_level = 0;
+        let width = level_info[current_level].width;
+        let length = level_info[current_level].length;
+        let height = level_info[current_level].height;
+
         Level { 
             width,
             length,
             height,
             game_objects: vec![vec![vec![None; length]; height]; width],
-            frame_updates: vec!()
+            frame_updates: vec!(),
+            current_level: 0,
+            level_info
         }
     }
+
+    pub fn is_last_level(&self) -> bool {
+        self.current_level == self.level_info.len() - 1
+    }
+
+    pub fn change_to_next_level(&mut self) {
+        self.current_level += 1;
+        self.width = self.level_info[self.current_level].width;
+        self.length = self.level_info[self.current_level].length;
+        self.height = self.level_info[self.current_level].height;
+        self.game_objects = vec![vec![vec![None; self.length]; self.height]; self.width];
+    }
+
     pub fn set_with_vec(&mut self, position: Vec3, game_object: Option::<GameObject>) {
         self.set(position.x as i32, position.y as i32, position.z as i32, game_object);
     }

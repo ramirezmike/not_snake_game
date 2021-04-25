@@ -50,6 +50,7 @@ pub enum AppState {
     MainMenu,
     Loading,
     InGame,
+    ChangingLevel,
     Credits,
 }
 

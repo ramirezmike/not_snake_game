@@ -8,11 +8,8 @@ use crate::{level::Level, Position, collectable, dude::DudeMeshes, snake, level,
 pub struct EnvironmentPlugin;
 impl Plugin for EnvironmentPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        let width = 6;
-        let length = 12;
-        let height = 12;
-        app.insert_resource(Level::new(width, length, height))
-           .insert_resource(PathFinder::new(width, length, height))
+        app.insert_resource(Level::new())
+           .insert_resource(PathFinder::new())
            .init_resource::<DudeMeshes>()
            .init_resource::<snake::EnemyMeshes>()
            .init_resource::<AssetsLoading>()
@@ -23,6 +20,7 @@ impl Plugin for EnvironmentPlugin {
            .add_event::<snake::AddBodyPartEvent>()
            .add_event::<snake::KillSnakeEvent>()
            .add_event::<food::FoodEatenEvent>()
+           .add_event::<level::NextLevelEvent>()
            .add_system_set(
                SystemSet::on_enter(crate::AppState::Loading)
                          .with_system(load_assets.system())
@@ -32,6 +30,10 @@ impl Plugin for EnvironmentPlugin {
                    .with_system(check_assets_ready.system())
            )
            .add_system_set(
+               SystemSet::on_update(crate::AppState::ChangingLevel)
+                   .with_system(change_level_screen.system())
+           )
+           .add_system_set(
                SystemSet::on_enter(crate::AppState::InGame)
                          .with_system(load_level.system())
                          .with_system(snake::spawn_enemy.system())
@@ -39,7 +41,6 @@ impl Plugin for EnvironmentPlugin {
            )
 
            .insert_resource(credits::CreditsDelay(Timer::from_seconds(1.5, false)))
-           .insert_resource(level_over::LevelIsOver(false))
            .add_system_set(
                SystemSet::on_update(crate::AppState::InGame)
                .with_system(holdable::lift_holdable.system().label("handle_lift_events"))
@@ -64,6 +65,21 @@ impl Plugin for EnvironmentPlugin {
 //               .with_system(update_text_position.system())
                .with_system(level::broadcast_changes.system().after("handle_moveables"))
            );
+    }
+}
+
+pub fn change_level_screen(
+    mut state: ResMut<State<crate::AppState>>,
+    time: Res<Time>,
+    mut level: ResMut<Level>,
+    mut timer: Local<f32>,
+) {
+    *timer += time.delta_seconds();
+
+    println!("changing level...");
+    if *timer > 2.0 {
+        level.change_to_next_level();
+        state.set(crate::AppState::InGame).unwrap();
     }
 }
 
@@ -126,7 +142,8 @@ pub fn cleanup_environment(
     for (entity, entity_type) in entities.iter() {
         println!("Despawning... {:?}", entity_type);
         match entity_type {
-            EntityType::Enemy | EntityType::Dude | EntityType::Block | EntityType::WinFlag | EntityType::Platform => {
+            EntityType::Enemy | EntityType::Dude | EntityType::Block | 
+            EntityType::WinFlag | EntityType::Platform | EntityType::Food => {
                 commands.entity(entity).despawn_recursive();
             }
             _ => commands.entity(entity).despawn()
@@ -142,9 +159,11 @@ pub fn load_level(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut level: ResMut<Level>,
+    mut path_finder: ResMut<PathFinder>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
+    path_finder.load_level(&level);
     let mesh = meshes.add(Mesh::from(shape::Plane { size: 1.0 }));
     commands.spawn_bundle(UiCameraBundle::default());
 //    let font = asset_server.load("fonts/FiraSans-Bold.ttf");

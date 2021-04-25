@@ -254,14 +254,15 @@ pub fn handle_food_eaten(
 pub fn handle_kill_snake(
     mut commands: Commands, 
     mut kill_snake_event_reader: EventReader<KillSnakeEvent>,
-    mut snakes: Query<(&mut Enemy, &mut Transform, &mut Position), With<Snake>>,
-    snake_part_positions: Query<&Position, (With<SnakeBody>, Without<Snake>)>,
-    mut snake_parts: Query<&mut Visible, Or<(With<SnakeBody>, With<Snake>)>>,
+    mut snakes: Query<(&mut Enemy, &mut Transform, &mut Position), (With<Snake>, Without<SnakeBody>)>,
+    snake_part_positions: Query<&Position, With<SnakeBody>>,
+    snake_part_meshes: Query<&Children, Or<(With<SnakeBody>, With<Snake>)>>,
+    mut visibles: Query<&mut Visible>,
     mut dying_snakes: Local<Vec::<(Entity, u32, Timer)>>, // entity, number of flashes, timer
     time: Res<Time>,
     mut level: ResMut<Level>,
 ) {
-    let flash_limit = 6;
+    let flash_limit = 5;
     for snake_entity in kill_snake_event_reader.iter() {
         println!("Received kill event");
         dying_snakes.push((snake_entity.0, 0, Timer::from_seconds(0.5, true)));
@@ -297,6 +298,7 @@ pub fn handle_kill_snake(
             println!("despawning tail");
             // despawn the tail
             if let Ok(position) = snake_part_positions.get(dead_snake.0) {
+                println!("setting position to none");
                 level.set(position.x, position.y, position.z, None);
             }
             commands.entity(dead_snake.0).despawn_recursive();
@@ -306,12 +308,16 @@ pub fn handle_kill_snake(
 
     // make dying snakes flash
     for mut dying_snake in flashing.iter_mut() {
-        if let Ok(mut snake_part) = snake_parts.get_mut(dying_snake.0) {
+        if let Ok(snake_part) = snake_part_meshes.get(dying_snake.0) {
             if dying_snake.2.tick(time.delta()).finished() {
-                println!("flashing entity");
-                snake_part.is_visible = !snake_part.is_visible;
-                dying_snake.1 += 1;
-                dying_snake.2.reset();
+                for child in snake_part.iter() {
+                    if let Ok(mut child_mesh) = visibles.get_mut(*child) {
+                        println!("flashing entity");
+                        child_mesh.is_visible = !child_mesh.is_visible;
+                        dying_snake.1 += 1;
+                        dying_snake.2.reset();
+                    }
+                }
             }
         } else {
             dying_snake.1 = flash_limit; // couldn't find the part for some reason so just let it disappear next iteration

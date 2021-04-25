@@ -21,7 +21,10 @@ pub struct PathFinder {
 }
 
 impl PathFinder {
-    pub fn new(width: usize, length: usize, height: usize) -> Self {
+    pub fn load_level(&mut self, level: &Level) {
+        let length = level.length;
+        let width = level.width;
+        let height = level.height;
         let mut indices: Vec::<Vec::<Vec::<NodeIndex<u32>>>> = vec![vec![vec![NodeIndex::new(0); length]; height]; width];
         let mut graph = Graph::<(i32, i32, i32), u32>::new();
         for x in 0..width {
@@ -42,15 +45,19 @@ impl PathFinder {
                 }
             }
         }
-
+        self.indices = indices;
+        self.graph = graph;
+        self.current_path = None;
+    }
+    pub fn new() -> Self {
         PathFinder {
-            indices,
-            graph,
+            indices: vec!(),
+            graph: Graph::<(i32, i32, i32), u32>::new(),
             current_path: None,
         }
     }
 
-    fn get_edge(&self, position_a: &Position, position_b: &Position, level: &Res<Level>) -> Option::<(EdgeIndex<u32>)> {
+    fn get_edge(&self, position_a: &Position, position_b: &Position, level: &Res<Level>) -> Option::<EdgeIndex<u32>> {
         if level.is_inbounds(position_a.x, position_a.y, position_a.z) 
         && level.is_inbounds(position_b.x, position_b.y, position_b.z) {
             self.graph.find_edge(self.indices[position_a.x as usize][position_a.y as usize][position_a.z as usize], 
@@ -348,10 +355,6 @@ pub fn update_graph(
             }
         }
     }
-//  for change in changes.iter() {
-//      println!("updating graph..{:?}", change);
-//      path_finder.update_graph(&change.0, &change.1, &level);
-//  }
 }
 
 pub fn draw_edges(

@@ -1,8 +1,7 @@
 use bevy::{prelude::*,};
-use crate::{credits};
+use crate::{credits, level};
 
 pub struct LevelOverEvent {}
-pub struct LevelIsOver(pub bool);
 pub struct LevelOverText {}
 
 pub fn setup_level_over_screen(
@@ -47,23 +46,31 @@ pub fn setup_level_over_screen(
 }
 
 pub fn level_over_check(
+    mut state: ResMut<State<crate::AppState>>,
     mut level_over_events: EventReader<LevelOverEvent>,
     mut query: Query<&mut Text>,
-    mut level_is_over: ResMut<LevelIsOver>,
+    mut game_is_over: Local<bool>,
+    mut level: ResMut<level::Level>,
     time: Res<Time>, 
     mut credits_delay: ResMut<credits::CreditsDelay>,
-    mut credits_event_writer: EventWriter<crate::credits::CreditsEvent>
+    mut credits_event_writer: EventWriter<crate::credits::CreditsEvent>,
+    mut next_level_event_writer: EventWriter<level::NextLevelEvent>,
 ) {
-    for _level_over in level_over_events.iter() {
-        for mut text in query.iter_mut() {
-            println!("Changing text!");
-            text.sections[0].value = "YOU WIN!".to_string();
-            level_is_over.0 = true;
-            credits_delay.0.reset();
+    if level_over_events.iter().count() > 0 {
+        if level.is_last_level() {
+            for mut text in query.iter_mut() {
+                text.sections[0].value = "YOU WIN!".to_string();
+                *game_is_over = true;
+                credits_delay.0.reset();
+            }
+        } else {
+            //next_level_event_writer.send(level::NextLevelEvent);
+
+            state.set(crate::AppState::ChangingLevel).unwrap();
         }
     }
 
-    if level_is_over.0 && credits_delay.0.tick(time.delta()).finished() {
+    if *game_is_over && credits_delay.0.tick(time.delta()).finished() {
         credits_event_writer.send(crate::credits::CreditsEvent {});
     }
 }
