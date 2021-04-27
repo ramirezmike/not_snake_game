@@ -42,7 +42,7 @@ pub fn spawn_player(
             .insert(EntityType::Dude)
             .insert(holdable::Holder { holding: None })
             .insert(moveable::Moveable::new(true, true, 0.1))
-            .insert(Facing::new(Direction::Right))
+            .insert(Facing::new(Direction::Right, false))
             .with_children(|parent|  {
                 parent.spawn_bundle(PbrBundle {
                     mesh: meshes.step1.clone(),

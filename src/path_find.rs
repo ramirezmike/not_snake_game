@@ -49,6 +49,7 @@ impl PathFinder {
         self.graph = graph;
         self.current_path = None;
     }
+
     pub fn new() -> Self {
         PathFinder {
             indices: vec!(),
@@ -343,9 +344,11 @@ pub fn show_path(
 pub fn update_graph(
     mut changes: EventReader<PositionChangeEvent>,
     mut path_finder: ResMut<PathFinder>,
+    mut initial_iteration_completed: Local<bool>,
     level: Res<Level>,
 ) {
-    if changes.iter().count() > 0 {
+    if !*initial_iteration_completed || changes.iter().count() > 0 {
+        *initial_iteration_completed = true; 
         for x in 0..level.width {
             for y in 0..level.height{
                 for z in 0..level.length {
@@ -355,6 +358,7 @@ pub fn update_graph(
             }
         }
     }
+    println!("GRAPH IS READY");
 }
 
 pub fn draw_edges(

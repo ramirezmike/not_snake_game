@@ -6,12 +6,20 @@ use rand::seq::SliceRandom;
 pub struct PositionChangeEvent(pub Position, pub Option::<GameObject>);
 pub struct NextLevelEvent;
 
+
+static START_LEVEL: usize = 1;
+static m: usize = 2; // movable block
+static w: usize = 3; // win flag spawn point
+static d: usize = 4; // dude spawn point
+static s: usize = 5; // snake spawn point
+static f: usize = 6; // food spawn point
+
 pub struct Level {
     pub width: usize,
     pub length: usize,
     pub height: usize,
     pub game_objects: Vec::<Vec::<Vec::<Option::<GameObject>>>>,
-    current_level: usize,
+    pub current_level: usize,
     frame_updates: Vec::<(usize, usize, usize)>,
     level_info: Vec::<LevelInfo>,
 }
@@ -21,12 +29,24 @@ pub struct LevelInfo {
     pub length: usize,
     pub height: usize,
     level: Vec::<Vec::<Vec::<usize>>>,
-    snake_count: usize,
+    is_food_random: bool,
+    camera_position: Vec3,
+    camera_rotation: Quat,
 }
 
 impl LevelInfo {
-    pub fn new(level: Vec::<Vec::<Vec::<usize>>>, snake_count: usize) -> Self {
-        LevelInfo { width: level[0].len(), height: level.len(), length: level[0][0].len(), level, snake_count }
+    pub fn new(level: Vec::<Vec::<Vec::<usize>>>, camera_position: Vec3, camera_rotation: Quat) -> Self {
+        let is_food_random = !level.iter().any(|y| y.iter().any(|x| x.iter().any(|z| *z == f)));
+
+        LevelInfo { 
+            width: level[0].len(), 
+            height: level.len(), 
+            length: level[0][0].len(), 
+            level, 
+            camera_position, 
+            camera_rotation,
+            is_food_random,
+        }
     }
 }
 
@@ -51,89 +71,135 @@ impl Level {
             // Level 1
             LevelInfo::new(
                 vec![
-                    empty.clone(),
-                    empty.clone(),
-                    empty.clone(),
-                    empty.clone(),
-                    empty.clone(),
-                    empty.clone(),
-                    empty.clone(),
-                    empty.clone(),
-                    empty.clone(),
-                    empty.clone(),
-                    empty.clone(),
-                    empty.clone(),
+                    empty_3.clone(),
+                    empty_3.clone(),
+                    empty_3.clone(),
+                    empty_3.clone(),
+                    empty_3.clone(),
                     vec![
-                        vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                        vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                        vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                        vec![0, 0, 0, 0, 0, 2, 3, 0, 0, 0, 0, 0],
-                        vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                        vec![4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                        vec![0, 0, 0, 0, 0, m, 0, 0, 0, 0, 0, 0],
+                        vec![d, 0, f, m, 0, f, 0, m, 0, 0, 0, w],
+                        vec![0, 0, 0, 0, 0, m, 0, 0, 0, 0, 0, 0],
                     ],
                     vec![
                         vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
                         vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
                         vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-                        vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-                        vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-                        vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-                    ]
+                    ],
                 ],
-                0
+                Vec3::new(-7.0, 6.8, 5.3), 
+                Quat::from_axis_angle(Vec3::new(-0.21380125, -0.952698, -0.21599823), 1.6294433),
             ),
-            // Level 2
             LevelInfo::new(
                 vec![
-                    empty.clone(),
-                    empty.clone(),
-                    empty.clone(),
-                    empty.clone(),
-                    empty.clone(),
-                    empty.clone(),
-                    empty.clone(),
-                    empty.clone(),
-                    empty.clone(),
-                    empty.clone(),
-                    empty.clone(),
+                    empty_3.clone(),
+                    empty_3.clone(),
+                    empty_3.clone(),
+                    empty_3.clone(),
+                    empty_3.clone(),
                     vec![
-                        vec![4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                        vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                        vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                        vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                        vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                        vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3],
+                        vec![0, 0, m, 0, 0, m, 0, 0, m, 0, 0, 0],
+                        vec![d, 0, m, 0, 0, m, 0, 0, m, s, 0, w],
+                        vec![0, 0, m, 0, 0, m, 0, 0, m, 0, 0, 0],
                     ],
                     vec![
                         vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
                         vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
                         vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-                        vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-                        vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-                        vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-                    ]
+                    ],
                 ],
-                1
+                Vec3::new(-7.0, 6.8, 5.3), 
+                Quat::from_axis_angle(Vec3::new(-0.21380125, -0.952698, -0.21599823), 1.6294433),
+
             ),
+//          // level 2
+//          LevelInfo::new(
+//              vec![
+//                  empty_1.clone(),
+//                  vec![
+//                      vec![d, 0, 0, 0, 0, m, 0, 0, 0, 0, f],
+//                  ],
+//                  vec![
+//                      vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+//                  ]
+//              ],
+//              Some(Vec3::new(-8.0, 5.0, 6.0)), 
+//              None, 
+//          ),
+//          // Level 3
+//          LevelInfo::new(
+//              vec![
+//                  empty.clone(),
+//                  empty.clone(),
+//                  empty.clone(),
+//                  empty.clone(),
+//                  empty.clone(),
+//                  empty.clone(),
+//                  empty.clone(),
+//                  empty.clone(),
+//                  empty.clone(),
+//                  empty.clone(),
+//                  empty.clone(),
+//                  vec![
+//                      vec![d, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+//                      vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+//                      vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+//                      vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+//                      vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+//                      vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, f],
+//                  ],
+//                  vec![
+//                      vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+//                      vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+//                      vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+//                      vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+//                      vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+//                      vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+//                  ]
+//              ],
+//              None, 
+//              None, 
+//          ),
             // Level 3
-            LevelInfo::new(
-                vec![
-                    empty_3.clone(), 
-                    empty_3.clone(), 
-                    empty_3.clone(), 
-                    vec![
-                        vec![0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                        vec![4, 0, 2, 0, 0, 5, 0, 0, 0, 0, 0, 3],
-                        vec![0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                    ],
-                    vec![
-                        vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-                        vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-                        vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-                    ]
-                ],
-                1
-            )
+//          LevelInfo::new(
+//              vec![
+//                  empty_3.clone(), 
+//                  empty_3.clone(), 
+//                  empty_3.clone(), 
+//                  vec![
+//                      vec![0, 0, m, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+//                      vec![d, 0, m, 0, 0, s, 0, 0, 0, 0, 0, f],
+//                      vec![0, 0, m, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+//                  ],
+//                  vec![
+//                      vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+//                      vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+//                      vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+//                  ]
+//              ],
+//              None, 
+//              None, 
+//          ),
+            // Level 4
+//          LevelInfo::new(
+//              vec![
+//                  empty_3.clone(), 
+//                  empty_3.clone(), 
+//                  empty_3.clone(), 
+//                  vec![
+//                      vec![0, 0, m, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+//                      vec![d, 0, m, 0, 0, s, 0, 0, 0, 0, 0, f],
+//                      vec![0, 0, m, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+//                  ],
+//                  vec![
+//                      vec![1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1],
+//                      vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+//                      vec![1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1],
+//                  ]
+//              ],
+//              None, 
+//              None, 
+//          )
         );
         let current_level = 0;
         let width = level_info[current_level].width;
@@ -146,9 +212,24 @@ impl Level {
             height,
             game_objects: vec![vec![vec![None; length]; height]; width],
             frame_updates: vec!(),
-            current_level: 0,
+            current_level: START_LEVEL,
             level_info
         }
+    }
+
+    pub fn get_camera_position(&self) -> Vec3 {
+        let current = &self.level_info[self.current_level];
+        current.camera_position
+    }
+
+    pub fn get_camera_rotation(&self) -> Quat {
+        let current = &self.level_info[self.current_level];
+        current.camera_rotation
+    }
+
+    pub fn is_food_random(&self) -> bool {
+        let current = &self.level_info[self.current_level];
+        current.is_food_random
     }
 
     pub fn get_level_info(&self, x: usize, y: usize, z: usize) -> usize {

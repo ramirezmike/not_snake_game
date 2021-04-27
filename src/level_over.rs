@@ -65,6 +65,9 @@ pub fn level_over_check(
             }
         } else {
             //next_level_event_writer.send(level::NextLevelEvent);
+            for mut text in query.iter_mut() {
+                text.sections[0].value = format!("LEVEL {}", level.current_level + 2).to_string();
+            }
 
             state.set(crate::AppState::ChangingLevel).unwrap();
         }

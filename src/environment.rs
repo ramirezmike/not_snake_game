@@ -34,6 +34,10 @@ impl Plugin for EnvironmentPlugin {
                    .with_system(change_level_screen.system())
            )
            .add_system_set(
+               SystemSet::on_exit(crate::AppState::ChangingLevel)
+                   .with_system(cleanup_change_level_screen.system())
+           )
+           .add_system_set(
                SystemSet::on_enter(crate::AppState::InGame)
                          .with_system(load_level.system())
                          .with_system(level_over::setup_level_over_screen.system())
@@ -57,13 +61,22 @@ impl Plugin for EnvironmentPlugin {
                .with_system(snake::debug_add_body_part.system())
                .with_system(snake::add_body_parts.system())
                .with_system(snake::handle_kill_snake.system())
-               .with_system(path_find::update_path.system())
-               .with_system(path_find::update_graph.system())
+               .with_system(path_find::update_graph.system().label("graph_update"))
+               .with_system(path_find::update_path.system().after("graph_update"))
                .with_system(path_find::draw_edges.system())
 //             .with_system(level::print_level.system())
 //               .with_system(update_text_position.system())
                .with_system(level::broadcast_changes.system().after("handle_moveables"))
            );
+    }
+}
+
+pub fn cleanup_change_level_screen(
+    mut commands: Commands,
+    level_over_text: Query<(Entity, &level_over::LevelOverText)>,
+) {
+    for (entity, _text) in level_over_text.iter() {
+        commands.entity(entity).despawn();
     }
 }
 
@@ -84,7 +97,6 @@ pub fn change_level_screen(
 }
 
 pub fn load_assets(
-    mut _commands: Commands,
     asset_server: Res<AssetServer>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut dude_meshes: ResMut<dude::DudeMeshes>,
@@ -137,7 +149,6 @@ fn check_assets_ready(
 pub fn cleanup_environment(
     mut commands: Commands, 
     entities: Query<(Entity, &EntityType)>,
-    level_over_text: Query<(Entity, &level_over::LevelOverText)>,
 ) {
     for (entity, entity_type) in entities.iter() {
         println!("Despawning... {:?}", entity_type);
@@ -148,10 +159,6 @@ pub fn cleanup_environment(
             }
             _ => commands.entity(entity).despawn()
         }
-    }
-
-    for (entity, _text) in level_over_text.iter() {
-        commands.entity(entity).despawn();
     }
 }
 
@@ -243,6 +250,10 @@ pub fn load_level(
                     },
                     4 => dude::spawn_player(&mut commands, &dude_meshes, &mut level, x, y, z),
                     5 => snake::spawn_enemy(&mut commands, &enemy_meshes, &mut level, x, y, z),
+                    6 => {
+                        food::spawn_food(&mut commands, &mut level, &mut meshes, &mut materials, 
+                                         Some(Position{ x: x as i32, y: y as i32, z: z as i32 }))
+                    }
                     _ => ()
                 }
             }
@@ -254,7 +265,9 @@ pub fn load_level(
         ..Default::default()
     });
 
-    food::spawn_food(commands, level, meshes, materials);
+    if level.is_food_random() {
+        food::spawn_food(&mut commands, &mut level, &mut meshes, &mut materials, None);
+    }
 }
 
 pub struct DisplayText(pub String);

@@ -30,7 +30,7 @@ pub fn spawn_enemy(
     let position = Vec3::new(x as f32, y as f32, z as f32);
     let mut transform = Transform::from_translation(position);
     transform.apply_non_uniform_scale(Vec3::new(0.50, 0.50, 0.50)); 
-    transform.rotate(Quat::from_axis_angle(Vec3::new(0.0, 1.0, 0.0), std::f32::consts::PI));
+    transform.rotate(Quat::from_axis_angle(Vec3::new(0.0, 1.0, 0.0), std::f32::consts::FRAC_PI_2));
     let enemy_entity = 
     commands.spawn_bundle(PbrBundle {
                 transform,
@@ -45,7 +45,7 @@ pub fn spawn_enemy(
                 is_dead: false,
             })
             .insert(moveable::Moveable::new(false, false, 0.1))
-            .insert(Facing::new(Direction::Right))
+            .insert(Facing::new(Direction::Right, true))
             .with_children(|parent|  {
                 parent.spawn_bundle(PbrBundle {
                     mesh: meshes.head.clone(),
@@ -271,6 +271,12 @@ pub fn handle_kill_snake(
         dying_snakes.push((snake_entity.0, 0, Timer::from_seconds(0.5, true)));
         for body_part in snakes.get_mut(snake_entity.0).unwrap().0.body_parts.iter() {
             dying_snakes.push((*body_part, 0, Timer::from_seconds(0.5, true)));
+            if let Ok(position) = snake_part_positions.get(*body_part) {
+                level.set(position.x, position.y, position.z, None);
+            }
+        }
+        if let Ok(position) = snake_part_positions.get(snake_entity.0) {
+            level.set(position.x, position.y, position.z, None);
         }
     }
 
@@ -287,6 +293,7 @@ pub fn handle_kill_snake(
             // move the head to a new spot
             snake_head.body_parts = vec!();
             let random_standable = level.get_random_standable();
+            level.set(position.x, position.y, position.z, None);
 
             *position = random_standable;
             transform.translation.x = random_standable.x as f32;
@@ -299,13 +306,7 @@ pub fn handle_kill_snake(
             snake_head.is_dead = false;
         } else {
             println!("despawning tail");
-            // despawn the tail
-            if let Ok(position) = snake_part_positions.get(dead_snake.0) {
-                println!("setting position to none");
-                level.set(position.x, position.y, position.z, None);
-            }
             commands.entity(dead_snake.0).despawn_recursive();
-
         }
     }
 

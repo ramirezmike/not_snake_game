@@ -1,14 +1,17 @@
 use bevy::prelude::*;
 use crate::Direction;
 
+#[derive(Debug)]
 pub struct Facing {
     pub direction: Direction,
+    pub can_face_verticals: bool
 }
 
 impl Facing {
-    pub fn new(direction: Direction) -> Self {
+    pub fn new(direction: Direction, can_face_verticals: bool) -> Self {
         Facing {
-            direction
+            direction,
+            can_face_verticals,
         }
     }
 }

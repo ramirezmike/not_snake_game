@@ -4,6 +4,7 @@ use bevy::prelude::*;
 //  use bevy_rapier3d::rapier::dynamics::{RigidBodyBuilder,RigidBodySet};
 //  use bevy_rapier3d::physics::RigidBodyHandleComponent;
 //  use bevy_rapier3d::rapier::math::Isometry;
+use crate::level::Level;
 
 mod fly_camera;
 
@@ -19,6 +20,10 @@ impl Plugin for CameraPlugin {
                          .with_system(create_camera.system())
            )
            .add_system_set(
+               SystemSet::on_exit(crate::AppState::InGame)
+                         .with_system(destroy_camera.system())
+           )
+           .add_system_set(
                SystemSet::on_update(crate::AppState::InGame)
                          .with_system(toggle_fly.system())
            )
@@ -32,17 +37,28 @@ impl Plugin for CameraPlugin {
     
 fn update_camera(cameras: Query<(Entity, &Camera, &Transform)>) {
     for (_e, _camera, transform) in cameras.iter() {
-        println!("{:?}", transform);
+        println!("Position: {:?} Rotation: {:?} {:?}", transform.translation, transform.rotation.to_axis_angle(), transform.rotation);
+    }
+}
+
+fn destroy_camera(
+    mut commands: Commands,
+    cameras: Query<Entity, With<Camera>>
+) {
+    for camera in cameras.iter() {
+        commands.entity(camera).despawn_recursive();
     }
 }
 
 fn create_camera(
     mut commands: Commands,
     mut windows: ResMut<Windows>,
+    level: Res<Level>,
 ) {
+    println!("Creating camera!");
     let mut transform = Transform::default();
-    transform.translation = Vec3::new(-6.867214, 5.8081317, 5.4974184);
-    transform.rotation = Quat::from_xyzw(-0.14680715, -0.6914177, -0.14668213, 0.692007);
+    transform.translation = level.get_camera_position();
+    transform.rotation = level.get_camera_rotation();
 
     commands
         .spawn_bundle(PerspectiveCameraBundle {
@@ -50,17 +66,12 @@ fn create_camera(
             ..Default::default()
         })
         .insert(Camera)
-        .with_children(|_parent|  {
-//          parent.spawn(Player)
-//                .with(ColliderBuilder::cuboid(1.0, 2.0, 1.0))
-//                .with(RigidBodyBuilder::new_kinematic());
-        })
  //       .with(PickSource::default());
             ;
 
-        let window = windows.get_primary_mut().unwrap();
-        window.set_cursor_lock_mode(true);
-        window.set_cursor_visibility(false);
+    let window = windows.get_primary_mut().unwrap();
+    window.set_cursor_lock_mode(true);
+    window.set_cursor_visibility(false);
 }
 
 #[derive(Bundle)]

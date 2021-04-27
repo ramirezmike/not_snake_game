@@ -68,7 +68,11 @@ fn main() {
         .add_system_set(SystemSet::on_enter(AppState::MainMenu).with_system(menu::setup_menu.system()))
         .add_system_set(SystemSet::on_update(AppState::MainMenu).with_system(menu::menu.system()))
         .add_system_set(SystemSet::on_exit(AppState::MainMenu).with_system(menu::cleanup_menu.system()))
-        .add_system_set(SystemSet::on_enter(AppState::Credits).with_system(credits::setup_credits.system()))
+        .add_system_set(
+            SystemSet::on_enter(AppState::Credits)
+            .with_system(environment::cleanup_change_level_screen.system())
+            .with_system(credits::setup_credits.system())
+        )
         .add_system_set(SystemSet::on_update(AppState::Credits).with_system(credits::update_credits.system()))
         .add_system_set(SystemSet::on_update(AppState::InGame).with_system(credits::show_credits.system()))
         .add_system_set(SystemSet::on_exit(AppState::InGame).with_system(environment::cleanup_environment.system()))

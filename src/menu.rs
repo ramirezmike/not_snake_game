@@ -29,7 +29,7 @@ pub fn setup_menu(
             // Use the `Text::with_section` constructor
             text: Text::with_section(
                 // Accepts a `String` or any type that converts into a `String`, such as `&str`
-                "Blocks and Stuff \nor whatever idk.",
+                "     No, Snake, \nThat's My Food!",
                 TextStyle {
                     font: asset_server.load("fonts/FiraSans-Bold.ttf"),
                     font_size: 300.0,
@@ -78,17 +78,57 @@ pub fn setup_menu(
             });
         })
         .id();
-    commands.insert_resource(MenuData { button_entity, title_text_entity  });
+
+    let quit_button_entity = commands
+        .spawn_bundle(ButtonBundle {
+            style: Style {
+                size: Size::new(Val::Px(150.0), Val::Px(65.0)),
+                // center button
+                margin: Rect::all(Val::Auto),
+                // horizontally center child text
+                justify_content: JustifyContent::Center,
+                // vertically center child text
+                align_items: AlignItems::Center,
+                position_type: PositionType::Absolute,
+                position: Rect {
+                    bottom: Val::Percent(5.0),
+                    left: Val::Percent(45.0),
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
+            material: button_materials.normal.clone(),
+            ..Default::default()
+        })
+        .with_children(|parent| {
+            parent.spawn_bundle(TextBundle {
+                text: Text::with_section(
+                    "Quit",
+                    TextStyle {
+                        font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                        font_size: 40.0,
+                        color: Color::rgb(0.9, 0.9, 0.9),
+                    },
+                    Default::default(),
+                ),
+                ..Default::default()
+            });
+        })
+        .id();
+
+    commands.insert_resource(MenuData { button_entity, title_text_entity, quit_button_entity });
 }
 
 pub struct MenuData {
     button_entity: Entity,
     title_text_entity: Entity,
+    quit_button_entity: Entity,
 }
 
 pub fn cleanup_menu(mut commands: Commands, menu_data: Res<MenuData>) {
     commands.entity(menu_data.button_entity).despawn_recursive();
     commands.entity(menu_data.title_text_entity).despawn_recursive();
+    commands.entity(menu_data.quit_button_entity).despawn_recursive();
 }
 
 pub fn menu(

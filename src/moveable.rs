@@ -58,11 +58,12 @@ impl Moveable {
 }
 
 pub fn update_moveable(
-    mut moveables: Query<(Entity, &mut Moveable, &mut Transform, &mut Position, &EntityType, Option::<&mut Facing>)>,
+    mut moveables: Query<(Entity, &mut Moveable, &mut Transform, &mut Position, &EntityType, Option::<&mut Facing>, &Children)>,
+    mut inner_meshes: Query<&mut Transform, Without<Moveable>>,
     mut level: ResMut<Level>,
     time: Res<Time>,
 ) {
-    for (entity, mut moveable, mut transform, mut position, entity_type, maybe_facing) in moveables.iter_mut() {
+    for (entity, mut moveable, mut transform, mut position, entity_type, maybe_facing, children) in moveables.iter_mut() {
         if let Some(target_position) = &mut moveable.target_position {
 //            println!("{:?} {:?} {:?}",transform.translation, target_position.1, target_position.2);
 
@@ -134,16 +135,28 @@ pub fn update_moveable(
                             match queued_movement.0 {
                                 Direction::Up | Direction::Down |
                                 Direction::Right | Direction::Left => queued_movement.0,
-                                _ => facing.direction
+                                _ => if facing.can_face_verticals { queued_movement.0 } else { facing.direction }
                             };
-                        transform.rotation = 
-                            match facing.direction {
-                                Direction::Up => Quat::from_axis_angle(Vec3::Y, -std::f32::consts::FRAC_PI_2),
-                                Direction::Down => Quat::from_axis_angle(Vec3::Y, std::f32::consts::FRAC_PI_2),
-                                Direction::Right => Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI),
-                                Direction::Left => Quat::from_axis_angle(Vec3::Y, 0.0),
-                                _ => transform.rotation
-                            };
+                        for child in children.iter() {
+                            if let Ok(mut inner_mesh) = inner_meshes.get_mut(*child) {
+                                inner_mesh.rotation = 
+                                    match (facing.can_face_verticals, facing.direction) {
+                                        (_, Direction::Up) => Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI),
+                                        (_, Direction::Down) => Quat::from_axis_angle(Vec3::Y, 0.0),
+                                        (_, Direction::Right) => Quat::from_axis_angle(Vec3::Y, std::f32::consts::FRAC_PI_2),
+                                        (_, Direction::Left) => Quat::from_axis_angle(Vec3::Y, -std::f32::consts::FRAC_PI_2),
+                                        (true, Direction::Above) => {
+                                            println!("Rotating above!");
+                                            Quat::from_axis_angle(Vec3::X, std::f32::consts::FRAC_PI_2)
+                                        },
+                                        (true, Direction::Beneath) => {
+                                            println!("Rotating beneath!");
+                                            Quat::from_axis_angle(Vec3::X, -std::f32::consts::FRAC_PI_2)
+                                        },
+                                        _ => inner_mesh.rotation
+                                    };
+                            }
+                        }
 
                         if moveable.can_climb {
                             // if we're currently not facing a wall/cliff then just turn toward it
@@ -236,11 +249,19 @@ pub fn update_moveable(
                                 _ => facing.direction
                             };
                         transform.rotation = 
-                            match facing.direction {
-                                Direction::Up => Quat::from_axis_angle(Vec3::Y, -std::f32::consts::FRAC_PI_2),
-                                Direction::Down => Quat::from_axis_angle(Vec3::Y, std::f32::consts::FRAC_PI_2),
-                                Direction::Right => Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI),
-                                Direction::Left => Quat::from_axis_angle(Vec3::Y, 0.0),
+                            match (facing.can_face_verticals, facing.direction) {
+                                (_, Direction::Up) => Quat::from_axis_angle(Vec3::Y, -std::f32::consts::FRAC_PI_2),
+                                (_, Direction::Down) => Quat::from_axis_angle(Vec3::Y, std::f32::consts::FRAC_PI_2),
+                                (_, Direction::Right) => Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI),
+                                (_, Direction::Left) => Quat::from_axis_angle(Vec3::Y, 0.0),
+                                (true, Direction::Above) => {
+                                    println!("Rotating above!");
+                                    Quat::from_axis_angle(Vec3::X, std::f32::consts::FRAC_PI_2)
+                                },
+                                (true, Direction::Beneath) => {
+                                    println!("Rotating beneath!");
+                                    Quat::from_axis_angle(Vec3::X, -std::f32::consts::FRAC_PI_2)
+                                },
                                 _ => transform.rotation
                             };
                     }

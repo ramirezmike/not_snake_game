@@ -6,14 +6,15 @@ pub struct FoodInnerMesh { }
 pub struct FoodEatenEvent(pub Entity);
 
 pub fn spawn_food(
-    mut commands: Commands,
-    mut level: ResMut<Level>,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
+    commands: &mut Commands,
+    level: &mut ResMut<Level>,
+    meshes: &mut ResMut<Assets<Mesh>>,
+    materials: &mut ResMut<Assets<StandardMaterial>>,
+    position: Option::<Position>,
 ) {
     let food_color = Color::hex(crate::COLOR_FOOD).unwrap();
     let food_color = Color::rgba(food_color.r(), food_color.g(), food_color.b(), 1.0);
-    let position = level.get_random_standable();
+    let position = if position.is_some() { position.unwrap() } else { level.get_random_standable() };
     let transform = Transform::from_xyz(position.x as f32, position.y as f32, position.z as f32);
     let food_id = 
         commands.spawn_bundle(PbrBundle {
@@ -35,6 +36,7 @@ pub fn spawn_food(
         .id();
 
     level.set_with_position(position, Some(GameObject::new(food_id, EntityType::Food)));
+    println!("FOOD SPAWNED!");
 }
 
 pub fn animate_food(
@@ -50,6 +52,7 @@ pub fn animate_food(
 }
 
 pub fn update_food(
+    mut commands: Commands,
     mut foods: Query<(Entity, &mut Transform, &mut Position), With<Food>>,
     mut position_change_event_reader: EventReader<level::PositionChangeEvent>,
     mut food_eaten_event_writer: EventWriter<FoodEatenEvent>,
@@ -59,11 +62,16 @@ pub fn update_food(
         if let Some(game_object) = position_change.1 {
             for (entity, mut transform, mut position) in foods.iter_mut() {
                 if position_change.0 == *position && game_object.entity != entity {
-                    *position = level.get_random_standable();
-                    *transform = Transform::from_xyz(position.x as f32, 
-                                                     position.y as f32, 
-                                                     position.z as f32);
-                    level.set_with_position(*position, Some(GameObject::new(entity, EntityType::Food)));
+                    if level.is_food_random() {
+                        *position = level.get_random_standable();
+                        *transform = Transform::from_xyz(position.x as f32, 
+                                                         position.y as f32, 
+                                                         position.z as f32);
+                        level.set_with_position(*position, Some(GameObject::new(entity, EntityType::Food)));
+                    } else {
+                        commands.entity(entity).despawn_recursive();
+                    }
+
                     food_eaten_event_writer.send(FoodEatenEvent(game_object.entity));
                 }
             }
