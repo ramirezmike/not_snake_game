@@ -14,6 +14,7 @@ pub fn spawn_food(
 ) {
     let food_color = Color::hex(crate::COLOR_FOOD).unwrap();
     let food_color = Color::rgba(food_color.r(), food_color.g(), food_color.b(), 1.0);
+    let shaded_food_color = Color::rgba(food_color.r(), food_color.g(), food_color.b(), 0.4);
     let position = if position.is_some() { position.unwrap() } else { level.get_random_standable() };
     let transform = Transform::from_xyz(position.x as f32, position.y as f32, position.z as f32);
     let food_id = 
@@ -29,6 +30,14 @@ pub fn spawn_food(
                 ..Default::default()
             })
             .insert(FoodInnerMesh {});
+
+            parent.spawn_bundle(PbrBundle {
+                mesh: meshes.add(Mesh::from(shape::Plane { size: 0.25 })),
+                material: materials.add(shaded_food_color.into()),
+                transform: Transform::from_xyz(0.0, 0.05, 0.0),
+                ..Default::default()
+            })
+            .insert(FoodInnerMesh {});
         })
         .insert(Food {})
         .insert(EntityType::Food)
@@ -36,7 +45,6 @@ pub fn spawn_food(
         .id();
 
     level.set_with_position(position, Some(GameObject::new(food_id, EntityType::Food)));
-    println!("FOOD SPAWNED!");
 }
 
 pub fn animate_food(

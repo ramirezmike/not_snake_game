@@ -98,7 +98,7 @@ impl Level {
                     empty_3.clone(),
                     empty_3.clone(),
                     vec![
-                        vec![0, 0, m, 0, 0, m, 0, 0, m, 0, 0, 0],
+                        vec![0, 0, m, 0, 0, m, 0, 0, m, 0, 1, 0],
                         vec![d, 0, m, 0, 0, m, 0, 0, m, s, 0, w],
                         vec![0, 0, m, 0, 0, m, 0, 0, m, 0, 0, 0],
                     ],

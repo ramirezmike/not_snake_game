@@ -1,12 +1,14 @@
 use bevy::prelude::*;
 use crate::{Direction, EntityType, GameObject, level::Level, path_find::PathFinder, level,
-            Position, holdable, moveable, facing::Facing, food::FoodEatenEvent};
+            environment, Position, holdable, moveable, facing::Facing, food::FoodEatenEvent};
 
 #[derive(Default)]
 pub struct EnemyMeshes {
     pub head: Handle<Mesh>,
     pub body: Handle<Mesh>,
+    pub shadow: Handle<Mesh>,
     pub material: Handle<StandardMaterial>,
+    pub shadow_material: Handle<StandardMaterial>,
 }
 
 pub struct Enemy {
@@ -31,6 +33,7 @@ pub fn spawn_enemy(
     let mut transform = Transform::from_translation(position);
     transform.apply_non_uniform_scale(Vec3::new(0.50, 0.50, 0.50)); 
     transform.rotate(Quat::from_axis_angle(Vec3::new(0.0, 1.0, 0.0), std::f32::consts::FRAC_PI_2));
+    let inner_mesh_vertical_offset = 1.0;
     let enemy_entity = 
     commands.spawn_bundle(PbrBundle {
                 transform,
@@ -44,19 +47,27 @@ pub fn spawn_enemy(
                 action_cooldown: Timer::from_seconds(0.5, true),
                 is_dead: false,
             })
-            .insert(moveable::Moveable::new(false, false, 0.1))
-            .insert(Facing::new(Direction::Right, true))
+            .insert(moveable::Moveable::new(false, false, 0.1, inner_mesh_vertical_offset))
+            .insert(Facing::new(Direction::Down, true))
             .with_children(|parent|  {
                 parent.spawn_bundle(PbrBundle {
                     mesh: meshes.head.clone(),
                     material: meshes.material.clone(),
                     transform: {
                         let mut transform = Transform::from_rotation(Quat::from_axis_angle(Vec3::new(0.0, 1.0, 0.0), 0.0));
-                        transform.translation = Vec3::new(0.0, 1.0, 0.0);
+                        transform.translation = Vec3::new(0.0, inner_mesh_vertical_offset, 0.0);
                         transform
                     },
                     ..Default::default()
                 });
+
+//              parent.spawn_bundle(PbrBundle {
+//                  mesh: meshes.shadow.clone(),
+//                  material: meshes.shadow_material.clone(),
+//                  transform: Transform::from_xyz(0.0, -0.25, 0.0),
+//                  ..Default::default()
+//              })
+//              .insert(environment::Shadow);
             }).id();
     level.set(position.x as i32, position.y as i32, position.z as i32, Some(GameObject::new(enemy_entity, EntityType::Enemy)));
 }
@@ -120,6 +131,7 @@ pub fn add_body_parts(
         transform.apply_non_uniform_scale(Vec3::new(0.50, 0.50, 0.50)); 
         let mut snake_enemy = snake_enemies.get_mut(part_to_add.snake).unwrap();
 
+        let inner_mesh_vertical_offset = 1.0;
         let enemy_entity = 
         commands.spawn_bundle(PbrBundle {
                     transform,
@@ -131,14 +143,18 @@ pub fn add_body_parts(
                 .insert(EntityType::Enemy)
                 .insert(SnakeBody)
                 .insert(Snake)
-                .insert(moveable::Moveable::new(false, false, 0.1))
+                .insert(moveable::Moveable::new(false, false, 0.1, inner_mesh_vertical_offset))
                 .with_children(|parent|  {
                     parent.spawn_bundle(PbrBundle {
                         mesh: meshes.body.clone(),
                         material: meshes.material.clone(),
+                        visible: Visible {
+                            is_visible: false,
+                            is_transparent: false,
+                        },
                         transform: {
                             let mut transform = Transform::from_rotation(Quat::from_axis_angle(Vec3::new(0.0, 1.0, 0.0), 0.0));
-                            transform.translation = Vec3::new(0.0, 1.0, 0.0);
+                            transform.translation = Vec3::new(0.0, inner_mesh_vertical_offset, 0.0);
                             transform
                         },
                         ..Default::default()
@@ -194,40 +210,47 @@ pub fn update_enemy(
                 let set_movement = 
                     |target: Position, current: IVec3, 
                      moveable: &mut moveable::Moveable, 
-                     movement_type: moveable::MovementType| {
+                     movement_type: moveable::MovementType| -> Direction {
 
                     if target.z > current.z {
                         println!("Going right");
                         moveable.set_movement(Direction::Right, movement_type);
+                        Direction::Right
                     } else if target.z < current.z {
                         println!("Going left");
                         moveable.set_movement(Direction::Left, movement_type);
+                        Direction::Left
                     } else if target.x > current.x {
                         println!("Going up");
                         moveable.set_movement(Direction::Up, movement_type);
+                        Direction::Up
                     } else if target.x < current.x {
                         println!("Going down");
                         moveable.set_movement(Direction::Down, movement_type);
+                        Direction::Down
                     } else if target.y < current.y {
                         println!("Going below");
                         moveable.set_movement(Direction::Beneath, movement_type);
-                    } else if target.y > current.y {
+                        Direction::Beneath
+                    } else {
                         println!("Going above");
                         moveable.set_movement(Direction::Above, movement_type);
+                        Direction::Above
                     }
                 };
 
                 if let Some(target) = new_target {
                     let target = path_find.get_position(*target);
                     let current = transform.translation.as_i32();
-                    set_movement(target, current, &mut moveable, moveable::MovementType::Step); 
+                    let mut previous_direction = set_movement(target, current, &mut moveable, moveable::MovementType::Step); 
 
                     let mut previous_position = current;
                     for snake_body in enemy.body_parts.iter() {
                         if let Ok((mut moveable, transform)) = snake_bodies.get_mut(*snake_body) {
                             let target = Position::from_vec(previous_position.as_f32());
                             let current = transform.translation.as_i32();
-                            set_movement(target, current, &mut moveable, moveable::MovementType::Force); 
+                            previous_direction 
+                                = set_movement(target, current, &mut moveable, moveable::MovementType::Force(previous_direction)); 
                             previous_position = current; 
                         }
                     }

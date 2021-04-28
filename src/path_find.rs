@@ -263,12 +263,11 @@ impl PathFinder {
             attempts += 1; 
 
             if attempts >= max_attempts {
-                println!("Sending event");
+                println!("Sending kill event");
                 // killing the snake since it's probably stuck
                 kill_snake_event_writer.send(snake::KillSnakeEvent(requesting_entity));
             }
         }
-        println!("exited while loop");
 
         self.current_path = path;
     }
@@ -358,7 +357,6 @@ pub fn update_graph(
             }
         }
     }
-    println!("GRAPH IS READY");
 }
 
 pub fn draw_edges(

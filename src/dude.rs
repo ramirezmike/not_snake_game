@@ -30,6 +30,7 @@ pub fn spawn_player(
     let mut transform = Transform::from_translation(Vec3::new(x as f32, y as f32, z as f32));
     transform.apply_non_uniform_scale(Vec3::new(0.25, 0.25, 0.25)); 
     transform.rotate(Quat::from_axis_angle(Vec3::new(0.0, 1.0, 0.0), std::f32::consts::PI));
+    let inner_mesh_vertical_offset = 0.5;
     let player_entity = 
     commands.spawn_bundle(PbrBundle {
                 transform,
@@ -41,7 +42,7 @@ pub fn spawn_player(
             .insert(Position { x: x as i32, y: y as i32, z: z as i32 })
             .insert(EntityType::Dude)
             .insert(holdable::Holder { holding: None })
-            .insert(moveable::Moveable::new(true, true, 0.1))
+            .insert(moveable::Moveable::new(true, true, 0.1, inner_mesh_vertical_offset))
             .insert(Facing::new(Direction::Right, false))
             .with_children(|parent|  {
                 parent.spawn_bundle(PbrBundle {
@@ -49,7 +50,7 @@ pub fn spawn_player(
                     material: meshes.material.clone(),
                     transform: {
                         let mut transform = Transform::from_rotation(Quat::from_axis_angle(Vec3::new(0.0, 1.0, 0.0), 1.57079632679));
-                        transform.translation = Vec3::new(0.0, 0.5, 0.0);
+                        transform.translation = Vec3::new(0.0, inner_mesh_vertical_offset, 0.0);
                         transform
                     },
                     ..Default::default()
@@ -63,7 +64,13 @@ fn player_input(
     time: Res<Time>, 
     mut lift_holdable_event_writer: EventWriter<holdable::LiftHoldableEvent>,
     mut dudes: Query<(Entity, &mut Dude, &mut moveable::Moveable, &Facing)>, 
+    camera: Query<&crate::camera::fly_camera::FlyCamera>
 ) {
+    // this is for debugging. If we're flying, don't move the player
+    if camera.iter().count() > 0 {
+        return;
+    }
+
     for (entity, mut dude, mut moveable, facing) in dudes.iter_mut() {
         dude.action_cooldown.tick(time.delta());
         if !dude.action_cooldown.finished() {

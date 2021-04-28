@@ -6,7 +6,7 @@ use bevy::prelude::*;
 //  use bevy_rapier3d::rapier::math::Isometry;
 use crate::level::Level;
 
-mod fly_camera;
+pub mod fly_camera;
 
 use fly_camera::*;
 
@@ -105,10 +105,10 @@ fn toggle_fly(
                 },
                 None => {
                     let mut fly_camera = FlyCamera::default();
-                    fly_camera.key_forward = KeyCode::Up; 
-                    fly_camera.key_backward = KeyCode::Down; 
-                    fly_camera.key_left = KeyCode::Left; 
-                    fly_camera.key_right = KeyCode::Right; 
+                    fly_camera.key_forward = KeyCode::W; 
+                    fly_camera.key_backward = KeyCode::S; 
+                    fly_camera.key_left = KeyCode::A; 
+                    fly_camera.key_right = KeyCode::D; 
                     commands.entity(e).insert(fly_camera);
                     t.translation = Vec3::new(-6.867214, 5.8081317, 5.4974184);
                     t.rotation = Quat::from_xyzw(-0.14680715, -0.6914177, -0.14668213, 0.692007);

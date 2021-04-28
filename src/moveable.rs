@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use crate::{Direction, level::Level, Position, EntityType, GameObject, facing::Facing};
+use crate::{Direction, level::Level, Position, EntityType, GameObject, facing::Facing, environment, snake};
 
 #[derive(Debug)]
 pub struct Moveable {
@@ -10,17 +10,18 @@ pub struct Moveable {
     can_climb: bool,
     is_climbing: bool,
     movement_speed: f32,
+    inner_mesh_vertical_offset: f32
 }
 
 #[derive(Debug, PartialEq)]
 pub enum MovementType {
     Step,
     Slide,
-    Force,
+    Force(Direction),
 }
 
 impl Moveable {
-    pub fn new(gravity: bool, can_climb: bool, movement_speed: f32) -> Self {
+    pub fn new(gravity: bool, can_climb: bool, movement_speed: f32, inner_mesh_vertical_offset: f32) -> Self {
         Moveable {
             target_position: None,
             queued_movement: None,
@@ -28,6 +29,7 @@ impl Moveable {
             gravity,
             can_climb,
             movement_speed,
+            inner_mesh_vertical_offset,
         }
     }
 
@@ -36,6 +38,11 @@ impl Moveable {
                       && self.queued_movement.is_some() 
                       && self.queued_movement.as_ref().unwrap().0 == Direction::Beneath;
         if !is_falling && !self.is_climbing {
+            match movement_type  {
+                MovementType::Force(_) => self.target_position = None,
+                _ => ()
+            }
+
             self.queued_movement = Some((direction, movement_type));
         }
     }
@@ -58,12 +65,20 @@ impl Moveable {
 }
 
 pub fn update_moveable(
-    mut moveables: Query<(Entity, &mut Moveable, &mut Transform, &mut Position, &EntityType, Option::<&mut Facing>, &Children)>,
+    mut moveables: Query<(Entity, 
+                          &mut Moveable, 
+                          &mut Transform, 
+                          &mut Position, 
+                          &EntityType, 
+                          Option::<&mut Facing>, 
+                          &Children,
+                          Option::<&snake::SnakeBody>)>,
     mut inner_meshes: Query<&mut Transform, Without<Moveable>>,
+    mut inner_meshes_visibility: Query<&mut Visible, Without<Moveable>>,
     mut level: ResMut<Level>,
     time: Res<Time>,
 ) {
-    for (entity, mut moveable, mut transform, mut position, entity_type, maybe_facing, children) in moveables.iter_mut() {
+    for (entity, mut moveable, mut transform, mut position, entity_type, maybe_facing, children, maybe_snake) in moveables.iter_mut() {
         if let Some(target_position) = &mut moveable.target_position {
 //            println!("{:?} {:?} {:?}",transform.translation, target_position.1, target_position.2);
 
@@ -74,7 +89,10 @@ pub fn update_moveable(
                 }
             }
 
-            let is_forced = target_position.5 == MovementType::Force;
+            let is_forced = match target_position.5 {
+                                MovementType::Force(_) => true,
+                                _ => false
+                            };
 
             if target_position.1 >= target_position.2 {
                 //  check if the target is still valid
@@ -82,6 +100,13 @@ pub fn update_moveable(
                     transform.translation = target_position.0;
                 } 
                 moveable.target_position = None;
+
+                for child in children.iter() {
+                    // set the body part visible now that it's facing the right way
+                    if let Ok(mut inner_meshes_visibility) = inner_meshes_visibility.get_mut(*child) {
+                        inner_meshes_visibility.is_visible = true;
+                    }
+                }
             } else {
                 // try to keep moving toward target
                 target_position.1 += time.delta_seconds();
@@ -95,6 +120,7 @@ pub fn update_moveable(
                     }
                 }
             }
+
             // need to update level here
             level.set_with_vec(transform.translation, Some(GameObject::new(entity, *entity_type)));
             position.update_from_vec(transform.translation);
@@ -138,25 +164,43 @@ pub fn update_moveable(
                                 _ => if facing.can_face_verticals { queued_movement.0 } else { facing.direction }
                             };
                         for child in children.iter() {
+                            // this is all so that the snake head points the right direction 
+                            // and is in the right spot
+                            // vertically when moving vertically
                             if let Ok(mut inner_mesh) = inner_meshes.get_mut(*child) {
-                                inner_mesh.rotation = 
-                                    match (facing.can_face_verticals, facing.direction) {
-                                        (_, Direction::Up) => Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI),
-                                        (_, Direction::Down) => Quat::from_axis_angle(Vec3::Y, 0.0),
-                                        (_, Direction::Right) => Quat::from_axis_angle(Vec3::Y, std::f32::consts::FRAC_PI_2),
-                                        (_, Direction::Left) => Quat::from_axis_angle(Vec3::Y, -std::f32::consts::FRAC_PI_2),
-                                        (true, Direction::Above) => {
-                                            println!("Rotating above!");
-                                            Quat::from_axis_angle(Vec3::X, std::f32::consts::FRAC_PI_2)
-                                        },
-                                        (true, Direction::Beneath) => {
-                                            println!("Rotating beneath!");
-                                            Quat::from_axis_angle(Vec3::X, -std::f32::consts::FRAC_PI_2)
-                                        },
-                                        _ => inner_mesh.rotation
-                                    };
+                                match facing.direction {
+                                    Direction::Up | Direction::Down |
+                                    Direction::Right | Direction::Left => {
+                                        inner_mesh.translation.y = moveable.inner_mesh_vertical_offset;
+                                        inner_mesh.translation.z = 0.0;
+                                    },
+                                    Direction::Beneath => {
+                                        inner_mesh.translation.y = 0.0;
+                                        inner_mesh.translation.z = moveable.inner_mesh_vertical_offset;
+                                    },
+                                    Direction::Above => {
+                                        inner_mesh.translation.y = 0.0;
+                                        inner_mesh.translation.z = -moveable.inner_mesh_vertical_offset;
+                                    }
+                                }
                             }
                         }
+                        transform.rotation = 
+                            match (facing.can_face_verticals, facing.direction) {
+                                (_, Direction::Up) => Quat::from_axis_angle(Vec3::Y, -std::f32::consts::FRAC_PI_2),
+                                (_, Direction::Down) => Quat::from_axis_angle(Vec3::Y, std::f32::consts::FRAC_PI_2),
+                                (_, Direction::Right) => Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI),
+                                (_, Direction::Left) => Quat::from_axis_angle(Vec3::Y, 0.0),
+                                (true, Direction::Above) => {
+                                    println!("Rotating above!");
+                                    Quat::from_axis_angle(Vec3::X, std::f32::consts::FRAC_PI_2)
+                                },
+                                (true, Direction::Beneath) => {
+                                    println!("Rotating beneath!");
+                                    Quat::from_axis_angle(Vec3::X, -std::f32::consts::FRAC_PI_2)
+                                },
+                                _ => transform.rotation
+                            };
 
                         if moveable.can_climb {
                             // if we're currently not facing a wall/cliff then just turn toward it
@@ -228,7 +272,7 @@ pub fn update_moveable(
                               moveable.movement_speed * number_of_steps as f32, 
                               queued_movement.0, transform.translation, MovementType::Slide));
                 },
-                MovementType::Force => {
+                MovementType::Force(direction) => {
                     let target_position = 
                         match queued_movement.0 { 
                             Direction::Up => (position.x + 1, position.y, position.z),
@@ -240,36 +284,42 @@ pub fn update_moveable(
                         };
                     let target_position = IVec3::new(target_position.0, target_position.1, target_position.2).as_f32();
 
-                    if let Some(mut facing) = maybe_facing {
-                        let previous_facing = facing.direction;
-                        facing.direction = 
-                            match queued_movement.0 {
+                    for child in children.iter() {
+                        // this is all so that the snake body part points the right direction 
+                        // and is in the right spot
+                        // vertically when moving vertically
+                        if let Ok(mut inner_mesh) = inner_meshes.get_mut(*child) {
+                            match direction {
                                 Direction::Up | Direction::Down |
-                                Direction::Right | Direction::Left => queued_movement.0,
-                                _ => facing.direction
-                            };
-                        transform.rotation = 
-                            match (facing.can_face_verticals, facing.direction) {
-                                (_, Direction::Up) => Quat::from_axis_angle(Vec3::Y, -std::f32::consts::FRAC_PI_2),
-                                (_, Direction::Down) => Quat::from_axis_angle(Vec3::Y, std::f32::consts::FRAC_PI_2),
-                                (_, Direction::Right) => Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI),
-                                (_, Direction::Left) => Quat::from_axis_angle(Vec3::Y, 0.0),
-                                (true, Direction::Above) => {
-                                    println!("Rotating above!");
-                                    Quat::from_axis_angle(Vec3::X, std::f32::consts::FRAC_PI_2)
+                                Direction::Right | Direction::Left => {
+                                    inner_mesh.translation.y = moveable.inner_mesh_vertical_offset;
+                                    inner_mesh.translation.x = 0.0;
                                 },
-                                (true, Direction::Beneath) => {
-                                    println!("Rotating beneath!");
-                                    Quat::from_axis_angle(Vec3::X, -std::f32::consts::FRAC_PI_2)
+                                Direction::Beneath => {
+                                    inner_mesh.translation.y = 0.0;
+                                    inner_mesh.translation.x = -moveable.inner_mesh_vertical_offset;
                                 },
-                                _ => transform.rotation
-                            };
+                                Direction::Above => {
+                                    inner_mesh.translation.y = 0.0;
+                                    inner_mesh.translation.x = moveable.inner_mesh_vertical_offset;
+                                }
+                            }
+                        }
                     }
+                    transform.rotation = 
+                        match direction {
+                            Direction::Right => Quat::from_axis_angle(Vec3::Y, -std::f32::consts::FRAC_PI_2),
+                            Direction::Left => Quat::from_axis_angle(Vec3::Y, std::f32::consts::FRAC_PI_2),
+                            Direction::Down => Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI),
+                            Direction::Up => Quat::from_axis_angle(Vec3::Y, 0.0),
+                            Direction::Above => Quat::from_axis_angle(Vec3::Z, std::f32::consts::FRAC_PI_2),
+                            Direction::Beneath => Quat::from_axis_angle(Vec3::Z, -std::f32::consts::FRAC_PI_2),
+                        };
 
                     moveable.target_position = 
                         Some((target_position, 0.0, 
                               moveable.movement_speed, queued_movement.0,
-                              transform.translation, MovementType::Force));
+                              transform.translation, MovementType::Force(direction)));
                 }
             }
 

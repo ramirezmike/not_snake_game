@@ -5,6 +5,7 @@ use crate::{level::Level, Position, collectable, dude, snake, level,
             EntityType, GameObject, holdable, win_flag, moveable, food,
             level_over, credits, block, camera, path_find, path_find::PathFinder};
 
+pub struct Shadow;
 pub struct EnvironmentPlugin;
 impl Plugin for EnvironmentPlugin {
     fn build(&self, app: &mut AppBuilder) {
@@ -58,7 +59,6 @@ impl Plugin for EnvironmentPlugin {
                .with_system(food::animate_food.system())
                .with_system(food::update_food.system())
 //              .with_system(snake::add_body_part.system())
-               .with_system(snake::debug_add_body_part.system())
                .with_system(snake::add_body_parts.system())
                .with_system(snake::handle_kill_snake.system())
                .with_system(path_find::update_graph.system().label("graph_update"))
@@ -98,6 +98,7 @@ pub fn change_level_screen(
 
 pub fn load_assets(
     asset_server: Res<AssetServer>,
+    mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut dude_meshes: ResMut<dude::DudeMeshes>,
     mut enemy_meshes: ResMut<snake::EnemyMeshes>,
@@ -108,7 +109,10 @@ pub fn load_assets(
 
     enemy_meshes.head = asset_server.load("models/snake.glb#Mesh0/Primitive0");
     enemy_meshes.body = asset_server.load("models/snake.glb#Mesh1/Primitive0");
-    enemy_meshes.material = materials.add(Color::hex(crate::COLOR_ENEMY).unwrap().into());
+    let enemy_color = Color::hex(crate::COLOR_ENEMY).unwrap();
+    enemy_meshes.material = materials.add(enemy_color.into());
+    enemy_meshes.shadow_material = materials.add(Color::rgba(enemy_color.r(), enemy_color.g(), enemy_color.b(), 0.4).into());
+    enemy_meshes.shadow = meshes.add(Mesh::from(shape::Plane { size: 0.75 }));
 
     loading.0.push(dude_meshes.step1.clone_untyped());
     loading.0.push(enemy_meshes.head.clone_untyped());
@@ -181,6 +185,7 @@ pub fn load_level(
     let flag_color = Color::rgba(flag_color.r(), flag_color.g(), flag_color.b(), 1.0);
                     
     commands.spawn_bundle(UiCameraBundle::default());
+    let space_scale = 0.9;
 
     for x in 0..level.width {
         for y in 0..level.height {
@@ -190,17 +195,51 @@ pub fn load_level(
                         let entity =
                             commands.spawn_bundle(PbrBundle {
                                 mesh: if y == 0 { plane.clone() } else { cube.clone() },
-                                material: if (x + z + 1) % 2 == 0 { ground_1_material.clone() } else { ground_2_material.clone() },
-                                transform: Transform::from_translation(Vec3::new(x as f32, 
-                                                                                 (if y == 0 { y + 1 } else { y }) as f32, 
-                                                                                 z as f32)),
+                                material: if (x + z + 1) % 2 == 0 { ground_2_material.clone() } else { ground_2_material.clone() },
+                                transform: { 
+                                    let mut transform = 
+                                    Transform::from_translation(Vec3::new(x as f32, 
+                                                                         if y == 0 { y as f32 + 1.0 } else { y as f32 + 0.5 }, 
+                                                                          z as f32));
+                                    transform.scale.x = space_scale;
+                                    if y != 0 {
+                                        transform.scale.y = space_scale;
+                                    }
+                                    transform.scale.z = space_scale;
+                                    transform
+                                },
                                 ..Default::default()
                             })
                             .insert(EntityType::Block)
                             .id();
                         level.set(x as i32, y as i32, z as i32, Some(GameObject::new(entity, EntityType::Block)));
+
+                        if y == 0 {
+                            commands.spawn_bundle(PbrBundle {
+                                mesh: cube.clone(),
+                                material: ground_1_material.clone(),
+                                transform: {
+                                    let height = 30.0;
+                                    let mut transform =
+                                        Transform::from_translation(Vec3::new(x as f32, 
+                                                                             ((y + 1) as f32) - (height / 2.0) - 0.0001, 
+                                                                              z as f32));
+
+                                    transform.scale.x = space_scale;
+                                    if y != 0 {
+                                        transform.scale.y = space_scale;
+                                    } else {
+                                        transform.scale.y = height;
+                                    }
+                                    transform.scale.z = space_scale;
+                                    transform
+                                },
+                                ..Default::default()
+                            });
+                        }
                     },
                     2 => { // moveable block
+                        let inner_mesh_vertical_offset = 0.5;
                         let block_entity =
                             commands.spawn_bundle(PbrBundle {
                               transform: Transform::from_xyz(x as f32, y as f32, z as f32),
@@ -210,7 +249,14 @@ pub fn load_level(
                                 parent.spawn_bundle(PbrBundle {
                                     mesh: cube.clone(),
                                     material: block_material.clone(),
-                                    transform: Transform::from_xyz(0.0, 0.5, 0.0),
+                                    transform: {
+                                        let mut transform = Transform::from_xyz(0.0, inner_mesh_vertical_offset, 0.0);
+
+                                        transform.scale.x = space_scale;
+                                        transform.scale.y = space_scale;
+                                        transform.scale.z = space_scale;
+                                        transform
+                                    },
                                     ..Default::default()
                                 });
                             })
@@ -218,7 +264,7 @@ pub fn load_level(
                             .insert(holdable::Holdable {})
                             .insert(Position { x: x as i32, y: y as i32, z: z as i32 })
                             .insert(block::BlockObject { })
-                            .insert(moveable::Moveable::new(true, false, 0.1))
+                            .insert(moveable::Moveable::new(true, false, 0.1, inner_mesh_vertical_offset))
                             .id();
                         level.set(x as i32, y as i32, z as i32, Some(GameObject::new(block_entity, EntityType::Block)));
                     },

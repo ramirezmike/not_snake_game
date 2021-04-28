@@ -15,6 +15,7 @@ pub fn lift_holdable(
     mut level: ResMut<Level>,
     mut lift_event: EventReader<LiftHoldableEvent>,
     mut holders: Query<(Entity, &mut Holder, Option::<&mut Facing>)>,
+    holdables: Query<Entity, With<Holdable>>,
     entity_types: Query<&EntityType>,
     mut positions: Query<&mut Position>,
     mut transforms: Query<&mut Transform>,
@@ -116,18 +117,21 @@ pub fn lift_holdable(
                     }
 
                     if let (Some(holder_position), Some(holdee_position)) = (holder_position, holdee_position) {
-                        if level.is_position_type(holdee_position, Some(EntityType::Block)) // TODO: need a "is holdable"
+                        if level.is_position_type(holdee_position, Some(EntityType::Block)) 
                         && level.is_type(holder_position.x, holder_position.y + 1, holder_position.z, None) {
                             if let Some(holdable) = level.get_with_position(holdee_position) {
-                                println!("Picking up item {} {} {}", holder_position.x, holder_position.y, holder_position.z);
-                                commands.entity(holdable.entity)
-                                        .insert(BeingHeld { held_by: *entity });
-                                level.set_with_position(holdee_position, None);
-                                commands.entity(holdable.entity).remove::<Position>();
-                                holder.holding = Some(holdable.entity);
+                                if let Ok(_) = holdables.get(holdable.entity) { // checks if actually is "holdable"
+                                    println!("Picking up item {} {} {}", holder_position.x, holder_position.y, holder_position.z);
+                                    commands.entity(holdable.entity)
+                                            .insert(BeingHeld { held_by: *entity });
+                                    level.set_with_position(holdee_position, None);
+                                    commands.entity(holdable.entity).remove::<Position>();
+                                    holder.holding = Some(holdable.entity);
+                                }
                             }
                         }
                     }
+                    
                 }
             }
         }
