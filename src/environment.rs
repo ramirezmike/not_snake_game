@@ -264,7 +264,7 @@ pub fn load_level(
                             .insert(holdable::Holdable {})
                             .insert(Position { x: x as i32, y: y as i32, z: z as i32 })
                             .insert(block::BlockObject { })
-                            .insert(moveable::Moveable::new(true, false, 0.1, inner_mesh_vertical_offset))
+                            .insert(moveable::Moveable::new(0.1, inner_mesh_vertical_offset))
                             .id();
                         level.set(x as i32, y as i32, z as i32, Some(GameObject::new(block_entity, EntityType::Block)));
                     },

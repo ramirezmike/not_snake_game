@@ -7,7 +7,7 @@ impl Plugin for DudePlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_system_set(
                SystemSet::on_update(crate::AppState::InGame)
-                   .with_system(player_input.system())
+                   //.with_system(player_input.system())
                    .with_system(push_block.system())
            );
     }
@@ -42,7 +42,7 @@ pub fn spawn_player(
             .insert(Position { x: x as i32, y: y as i32, z: z as i32 })
             .insert(EntityType::Dude)
             .insert(holdable::Holder { holding: None })
-            .insert(moveable::Moveable::new(true, true, 0.1, inner_mesh_vertical_offset))
+            .insert(moveable::Moveable::new(0.1, inner_mesh_vertical_offset))
             .insert(Facing::new(Direction::Right, false))
             .with_children(|parent|  {
                 parent.spawn_bundle(PbrBundle {

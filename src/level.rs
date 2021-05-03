@@ -98,6 +98,28 @@ impl Level {
                     empty_3.clone(),
                     empty_3.clone(),
                     vec![
+                        vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
+                        vec![d, 0, 0, 0, 0, s, 0, 0, 0, 0, 0, w],
+                        vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    ],
+                    vec![
+                        vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                        vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                        vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                    ],
+                ],
+                Vec3::new(-7.0, 6.8, 5.3), 
+                Quat::from_axis_angle(Vec3::new(-0.21380125, -0.952698, -0.21599823), 1.6294433),
+
+            ),
+            LevelInfo::new(
+                vec![
+                    empty_3.clone(),
+                    empty_3.clone(),
+                    empty_3.clone(),
+                    empty_3.clone(),
+                    empty_3.clone(),
+                    vec![
                         vec![0, 0, m, 0, 0, m, 0, 0, m, 0, 1, 0],
                         vec![d, 0, m, 0, 0, m, 0, 0, m, s, 0, w],
                         vec![0, 0, m, 0, 0, m, 0, 0, m, 0, 0, 0],

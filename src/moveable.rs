@@ -1,13 +1,11 @@
 use bevy::prelude::*;
-use crate::{Direction, level::Level, Position, EntityType, GameObject, facing::Facing, environment, snake};
+use crate::{Direction, level::Level, Position, EntityType, GameObject, facing::Facing,};
 
 #[derive(Debug)]
 pub struct Moveable {
     // (position, current movement time, finish movement time, Direction, original_position, movement_type)
     target_position: Option::<(Vec3, f32, f32, Direction, Vec3, MovementType)>, 
     queued_movement: Option::<(Direction, MovementType)>,
-    gravity: bool,
-    can_climb: bool,
     is_climbing: bool,
     movement_speed: f32,
     inner_mesh_vertical_offset: f32
@@ -17,32 +15,23 @@ pub struct Moveable {
 pub enum MovementType {
     Step,
     Slide,
-    Force(Direction),
 }
 
 impl Moveable {
-    pub fn new(gravity: bool, can_climb: bool, movement_speed: f32, inner_mesh_vertical_offset: f32) -> Self {
+    pub fn new(movement_speed: f32, inner_mesh_vertical_offset: f32) -> Self {
         Moveable {
             target_position: None,
             queued_movement: None,
             is_climbing: false,
-            gravity,
-            can_climb,
             movement_speed,
             inner_mesh_vertical_offset,
         }
     }
 
     pub fn set_movement(&mut self, direction: Direction, movement_type: MovementType) {
-        let is_falling = self.gravity 
-                      && self.queued_movement.is_some() 
+        let is_falling = self.queued_movement.is_some() 
                       && self.queued_movement.as_ref().unwrap().0 == Direction::Beneath;
         if !is_falling && !self.is_climbing {
-            match movement_type  {
-                MovementType::Force(_) => self.target_position = None,
-                _ => ()
-            }
-
             self.queued_movement = Some((direction, movement_type));
         }
     }
@@ -71,14 +60,13 @@ pub fn update_moveable(
                           &mut Position, 
                           &EntityType, 
                           Option::<&mut Facing>, 
-                          &Children,
-                          Option::<&snake::SnakeBody>)>,
+                          &Children)>,
     mut inner_meshes: Query<&mut Transform, Without<Moveable>>,
     mut inner_meshes_visibility: Query<&mut Visible, Without<Moveable>>,
     mut level: ResMut<Level>,
     time: Res<Time>,
 ) {
-    for (entity, mut moveable, mut transform, mut position, entity_type, maybe_facing, children, maybe_snake) in moveables.iter_mut() {
+    for (entity, mut moveable, mut transform, mut position, entity_type, maybe_facing, children) in moveables.iter_mut() {
         if let Some(target_position) = &mut moveable.target_position {
 //            println!("{:?} {:?} {:?}",transform.translation, target_position.1, target_position.2);
 
@@ -89,14 +77,9 @@ pub fn update_moveable(
                 }
             }
 
-            let is_forced = match target_position.5 {
-                                MovementType::Force(_) => true,
-                                _ => false
-                            };
-
             if target_position.1 >= target_position.2 {
                 //  check if the target is still valid
-                if level.is_enterable_with_vec(target_position.0) || is_forced  {
+                if level.is_enterable_with_vec(target_position.0) {
                     transform.translation = target_position.0;
                 } 
                 moveable.target_position = None;
@@ -202,17 +185,15 @@ pub fn update_moveable(
                                 _ => transform.rotation
                             };
 
-                        if moveable.can_climb {
-                            // if we're currently not facing a wall/cliff then just turn toward it
-                            let below_target_is_enterable 
-                                = level.is_enterable_with_vec(Vec3::new(target_position.x, target_position.y - 1.0, target_position.z));
-                            let is_vertical_movement = queued_movement.0 == Direction::Above || queued_movement.0 == Direction::Beneath;
+                        // if we're currently not facing a wall/cliff then just turn toward it
+                        let below_target_is_enterable 
+                            = level.is_enterable_with_vec(Vec3::new(target_position.x, target_position.y - 1.0, target_position.z));
+                        let is_vertical_movement = queued_movement.0 == Direction::Above || queued_movement.0 == Direction::Beneath;
 
-                            if !is_vertical_movement 
-                            && previous_facing != queued_movement.0 
-                            && (below_target_is_enterable || !target_is_enterable) {
-                                ignore_movement = true; 
-                            }
+                        if !is_vertical_movement 
+                        && previous_facing != queued_movement.0 
+                        && (below_target_is_enterable || !target_is_enterable) {
+                            ignore_movement = true; 
                         }
                     }
 
@@ -222,7 +203,7 @@ pub fn update_moveable(
                                 Some((target_position, 0.0, 
                                       moveable.movement_speed, queued_movement.0,
                                       transform.translation, MovementType::Step));
-                        } else if moveable.can_climb {
+                        } else {
                             let above_moveable = IVec3::new(position.x, position.y + 1, position.z).as_f32(); 
                             let above_target = Vec3::new(target_position.x, target_position.y + 1.0, target_position.z);
                             if level.is_enterable_with_vec(above_moveable) && level.is_enterable_with_vec(above_target) {
@@ -272,55 +253,6 @@ pub fn update_moveable(
                               moveable.movement_speed * number_of_steps as f32, 
                               queued_movement.0, transform.translation, MovementType::Slide));
                 },
-                MovementType::Force(direction) => {
-                    let target_position = 
-                        match queued_movement.0 { 
-                            Direction::Up => (position.x + 1, position.y, position.z),
-                            Direction::Down => (position.x - 1, position.y, position.z),
-                            Direction::Right => (position.x, position.y, position.z + 1),
-                            Direction::Left => (position.x, position.y, position.z - 1),
-                            Direction::Beneath => (position.x, position.y - 1, position.z),
-                            Direction::Above => (position.x, position.y + 1, position.z),
-                        };
-                    let target_position = IVec3::new(target_position.0, target_position.1, target_position.2).as_f32();
-
-                    for child in children.iter() {
-                        // this is all so that the snake body part points the right direction 
-                        // and is in the right spot
-                        // vertically when moving vertically
-                        if let Ok(mut inner_mesh) = inner_meshes.get_mut(*child) {
-                            match direction {
-                                Direction::Up | Direction::Down |
-                                Direction::Right | Direction::Left => {
-                                    inner_mesh.translation.y = moveable.inner_mesh_vertical_offset;
-                                    inner_mesh.translation.x = 0.0;
-                                },
-                                Direction::Beneath => {
-                                    inner_mesh.translation.y = 0.0;
-                                    inner_mesh.translation.x = -moveable.inner_mesh_vertical_offset;
-                                },
-                                Direction::Above => {
-                                    inner_mesh.translation.y = 0.0;
-                                    inner_mesh.translation.x = moveable.inner_mesh_vertical_offset;
-                                }
-                            }
-                        }
-                    }
-                    transform.rotation = 
-                        match direction {
-                            Direction::Right => Quat::from_axis_angle(Vec3::Y, -std::f32::consts::FRAC_PI_2),
-                            Direction::Left => Quat::from_axis_angle(Vec3::Y, std::f32::consts::FRAC_PI_2),
-                            Direction::Down => Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI),
-                            Direction::Up => Quat::from_axis_angle(Vec3::Y, 0.0),
-                            Direction::Above => Quat::from_axis_angle(Vec3::Z, std::f32::consts::FRAC_PI_2),
-                            Direction::Beneath => Quat::from_axis_angle(Vec3::Z, -std::f32::consts::FRAC_PI_2),
-                        };
-
-                    moveable.target_position = 
-                        Some((target_position, 0.0, 
-                              moveable.movement_speed, queued_movement.0,
-                              transform.translation, MovementType::Force(direction)));
-                }
             }
 
             // Queued movement should be handled at this point
@@ -328,8 +260,8 @@ pub fn update_moveable(
             moveable.is_climbing = false;
         }
 
-        if moveable.gravity && !moveable.is_climbing //&& moveable.target_position.is_none()
-            // need to add or movement_type is slide for blocks
+        // for gravity
+        if !moveable.is_climbing //&& moveable.target_position.is_none()
         && level.is_enterable_with_vec(IVec3::new(position.x, position.y - 1, position.z).as_f32()) {
             moveable.set_movement(Direction::Beneath, MovementType::Step);
         }
