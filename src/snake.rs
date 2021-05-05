@@ -11,8 +11,14 @@ pub struct EnemyMeshes {
     pub shadow_material: Handle<StandardMaterial>,
 }
 
+pub struct BodyPosition {
+    translation: Vec3,
+    rotation: Quat,
+}
+
 pub struct Enemy {
     body_parts: Vec::<Entity>,
+    body_positions: Vec::<BodyPosition>,
     action_cooldown: Timer, 
     speed: f32,
     movement: Option::<SnakeMovement>,
@@ -24,6 +30,13 @@ pub struct Enemy {
 pub struct Snake;
 pub struct SnakeBody;
 pub struct SnakeInnerMesh;
+pub struct Follow {
+    speed: f32,
+    is_active: bool,
+    movement: Option::<SnakeMovement>,
+    target_position: Option::<Vec3>,
+    target_rotation: Option::<Quat>,
+}
 pub struct KillSnakeEvent(pub Entity);
 struct SnakeMovement {
     facing: Direction,
@@ -40,6 +53,47 @@ struct SnakeMovement {
 
 static INNER_MESH_VERTICAL_OFFSET: f32 = 1.0;
 
+pub fn generate_snake_body(
+    commands: &mut Commands,
+    meshes: &Res<EnemyMeshes>, 
+    transform: Transform,
+) -> Entity {
+    commands.spawn_bundle(PbrBundle {
+                transform: {
+                    let mut t = transform.clone();
+                    t.translation.x += 1.0;
+                    //t.rotation = Quat::from_axis_angle(Vec3::new(0.0, 1.0, 0.0), std::f32::consts::PI/2.0);
+                    t
+                },
+                ..Default::default()
+            })
+            .insert(EntityType::Enemy)
+            .insert(SnakeBody)
+            .insert(Snake)
+            .with_children(|parent|  {
+                parent.spawn_bundle(PbrBundle {
+                    transform: {
+                        let mut t = Transform::from_translation(Vec3::new(0.0, INNER_MESH_VERTICAL_OFFSET, 0.0));
+                        //t.rotate();
+                        t
+                    },
+                    ..Default::default()
+                }).insert(SnakeInnerMesh)
+                .with_children(|inner_parent| {
+                    inner_parent.spawn_bundle(PbrBundle {
+                        mesh: meshes.body.clone(),
+                        material: meshes.material.clone(),
+                        transform: {
+                            let mut t = Transform::from_translation(Vec3::new(0.0, 0.0, 0.0));
+                            t.rotate(Quat::from_axis_angle(Vec3::new(0.0, 1.0, 0.0), std::f32::consts::PI / 2.0));
+                            t
+                        },
+                        ..Default::default()
+                    });
+                });
+            }).id()
+}
+
 pub fn spawn_enemy(
     commands: &mut Commands, 
     meshes: &Res<EnemyMeshes>, 
@@ -52,6 +106,9 @@ pub fn spawn_enemy(
     let mut transform = Transform::from_translation(position);
     transform.apply_non_uniform_scale(Vec3::new(0.50, 0.50, 0.50)); 
     transform.rotate(Quat::from_axis_angle(Vec3::new(0.0, 1.0, 0.0), std::f32::consts::FRAC_PI_2));
+
+    let body_part_entity = generate_snake_body(commands, meshes, transform);
+        
     let enemy_entity = 
     commands.spawn_bundle(PbrBundle {
                 transform,
@@ -61,7 +118,13 @@ pub fn spawn_enemy(
             .insert(EntityType::Enemy)
             .insert(Snake)
             .insert(Enemy {
-                body_parts: vec!(),
+                body_parts: vec![body_part_entity],
+                body_positions: vec![
+                    BodyPosition { translation: Vec3::new(transform.translation.x + 1.0, 
+                                                          transform.translation.y, 
+                                                          transform.translation.z), 
+                                   rotation: Quat::IDENTITY },
+                ],
                 action_cooldown: Timer::from_seconds(0.5, true),
                 speed: 0.5,
                 movement: None,
@@ -89,6 +152,7 @@ pub fn spawn_enemy(
 //              .insert(environment::Shadow);
             }).id();
     level.set(position.x as i32, position.y as i32, position.z as i32, Some(GameObject::new(enemy_entity, EntityType::Enemy)));
+    level.set(position.x as i32 + 1, position.y as i32, position.z as i32, Some(GameObject::new(enemy_entity, EntityType::Enemy)));
 }
 
 #[derive(Copy, Clone)]
@@ -126,75 +190,32 @@ pub fn add_body_parts(
     mut body_part_reader: EventReader<AddBodyPartEvent>,
     mut queued_parts: Local<Vec::<AddBodyPartEvent>>,
     snakes: Query<&Position, With<Snake>>,
-    mut snake_enemies: Query<&mut Enemy>,
+    mut snake_enemies: Query<(&mut Enemy, &Transform)>,
     mut commands: Commands, 
     meshes: Res<EnemyMeshes>, 
     mut level: ResMut<Level>,
 ) {
-    for event in body_part_reader.iter() {
-        queued_parts.push(AddBodyPartEvent { snake: event.snake, follow: event.follow, target: event.target });
-    }
+    for part_to_add in body_part_reader.iter() {
+        let (mut snake_enemy, snake_transform) = snake_enemies.get_mut(part_to_add.snake).unwrap();
 
-    let (alive, _):(Vec<AddBodyPartEvent>, Vec<AddBodyPartEvent>) 
-        = queued_parts.iter()
-                      .partition(|x| snakes.get(x.follow).is_ok());
-
-    let (ready, waiting): (Vec<AddBodyPartEvent>, Vec<AddBodyPartEvent>) 
-        = alive.iter()
-               .partition(|x| *snakes.get(x.follow).unwrap() != x.target);
-
-    for part_to_add in ready {
-        let position = part_to_add.target; 
-        let target = Transform::from_xyz(position.x as f32, position.y as f32, position.z as f32);
-        let mut transform = Transform::from_translation(target.translation);
+        let last_position = snake_enemy.body_positions.last().unwrap();
+        let mut transform = Transform::from_translation(last_position.translation);
+        transform.rotate(Quat::from_axis_angle(Vec3::new(0.0, 1.0, 0.0), std::f32::consts::FRAC_PI_2));
         transform.apply_non_uniform_scale(Vec3::new(0.50, 0.50, 0.50)); 
-        let mut snake_enemy = snake_enemies.get_mut(part_to_add.snake).unwrap();
 
-        let inner_mesh_vertical_offset = 1.0;
-        let enemy_entity = 
-        commands.spawn_bundle(PbrBundle {
-                    transform,
-                    ..Default::default()
-                })
-                .insert(Position { x: transform.translation.x as i32, 
-                                   y: transform.translation.y as i32, 
-                                   z: transform.translation.z as i32 })
-                .insert(EntityType::Enemy)
-                .insert(SnakeBody)
-                .insert(Snake)
-//                .insert(moveable::Moveable::new(false, false, 0.1, inner_mesh_vertical_offset))
-                .with_children(|parent|  {
-                    parent.spawn_bundle(PbrBundle {
-                        mesh: meshes.body.clone(),
-                        material: meshes.material.clone(),
-                        visible: Visible {
-                            is_visible: false,
-                            is_transparent: false,
-                        },
-                        transform: {
-                            let mut transform = Transform::from_rotation(Quat::from_axis_angle(Vec3::new(0.0, 1.0, 0.0), 0.0));
-                            transform.translation = Vec3::new(0.0, inner_mesh_vertical_offset, 0.0);
-                            transform
-                        },
-                        ..Default::default()
-                    });
-                }).id();
-        
-        snake_enemy.body_parts.push(enemy_entity);
-
-        level.set(transform.translation.x as i32, 
-                  transform.translation.y as i32, 
-                  transform.translation.z as i32, 
-                  Some(GameObject::new(enemy_entity, EntityType::Enemy)));
+        let body_part_entity = generate_snake_body(&mut commands, &meshes, transform);
+        snake_enemy.body_parts.push(body_part_entity);
     }
 
-    *queued_parts = waiting;
+//    *queued_parts = waiting;
+    *queued_parts = vec!();
 }
 
 pub fn update_enemy(
     time: Res<Time>,
-    mut enemies: Query<(Entity, &mut Enemy, &mut Transform, &mut Position, &Children), (Without<SnakeBody>, Without<SnakeInnerMesh>)>,
-    mut inner_meshes: Query<&mut Transform, With<SnakeInnerMesh>>,
+    mut enemies: Query<(Entity, &mut Enemy, &mut Transform, &mut Position, &Children), (Without<Follow>, Without<SnakeBody>, Without<SnakeInnerMesh>)>,
+    mut inner_meshes: Query<&mut Transform, (With<SnakeInnerMesh>, Without<Follow>)>,
+    mut follows: Query<(&mut Follow, &mut Transform), (Without<Enemy>, Without<SnakeInnerMesh>)>,
 //    mut snake_bodies: Query<&Transform, With<SnakeBody>>,
     path_find: Res<PathFinder>,
     mut level: ResMut<Level>,
@@ -217,7 +238,6 @@ pub fn update_enemy(
                 let is_ai_controlled = true;
                 let mut new_target = None;
                 if is_ai_controlled  {
-                    println!("finding new path..");
                     let (_, path) = path_find.get_path();
                     let mut found_next = false;
                     let mut found_target = None;
@@ -270,7 +290,6 @@ pub fn update_enemy(
                             else if target.x < current.x { Direction::Down } 
                             else if target.y < current.y { Direction::Beneath } 
                             else { Direction::Above };
-                    println!("Going {:?}", facing);
                     let starting_from = transform.translation;
                     let target = Vec3::new(target.x as f32, target.y as f32, target.z as f32);
 
@@ -779,55 +798,8 @@ pub fn update_enemy(
                             }
                         };
 
-                    /*
-                    let target_rotation =
-                        match (facing, start_rotation.to_axis_angle())  {
-                            (Direction::Up, (v,a)) 
-                                if is_90_degrees(a) => {
-                                    println!("IN UP");
-                                    if v.y < 0.0 {
-                                        println!("WAS FACING LEFT? {:?}", a);
-                                        start_rotation.mul_quat(Quat::from_axis_angle(Vec3::Y, -std::f32::consts::PI / 2.0))
-                                    } else { 
-                                        println!("WAS FACING RIGHT?");
-                                        start_rotation.mul_quat(Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI / 2.0))
-                                    }
-                                },
-                            (Direction::Down, _) => Quat::IDENTITY, // HAH 
-                            (Direction::Right, (v,a)) 
-                                if is_180_degrees(a) || is_0_degrees(a) || is_identity => {
-                                    if is_180_degrees(a) {
-                                        println!("WAS FACING UP?");
-                                        start_rotation.mul_quat(Quat::from_axis_angle(Vec3::Y, -std::f32::consts::PI / 2.0))
-                                    } else {
-                                        println!("WAS FACING DOWN?");
-                                        start_rotation.mul_quat(Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI / 2.0))
-                                    }
-                                }
-                            (Direction::Left, (v,a)) 
-                                if is_180_degrees(a) || is_0_degrees(a) || is_identity => {
-                                    if is_180_degrees(a) {
-                                        println!("WAS FACING UP?");
-                                        start_rotation.mul_quat(Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI / 2.0))
-                                    } else {
-                                        println!("WAS FACING DOWN?");
-                                        start_rotation.mul_quat(Quat::from_axis_angle(Vec3::Y, -std::f32::consts::PI / 2.0))
-                                    }
-                                }
-                            (Direction::Above, (v,a)) => {
-                                start_rotation.mul_quat(Quat::from_axis_angle(Vec3::X, std::f32::consts::PI / 2.0))
-                            },
-                            (Direction::Beneath, (v,a)) => {
-                                start_rotation.mul_quat(Quat::from_axis_angle(Vec3::X, -std::f32::consts::PI / 2.0))
-                            }
-                            _ => start_rotation
-                        };
-                    */
-                    println!("---------------------------------------------------");
-                    //println!("Source: {:?}", start_rotation.to_axis_angle());
-                    //println!("Target: {:?}", target_rotation.to_axis_angle());
-
-                    println!("Up: {:?} Forward: {:?}", enemy.up, enemy.forward);
+                  //println!("---------------------------------------------------");
+                  //println!("Up: {:?} Forward: {:?}", enemy.up, enemy.forward);
 
 
                     enemy.movement = Some(SnakeMovement { 
@@ -839,20 +811,16 @@ pub fn update_enemy(
                                         start_rotation,
                                         target_rotation,
                                         current_rotation_time: 0.0,
-                                        finish_rotation_time: enemy.speed ,
+                                        finish_rotation_time: enemy.speed,
                                      });
-                  //let mut previous_direction = set_movement(target, current, &mut moveable, moveable::MovementType::Step); 
 
-                  //let mut previous_position = current;
-                  //for snake_body in enemy.body_parts.iter() {
-                  //    if let Ok((mut moveable, transform)) = snake_bodies.get_mut(*snake_body) {
-                  //        let target = Position::from_vec(previous_position.as_f32());
-                  //        let current = transform.translation.as_i32();
-//                //          previous_direction 
-//                //             = set_movement(target, current, &mut moveable, moveable::MovementType::Force(previous_direction)); 
-                  //        previous_position = current; 
-                  //    }
-                  //}
+                    // pushes a new history state at the front, and pops one off the end 
+                    // and updates the level by setting that spot to None
+                    enemy.body_positions.insert(0, BodyPosition { translation: starting_from, rotation: target_rotation });
+                    let number_of_body_parts = enemy.body_parts.len();
+                    let last_body_position = enemy.body_positions.last().unwrap();
+                    level.set_with_vec(last_body_position.translation, None);
+                    enemy.body_positions.truncate(number_of_body_parts);
                 }
             }
 
@@ -865,11 +833,11 @@ pub fn update_enemy(
                         level.set_with_vec(transform.translation, None);
                     }
                 }
+
                 if movement.current_movement_time >= movement.finish_movement_time {
                     if level.is_enterable_with_vec(movement.target) {
                         transform.translation = movement.target;
                     }
-                    println!("setting enemy movement to none");
                     enemy.movement = None;
                 } else {
                     // keep moving toward target
@@ -908,6 +876,55 @@ pub fn update_enemy(
                 level.set_with_vec(transform.translation, Some(GameObject::new(entity, EntityType::Enemy)));
                 position.update_from_vec(transform.translation);
             }
+        }
+    }
+}
+
+pub fn update_following(
+    snakes: Query<&Enemy>,
+    mut body_parts: Query<(Entity, &mut Transform, &Children), (With<SnakeBody>, Without<Enemy>)>,
+    mut inner_meshes: Query<&mut Transform, (With<SnakeInnerMesh>, Without<SnakeBody>, Without<Enemy>)>,
+    time: Res<Time>,
+    mut level: ResMut<Level>,
+) {
+    for snake in snakes.iter() {
+        let mut part_index = 0;
+        //println!("Parts: {} Positions: {}",snake.body_parts.len(), snake.body_positions.len());
+        for body_part in snake.body_parts.iter() {
+            if let Ok((entity, mut transform, children)) = body_parts.get_mut(*body_part) {
+                if let Some(target) = &snake.body_positions.get(part_index) {
+                    let rate = snake.speed / 1.0;
+                    let distance = transform.translation.distance(target.translation);
+                    let new_translation = transform.translation.lerp(target.translation, time.delta_seconds() / (distance * rate));
+                    if !new_translation.is_nan() {
+                        if transform.translation.distance(target.translation) < transform.translation.distance(new_translation) {
+                            transform.translation = target.translation;
+                        } else {
+                            transform.translation = new_translation;
+                        }
+                    } 
+                    level.set_with_vec(target.translation, Some(GameObject::new(entity, EntityType::Enemy)));
+
+
+                    for child in children.iter() {
+                        if let Ok(mut transform) = inner_meshes.get_mut(*child) {
+                            let rotation_rate = (snake.speed * 0.5) / 1.0;
+                            let rotation_distance = transform.rotation.angle_between(target.rotation);
+                            let new_rotation = transform.rotation.lerp(target.rotation, 
+                                                                       time.delta_seconds() / (rotation_distance * rotation_rate));
+                            if !new_rotation.is_nan() {
+                                if transform.rotation.angle_between(target.rotation) < transform.rotation.angle_between(new_rotation) {
+                                    transform.rotation = target.rotation;
+                                } else {
+                                    transform.rotation = new_rotation;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            part_index += 1;
         }
     }
 }
@@ -1005,58 +1022,3 @@ pub fn handle_kill_snake(
 
     *dying_snakes = flashing;
 }
-
-
-
-
-/*
-                MovementType::Force(direction) => {
-                    let target_position = 
-                        match queued_movement.0 { 
-                            Direction::Up => (position.x + 1, position.y, position.z),
-                            Direction::Down => (position.x - 1, position.y, position.z),
-                            Direction::Right => (position.x, position.y, position.z + 1),
-                            Direction::Left => (position.x, position.y, position.z - 1),
-                            Direction::Beneath => (position.x, position.y - 1, position.z),
-                            Direction::Above => (position.x, position.y + 1, position.z),
-                        };
-                    let target_position = IVec3::new(target_position.0, target_position.1, target_position.2).as_f32();
-
-                    for child in children.iter() {
-                        // this is all so that the snake body part points the right direction 
-                        // and is in the right spot
-                        // vertically when moving vertically
-                        if let Ok(mut inner_mesh) = inner_meshes.get_mut(*child) {
-                            match direction {
-                                Direction::Up | Direction::Down |
-                                Direction::Right | Direction::Left => {
-                                    inner_mesh.translation.y = moveable.inner_mesh_vertical_offset;
-                                    inner_mesh.translation.x = 0.0;
-                                },
-                                Direction::Beneath => {
-                                    inner_mesh.translation.y = 0.0;
-                                    inner_mesh.translation.x = -moveable.inner_mesh_vertical_offset;
-                                },
-                                Direction::Above => {
-                                    inner_mesh.translation.y = 0.0;
-                                    inner_mesh.translation.x = moveable.inner_mesh_vertical_offset;
-                                }
-                            }
-                        }
-                    }
-                    transform.rotation = 
-                        match direction {
-                            Direction::Right => Quat::from_axis_angle(Vec3::Y, -std::f32::consts::FRAC_PI_2),
-                            Direction::Left => Quat::from_axis_angle(Vec3::Y, std::f32::consts::FRAC_PI_2),
-                            Direction::Down => Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI),
-                            Direction::Up => Quat::from_axis_angle(Vec3::Y, 0.0),
-                            Direction::Above => Quat::from_axis_angle(Vec3::Z, std::f32::consts::FRAC_PI_2),
-                            Direction::Beneath => Quat::from_axis_angle(Vec3::Z, -std::f32::consts::FRAC_PI_2),
-                        };
-
-                    moveable.target_position = 
-                        Some((target_position, 0.0, 
-                              moveable.movement_speed, queued_movement.0,
-                              transform.translation, MovementType::Force(direction)));
-                }
-*/

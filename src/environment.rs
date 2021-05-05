@@ -5,6 +5,7 @@ use crate::{level::Level, Position, collectable, dude, snake, level,
             EntityType, GameObject, holdable, win_flag, moveable, food,
             level_over, credits, block, camera, path_find, path_find::PathFinder};
 
+// material.shaded = false
 pub struct Shadow;
 pub struct EnvironmentPlugin;
 impl Plugin for EnvironmentPlugin {
@@ -60,11 +61,12 @@ impl Plugin for EnvironmentPlugin {
                .with_system(food::update_food.system())
 //              .with_system(snake::add_body_part.system())
                .with_system(snake::add_body_parts.system())
+               .with_system(snake::update_following.system())
                .with_system(snake::handle_kill_snake.system())
                .with_system(path_find::update_graph.system().label("graph_update"))
                .with_system(path_find::update_path.system().after("graph_update"))
                .with_system(path_find::draw_edges.system())
-//             .with_system(level::print_level.system())
+//               .with_system(level::print_level.system())
 //               .with_system(update_text_position.system())
                .with_system(level::broadcast_changes.system().after("handle_moveables"))
            );
