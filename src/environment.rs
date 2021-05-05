@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy::render::camera::Camera;
 
 use crate::{level::Level, Position, collectable, dude, snake, level,
-            EntityType, GameObject, holdable, win_flag, moveable, food,
+            EntityType, GameObject, holdable, win_flag, moveable, food, score,
             level_over, credits, block, camera, path_find, path_find::PathFinder};
 
 // material.shaded = false
@@ -12,6 +12,7 @@ impl Plugin for EnvironmentPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.insert_resource(Level::new())
            .insert_resource(PathFinder::new())
+           .insert_resource(score::Score::new())
            .init_resource::<dude::DudeMeshes>()
            .init_resource::<snake::EnemyMeshes>()
            .init_resource::<AssetsLoading>()
@@ -57,6 +58,7 @@ impl Plugin for EnvironmentPlugin {
                .with_system(path_find::show_path.system())
                .with_system(snake::update_enemy.system())
                .with_system(snake::handle_food_eaten.system())
+               .with_system(score::handle_food_eaten.system())
                .with_system(food::animate_food.system())
                .with_system(food::update_food.system())
 //              .with_system(snake::add_body_part.system())
@@ -174,9 +176,12 @@ pub fn load_level(
     mut path_finder: ResMut<PathFinder>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
+    mut score: ResMut<score::Score>,
     dude_meshes: Res<dude::DudeMeshes>,
     enemy_meshes: Res<snake::EnemyMeshes>, 
 ) {
+    score.total = score.current_level;
+    score.current_level = 0;
     path_finder.load_level(&level);
     let plane = meshes.add(Mesh::from(shape::Plane { size: 1.0 }));
     let cube = meshes.add(Mesh::from(shape::Cube { size: 1.0 }));
@@ -283,6 +288,10 @@ pub fn load_level(
                                 parent.spawn_bundle(PbrBundle {
                                     mesh: meshes.add(Mesh::from(shape::Icosphere { radius: 0.25, subdivisions: 0 })),
                                     material: materials.add(flag_color.into()),
+                                    visible: Visible {
+                                        is_visible: false,
+                                        is_transparent: false,
+                                    },
                                     transform: Transform::from_xyz(0.0, 0.5, 0.0),
                                     ..Default::default()
                                 })

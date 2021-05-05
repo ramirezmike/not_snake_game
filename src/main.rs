@@ -2,6 +2,7 @@ use bevy::{prelude::*,};
 use bevy::app::AppExit;
 use bevy::app::Events;
 use bevy_prototype_debug_lines::*;
+use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 
 mod camera;
 pub mod environment;
@@ -18,6 +19,7 @@ pub mod block;
 pub mod collectable;
 pub mod win_flag;
 pub mod food;
+pub mod score;
 pub mod path_find;
 mod menu;
 
@@ -79,6 +81,8 @@ fn main() {
         .add_plugin(EnvironmentPlugin)
         .add_plugin(DudePlugin)
         .add_system(exit.system())
+//      .add_plugin(LogDiagnosticsPlugin::default())
+//      .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .run();
 }
 

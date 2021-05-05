@@ -7,7 +7,7 @@ impl Plugin for DudePlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_system_set(
                SystemSet::on_update(crate::AppState::InGame)
-                   //.with_system(player_input.system())
+                   .with_system(player_input.system())
                    .with_system(push_block.system())
            );
     }

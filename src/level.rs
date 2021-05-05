@@ -7,12 +7,12 @@ pub struct PositionChangeEvent(pub Position, pub Option::<GameObject>);
 pub struct NextLevelEvent;
 
 
-static START_LEVEL: usize = 1;
-static m: usize = 2; // movable block
-static w: usize = 3; // win flag spawn point
-static d: usize = 4; // dude spawn point
-static s: usize = 5; // snake spawn point
-static f: usize = 6; // food spawn point
+static START_LEVEL: usize = 0;
+static M: usize = 2; // movable block
+static W: usize = 3; // win flag spawn point
+static D: usize = 4; // dude spawn point
+static S: usize = 5; // snake spawn point
+static F: usize = 6; // food spawn point
 
 pub struct Level {
     pub width: usize,
@@ -30,13 +30,14 @@ pub struct LevelInfo {
     pub height: usize,
     level: Vec::<Vec::<Vec::<usize>>>,
     is_food_random: bool,
+    minimum_food: usize,
     camera_position: Vec3,
     camera_rotation: Quat,
 }
 
 impl LevelInfo {
-    pub fn new(level: Vec::<Vec::<Vec::<usize>>>, camera_position: Vec3, camera_rotation: Quat) -> Self {
-        let is_food_random = !level.iter().any(|y| y.iter().any(|x| x.iter().any(|z| *z == f)));
+    pub fn new(level: Vec::<Vec::<Vec::<usize>>>, camera_position: Vec3, camera_rotation: Quat, minimum_food: usize) -> Self {
+        let is_food_random = !level.iter().any(|y| y.iter().any(|x| x.iter().any(|z| *z == F)));
 
         LevelInfo { 
             width: level[0].len(), 
@@ -46,6 +47,7 @@ impl LevelInfo {
             camera_position, 
             camera_rotation,
             is_food_random,
+            minimum_food,
         }
     }
 }
@@ -77,9 +79,9 @@ impl Level {
                     empty_3.clone(),
                     empty_3.clone(),
                     vec![
-                        vec![0, 0, 0, 0, 0, m, 0, 0, 0, 0, 0, 0],
-                        vec![d, 0, f, m, 0, f, 0, m, 0, 0, 0, w],
-                        vec![0, 0, 0, 0, 0, m, 0, 0, 0, 0, 0, 0],
+                        vec![0, 0, 0, 0, 0, M, 0, 0, 0, 0, 0, 0],
+                        vec![D, 0, F, M, 0, F, 0, M, 0, 0, 0, W],
+                        vec![0, 0, 0, 0, 0, M, 0, 0, 0, 0, 0, 0],
                     ],
                     vec![
                         vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
@@ -89,6 +91,7 @@ impl Level {
                 ],
                 Vec3::new(-7.0, 6.8, 5.3), 
                 Quat::from_axis_angle(Vec3::new(-0.21380125, -0.952698, -0.21599823), 1.6294433),
+                2, // minimum food
             ),
             LevelInfo::new(
                 vec![
@@ -99,7 +102,7 @@ impl Level {
                     empty_3.clone(),
                     vec![
                         vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
-                        vec![d, 0, 0, 0, 0, s, 0, 0, 0, 0, 0, w],
+                        vec![D, 0, 0, 0, 0, S, 0, 0, 0, 0, 0, W],
                         vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                     ],
                     vec![
@@ -110,7 +113,7 @@ impl Level {
                 ],
                 Vec3::new(-7.0, 6.8, 5.3), 
                 Quat::from_axis_angle(Vec3::new(-0.21380125, -0.952698, -0.21599823), 1.6294433),
-
+                5, // minimum food
             ),
             LevelInfo::new(
                 vec![
@@ -120,9 +123,9 @@ impl Level {
                     empty_3.clone(),
                     empty_3.clone(),
                     vec![
-                        vec![0, 0, m, 0, 0, m, 0, 0, m, 0, 1, 0],
-                        vec![d, 0, m, 0, 0, m, 0, 0, m, s, 0, w],
-                        vec![0, 0, m, 0, 0, m, 0, 0, m, 0, 0, 0],
+                        vec![0, 0, M, 0, 0, M, 0, 0, M, 0, 1, 0],
+                        vec![D, 0, M, 0, 0, M, 0, 0, M, S, 0, W],
+                        vec![0, 0, M, 0, 0, M, 0, 0, M, 0, 0, 0],
                     ],
                     vec![
                         vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
@@ -132,7 +135,7 @@ impl Level {
                 ],
                 Vec3::new(-7.0, 6.8, 5.3), 
                 Quat::from_axis_angle(Vec3::new(-0.21380125, -0.952698, -0.21599823), 1.6294433),
-
+                5, // minimum food
             ),
 //          // level 2
 //          LevelInfo::new(
@@ -359,6 +362,10 @@ impl Level {
             }
             _ => false
         }
+    }
+
+    pub fn get_current_minimum_food(&self) -> usize {
+        self.level_info[self.current_level].minimum_food
     }
 
     pub fn is_enterable_with_vec(&self, position: Vec3) -> bool {

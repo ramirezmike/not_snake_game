@@ -50,13 +50,13 @@ pub fn level_over_check(
     mut level_over_events: EventReader<LevelOverEvent>,
     mut query: Query<&mut Text>,
     mut game_is_over: Local<bool>,
-    mut level: ResMut<level::Level>,
+    level: ResMut<level::Level>,
     time: Res<Time>, 
     mut credits_delay: ResMut<credits::CreditsDelay>,
     mut credits_event_writer: EventWriter<crate::credits::CreditsEvent>,
-    mut next_level_event_writer: EventWriter<level::NextLevelEvent>,
 ) {
     if level_over_events.iter().count() > 0 {
+        println!("LEVEL IS OVER!");
         if level.is_last_level() {
             for mut text in query.iter_mut() {
                 text.sections[0].value = "YOU WIN!".to_string();
@@ -64,7 +64,6 @@ pub fn level_over_check(
                 credits_delay.0.reset();
             }
         } else {
-            //next_level_event_writer.send(level::NextLevelEvent);
             for mut text in query.iter_mut() {
                 text.sections[0].value = format!("LEVEL {}", level.current_level + 2).to_string();
             }
