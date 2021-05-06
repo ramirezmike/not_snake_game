@@ -37,10 +37,7 @@ pub fn spawn_player(
                 transform,
                 ..Default::default()
             })
-            .insert(Dude {
-                action_cooldown: Timer::from_seconds(0.15, false),
-                is_dead: false
-            })
+            .insert(Dude)
             .insert(Position { x: x as i32, y: y as i32, z: z as i32 })
             .insert(EntityType::Dude)
             .insert(holdable::Holder { holding: None })
@@ -65,7 +62,7 @@ fn player_input(
     keyboard_input: Res<Input<KeyCode>>,
     time: Res<Time>, 
     mut lift_holdable_event_writer: EventWriter<holdable::LiftHoldableEvent>,
-    mut dudes: Query<(Entity, &mut Dude, &mut moveable::Moveable, &Facing)>, 
+    mut dudes: Query<(Entity, &mut moveable::Moveable, &Facing), With<Dude>>, 
     camera: Query<&crate::camera::fly_camera::FlyCamera>
 ) {
     // this is for debugging. If we're flying, don't move the player
@@ -73,17 +70,9 @@ fn player_input(
         return;
     }
 
-    for (entity, mut dude, mut moveable, facing) in dudes.iter_mut() {
-        if dude.is_dead { continue; }
-
-        dude.action_cooldown.tick(time.delta());
-        if !dude.action_cooldown.finished() {
-            continue;
-        }
-
+    for (entity, mut moveable, facing) in dudes.iter_mut() {
         if keyboard_input.just_pressed(KeyCode::J) && !moveable.is_moving() {
             lift_holdable_event_writer.send(holdable::LiftHoldableEvent(entity, facing.direction));
-            dude.action_cooldown.reset();
             continue;
         }
 
@@ -105,7 +94,6 @@ fn player_input(
             if !moveable.is_moving()   {
                 moveable.set_movement(move_dir, moveable::MovementType::Step);
             }
-            dude.action_cooldown.reset();
         }
     }
 }
@@ -140,19 +128,15 @@ fn push_block(
 
 pub fn handle_kill_dude(
     mut commands: Commands,
-    mut dudes: Query<(Entity, &mut Dude)>,
+    mut dudes: Query<Entity, With<Dude>>,
     mut kill_dude_event_reader: EventReader<KillDudeEvent>,
 
 ) {
     for _event in kill_dude_event_reader.iter() {
-        for (entity, mut dude) in dudes.iter_mut() {
+        for entity in dudes.iter_mut() {
             commands.entity(entity).remove::<moveable::Moveable>();
-            dude.is_dead = true;
         }
     }
 }
 
-pub struct Dude {
-    action_cooldown: Timer,
-    is_dead: bool
-}
+pub struct Dude;
