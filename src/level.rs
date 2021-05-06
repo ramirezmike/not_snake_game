@@ -1,5 +1,5 @@
 use bevy::{prelude::*,};
-use crate::{GameObject, EntityType, Position, };
+use crate::{GameObject, EntityType, Position, dude};
 use rand::seq::SliceRandom;
 
 #[derive(Debug)]
@@ -22,6 +22,7 @@ pub struct Level {
     pub current_level: usize,
     frame_updates: Vec::<(usize, usize, usize)>,
     level_info: Vec::<LevelInfo>,
+    player_death_detected: bool,
 }
 
 pub struct LevelInfo {
@@ -238,7 +239,8 @@ impl Level {
             game_objects: vec![vec![vec![None; length]; height]; width],
             frame_updates: vec!(),
             current_level: START_LEVEL,
-            level_info
+            level_info,
+            player_death_detected: false,
         }
     }
 
@@ -276,6 +278,13 @@ impl Level {
         self.game_objects = vec![vec![vec![None; self.length]; self.height]; self.width];
     }
 
+    pub fn reset_level(&mut self) {
+        self.width = self.level_info[self.current_level].width;
+        self.length = self.level_info[self.current_level].length;
+        self.height = self.level_info[self.current_level].height;
+        self.game_objects = vec![vec![vec![None; self.length]; self.height]; self.width];
+    }
+
     pub fn set_with_vec(&mut self, position: Vec3, game_object: Option::<GameObject>) {
         self.set(position.x as i32, position.y as i32, position.z as i32, game_object);
     }
@@ -298,6 +307,14 @@ impl Level {
         if x < self.game_objects.len()
         && y < self.game_objects[x].len()
         && z < self.game_objects[x][y].len() { 
+            if let Some(game_object) = game_object {
+                if let Some(current) = self.game_objects[x][y][z] {
+                    if current.entity_type == EntityType::EnemyHead && game_object.entity_type == EntityType::Dude
+                    || current.entity_type == EntityType::Dude && game_object.entity_type == EntityType::EnemyHead {
+                        self.player_death_detected = true;
+                    }
+                }
+            }
             self.game_objects[x][y][z] = game_object;
             self.frame_updates.push((x, y, z));
         }
@@ -388,7 +405,7 @@ impl Level {
         match self.get(x, y, z) {
             Some(game_object) => {
                 match game_object.entity_type {
-                    EntityType::Dude | EntityType::Enemy => true,
+                    EntityType::Dude | EntityType::EnemyHead | EntityType::Enemy => true,
                     _ => false
                 }
             }
@@ -493,10 +510,15 @@ pub fn print_level(
 
 pub fn broadcast_changes(
     mut event_writer: EventWriter<PositionChangeEvent>,
+    mut kill_dude_event_writer: EventWriter<dude::KillDudeEvent>,
     mut level: ResMut<Level>,
 ) {
     for (position, game_object) in level.drain_frame_updates().iter() {
 //        println!("position changed!");
         event_writer.send(PositionChangeEvent(*position, *game_object));
+    }
+    if level.player_death_detected {
+        level.player_death_detected = false;
+        kill_dude_event_writer.send(dude::KillDudeEvent);
     }
 }

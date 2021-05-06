@@ -7,14 +7,18 @@ use crate::{level::Level, Position, collectable, dude, snake, level,
 
 // material.shaded = false
 pub struct Shadow;
+pub struct PlatformMesh;
+pub struct LevelReady(pub bool);
 pub struct EnvironmentPlugin;
 impl Plugin for EnvironmentPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.insert_resource(Level::new())
            .insert_resource(PathFinder::new())
+           .insert_resource(LevelReady(false))
            .insert_resource(score::Score::new())
            .init_resource::<dude::DudeMeshes>()
            .init_resource::<snake::EnemyMeshes>()
+           .init_resource::<camera::CameraMouthMovement>()
            .init_resource::<AssetsLoading>()
            .add_plugin(camera::CameraPlugin)
            .add_event::<holdable::LiftHoldableEvent>()
@@ -22,6 +26,7 @@ impl Plugin for EnvironmentPlugin {
            .add_event::<level_over::LevelOverEvent>()
            .add_event::<snake::AddBodyPartEvent>()
            .add_event::<snake::KillSnakeEvent>()
+           .add_event::<dude::KillDudeEvent>()
            .add_event::<food::FoodEatenEvent>()
            .add_event::<level::NextLevelEvent>()
            .add_system_set(
@@ -39,6 +44,14 @@ impl Plugin for EnvironmentPlugin {
            .add_system_set(
                SystemSet::on_exit(crate::AppState::ChangingLevel)
                    .with_system(cleanup_change_level_screen.system())
+           )
+           .add_system_set(
+               SystemSet::on_enter(crate::AppState::ResetLevel)
+                   .with_system(cleanup_change_level_screen.system())
+           )
+           .add_system_set(
+               SystemSet::on_update(crate::AppState::ResetLevel)
+                   .with_system(camera::handle_player_death.system())
            )
            .add_system_set(
                SystemSet::on_enter(crate::AppState::InGame)
@@ -65,15 +78,28 @@ impl Plugin for EnvironmentPlugin {
                .with_system(snake::add_body_parts.system())
                .with_system(snake::update_following.system())
                .with_system(snake::handle_kill_snake.system())
+               .with_system(camera::handle_player_death.system())
+               .with_system(dude::handle_kill_dude.system())
                .with_system(path_find::update_graph.system().label("graph_update"))
                .with_system(path_find::update_path.system().after("graph_update"))
                .with_system(path_find::draw_edges.system())
+//               .with_system(material_test.system())
 //               .with_system(level::print_level.system())
 //               .with_system(update_text_position.system())
                .with_system(level::broadcast_changes.system().after("handle_moveables"))
            );
     }
 }
+
+/*
+pub fn material_test(
+    mut materials: Query<&mut StandardMaterial>,
+) {
+    for mut material in materials.iter_mut() {
+        material.unlit = true; 
+    }
+}
+*/
 
 pub fn cleanup_change_level_screen(
     mut commands: Commands,
@@ -156,17 +182,34 @@ fn check_assets_ready(
 
 pub fn cleanup_environment(
     mut commands: Commands, 
+    mut level_ready: ResMut<LevelReady>,
     entities: Query<(Entity, &EntityType)>,
+    lights: Query<Entity, With<Light>>,
+    platforms: Query<Entity, With<PlatformMesh>>,
+    ui_cameras: Query<Entity, With<bevy::render::camera::OrthographicProjection>>,
 ) {
+    level_ready.0 = false;
     for (entity, entity_type) in entities.iter() {
         println!("Despawning... {:?}", entity_type);
         match entity_type {
-            EntityType::Enemy | EntityType::Dude | EntityType::Block | 
+            EntityType::EnemyHead | EntityType::Enemy | EntityType::Dude | EntityType::Block | 
             EntityType::WinFlag | EntityType::Platform | EntityType::Food => {
                 commands.entity(entity).despawn_recursive();
             }
             _ => commands.entity(entity).despawn()
         }
+    }
+
+    for entity in lights.iter() {
+        commands.entity(entity).despawn_recursive();
+    }
+
+    for entity in ui_cameras.iter() {
+        commands.entity(entity).despawn_recursive();
+    }
+
+    for entity in platforms.iter() {
+        commands.entity(entity).despawn_recursive();
     }
 }
 
@@ -177,11 +220,16 @@ pub fn load_level(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut score: ResMut<score::Score>,
+    mut level_ready: ResMut<LevelReady>,
     dude_meshes: Res<dude::DudeMeshes>,
     enemy_meshes: Res<snake::EnemyMeshes>, 
+    entities: Query<Entity>,
+    transforms: Query<&Transform>,
 ) {
+    println!("Starting to load level...");
     score.total = score.current_level;
     score.current_level = 0;
+    level.reset_level();
     path_finder.load_level(&level);
     let plane = meshes.add(Mesh::from(shape::Plane { size: 1.0 }));
     let cube = meshes.add(Mesh::from(shape::Cube { size: 1.0 }));
@@ -242,7 +290,7 @@ pub fn load_level(
                                     transform
                                 },
                                 ..Default::default()
-                            });
+                            }).insert(PlatformMesh);
                         }
                     },
                     2 => { // moveable block
@@ -325,6 +373,10 @@ pub fn load_level(
     if level.is_food_random() {
         food::spawn_food(&mut commands, &mut level, &mut meshes, &mut materials, None);
     }
+
+    println!("Level is Loaded... Number of items{:?} {:?}", entities.iter().len(), transforms.iter().len());
+
+    level_ready.0 = true;
 }
 
 pub struct DisplayText(pub String);

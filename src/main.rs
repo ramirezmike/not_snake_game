@@ -53,6 +53,7 @@ pub enum AppState {
     Loading,
     InGame,
     ChangingLevel,
+    ResetLevel,
     Credits,
 }
 
@@ -109,6 +110,7 @@ pub enum EntityType {
     Block,
     Dude,
     Enemy,
+    EnemyHead,
     Platform,
     WinFlag,
     Food,

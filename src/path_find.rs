@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use crate::{level::Level, level::PositionChangeEvent, EntityType, dude::Dude, camera::Camera,
-            Position, snake, food::Food, win_flag::WinFlag, GameObject};
+            environment::LevelReady, Position, snake, food::Food, win_flag::WinFlag, GameObject};
 use petgraph::{Graph, graph::NodeIndex, graph::EdgeIndex};
 use petgraph::algo::astar;
 use bevy_prototype_debug_lines::*; 
@@ -106,7 +106,7 @@ impl PathFinder {
         let weight = match level.get(x as i32, y as i32 - 1, z as i32) {
                         Some(game_object) => {
                             match game_object.entity_type {
-                                EntityType::Enemy => 3, // try to prevent snakes from climbing on themselves
+                                EntityType::Enemy | EntityType::EnemyHead => 3, // try to prevent snakes from climbing on themselves
                                 _ => 1
                             }
                         },
@@ -150,7 +150,8 @@ impl PathFinder {
                     // need to add this if enemy or something
                     // Below
                     if level.is_inbounds(position.x, position.y - 1, position.z) 
-                    && level.is_type(position.x, position.y - 1, position.z, Some(EntityType::Enemy)) { 
+                    && (level.is_type(position.x, position.y - 1, position.z, Some(EntityType::Enemy)) 
+                     || level.is_type(position.x, position.y - 1, position.z, Some(EntityType::EnemyHead))) { 
                         self.graph.update_edge(self.indices[x][y - 1][z], self.indices[x][y][z], weight);
                     }
                 } else {
@@ -233,7 +234,7 @@ impl PathFinder {
                         self.graph.update_edge(self.indices[x][y - 1][z], self.indices[x][y][z], weight);
                     }
                 },
-                EntityType::Block | EntityType::Enemy => (),
+                EntityType::Block | EntityType::Enemy | EntityType::EnemyHead => (),
                 _ => handle_general_case()
             }
         } else {
@@ -265,7 +266,7 @@ impl PathFinder {
             if attempts >= max_attempts {
                 println!("Sending kill event");
                 // killing the snake since it's probably stuck
-                kill_snake_event_writer.send(snake::KillSnakeEvent(requesting_entity));
+                //kill_snake_event_writer.send(snake::KillSnakeEvent(requesting_entity));
             }
         }
 
@@ -346,6 +347,7 @@ pub fn update_graph(
     mut initial_iteration_completed: Local<bool>,
     level: Res<Level>,
 ) {
+/*
     if !*initial_iteration_completed || changes.iter().count() > 0 {
         *initial_iteration_completed = true; 
         for x in 0..level.width {
@@ -357,6 +359,7 @@ pub fn update_graph(
             }
         }
     }
+*/
 }
 
 pub fn draw_edges(
@@ -398,15 +401,42 @@ pub fn update_path(
     level: Res<Level>,
     timer: Res<Time>,
     mut path_find: ResMut<PathFinder>,
-    mut snake: Query<(Entity, &mut snake::Enemy, &Position)>,
+    mut snake: Query<(Entity, &mut snake::Enemy, &Position, &Transform), Without<Dude>>,
+    dude: Query<(&Transform, &Position), (With<Dude>, Without<snake::Enemy>)>,
     food: Query<(&Food, &Position)>,
     kill_snake_event_writer: EventWriter::<snake::KillSnakeEvent>,
+    level_ready: Res<LevelReady>,
 ) {
+    if !level_ready.0 {
+        return; 
+    }
     *time += timer.delta_seconds();
 
     if *time > 0.2 {
-        if let Ok((entity, mut snake, snake_position)) = snake.single_mut() {
+        if let Ok((entity, mut snake, snake_position, snake_transform)) = snake.single_mut() {
             if !snake.is_dead {
+
+                for x in 0..level.width {
+                    for y in 0..level.height{
+                        for z in 0..level.length {
+                            let p = Position { x: x as i32, y: y as i32, z: z as i32 };
+                            path_find.update_position_in_graph(&p, &level);
+                        }
+                    }
+                }
+
+                snake.speed = 0.5;
+                if let Ok((dude_transform, dude_position)) = dude.single() {
+                    if dude_transform.translation.distance(snake_transform.translation) <= 1.5 {
+                        snake.speed = 0.4;
+                        path_find.update_path(entity, &level, snake_position, dude_position, kill_snake_event_writer);
+
+                        if path_find.current_path.is_none() {
+                            snake.is_dead = true;
+                        }
+                        return;
+                    }
+                }
                 if let Ok((_food, food_position)) = food.single() {
                     path_find.update_path(entity, &level, snake_position, food_position, kill_snake_event_writer);
 

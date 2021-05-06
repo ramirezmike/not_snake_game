@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use crate::{Direction, level::Level, Position, EntityType, GameObject, facing::Facing,};
+use crate::{Direction, level::Level, Position, EntityType, GameObject, facing::Facing, dude};
 
 #[derive(Debug)]
 pub struct Moveable {
@@ -206,6 +206,7 @@ pub fn update_moveable(
                         } else {
                             let above_moveable = IVec3::new(position.x, position.y + 1, position.z).as_f32(); 
                             let above_target = Vec3::new(target_position.x, target_position.y + 1.0, target_position.z);
+                            
                             if level.is_enterable_with_vec(above_moveable) && level.is_enterable_with_vec(above_target) {
                                 let movement_speed = moveable.movement_speed;
                                 let direction = queued_movement.0;

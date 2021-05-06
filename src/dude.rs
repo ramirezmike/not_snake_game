@@ -13,6 +13,7 @@ impl Plugin for DudePlugin {
     }
 }
 
+pub struct KillDudeEvent;
 #[derive(Default)]
 pub struct DudeMeshes {
     pub step1: Handle<Mesh>,
@@ -38,6 +39,7 @@ pub fn spawn_player(
             })
             .insert(Dude {
                 action_cooldown: Timer::from_seconds(0.15, false),
+                is_dead: false
             })
             .insert(Position { x: x as i32, y: y as i32, z: z as i32 })
             .insert(EntityType::Dude)
@@ -72,6 +74,8 @@ fn player_input(
     }
 
     for (entity, mut dude, mut moveable, facing) in dudes.iter_mut() {
+        if dude.is_dead { continue; }
+
         dude.action_cooldown.tick(time.delta());
         if !dude.action_cooldown.finished() {
             continue;
@@ -134,6 +138,21 @@ fn push_block(
     }
 }
 
+pub fn handle_kill_dude(
+    mut commands: Commands,
+    mut dudes: Query<(Entity, &mut Dude)>,
+    mut kill_dude_event_reader: EventReader<KillDudeEvent>,
+
+) {
+    for _event in kill_dude_event_reader.iter() {
+        for (entity, mut dude) in dudes.iter_mut() {
+            commands.entity(entity).remove::<moveable::Moveable>();
+            dude.is_dead = true;
+        }
+    }
+}
+
 pub struct Dude {
     action_cooldown: Timer,
+    is_dead: bool
 }

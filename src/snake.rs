@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use crate::{Direction, EntityType, GameObject, level::Level, path_find::PathFinder,
+use crate::{Direction, EntityType, GameObject, level::Level, path_find::PathFinder, dude,
             Position, food::FoodEatenEvent};
 
 #[derive(Default)]
@@ -19,7 +19,7 @@ pub struct BodyPosition {
 pub struct Enemy {
     body_parts: Vec::<Entity>,
     body_positions: Vec::<BodyPosition>,
-    speed: f32,
+    pub speed: f32, 
     movement: Option::<SnakeMovement>,
     pub is_dead: bool,
     up: Vec3,
@@ -102,7 +102,7 @@ pub fn spawn_enemy(
                 ..Default::default()
             })
             .insert(Position { x: position.x as i32, y: position.y as i32, z: position.z as i32 })
-            .insert(EntityType::Enemy)
+            .insert(EntityType::EnemyHead)
             .insert(Snake)
             .insert(Enemy {
                 body_parts: vec![body_part_entity],
@@ -112,7 +112,7 @@ pub fn spawn_enemy(
                                                           transform.translation.z), 
                                    rotation: Quat::IDENTITY },
                 ],
-                speed: 0.5,
+                speed: 0.5, // there's another speed in path_find.rs. TODO: make them one
                 movement: None,
                 is_dead: false,
                 up: Vec3::Y,
@@ -127,7 +127,7 @@ pub fn spawn_enemy(
                 })
                 .insert(SnakeInnerMesh);
             }).id();
-    level.set(position.x as i32, position.y as i32, position.z as i32, Some(GameObject::new(enemy_entity, EntityType::Enemy)));
+    level.set(position.x as i32, position.y as i32, position.z as i32, Some(GameObject::new(enemy_entity, EntityType::EnemyHead)));
     level.set(position.x as i32 + 1, position.y as i32, position.z as i32, Some(GameObject::new(enemy_entity, EntityType::Enemy)));
 }
 
@@ -160,15 +160,15 @@ pub fn add_body_parts(
     meshes: Res<EnemyMeshes>, 
 ) {
     for part_to_add in body_part_reader.iter() {
-        let mut snake_enemy = snake_enemies.get_mut(part_to_add.snake).unwrap();
+        if let Ok(mut snake_enemy) = snake_enemies.get_mut(part_to_add.snake) {
+            let last_position = snake_enemy.body_positions.last().unwrap();
+            let mut transform = Transform::from_translation(last_position.translation);
+            transform.rotate(Quat::from_axis_angle(Vec3::new(0.0, 1.0, 0.0), std::f32::consts::FRAC_PI_2));
+            transform.apply_non_uniform_scale(Vec3::new(0.50, 0.50, 0.50)); 
 
-        let last_position = snake_enemy.body_positions.last().unwrap();
-        let mut transform = Transform::from_translation(last_position.translation);
-        transform.rotate(Quat::from_axis_angle(Vec3::new(0.0, 1.0, 0.0), std::f32::consts::FRAC_PI_2));
-        transform.apply_non_uniform_scale(Vec3::new(0.50, 0.50, 0.50)); 
-
-        let body_part_entity = generate_snake_body(&mut commands, &meshes, transform);
-        snake_enemy.body_parts.push(body_part_entity);
+            let body_part_entity = generate_snake_body(&mut commands, &meshes, transform);
+            snake_enemy.body_parts.push(body_part_entity);
+        }
     }
 }
 
@@ -178,6 +178,7 @@ pub fn update_enemy(
     mut inner_meshes: Query<&mut Transform, With<SnakeInnerMesh>>,
     path_find: Res<PathFinder>,
     mut level: ResMut<Level>,
+    dude: Query<&Transform, (With<dude::Dude>, Without<SnakeInnerMesh>, Without<Enemy>)>,
 
     keyboard_input: Res<Input<KeyCode>>,
     mut is_active: Local<bool>,
@@ -193,6 +194,12 @@ pub fn update_enemy(
 
     if !*is_active {
         for (entity, mut enemy, mut transform, mut position, children) in enemies.iter_mut() {
+//          if let Ok(dude_transform) = dude.single() {
+//              if dude_transform.translation.distance(transform.translation) <= 1.5 {
+//                  enemy.movement = None; // set to None so that we detect in the next step to move toward dude
+//              }
+//          }
+
             if enemy.movement.is_none() {
                 let is_ai_controlled = true;
                 let mut new_target = None;
@@ -819,7 +826,7 @@ pub fn update_enemy(
                 }
 
                 // need to update level here
-                level.set_with_vec(transform.translation, Some(GameObject::new(entity, EntityType::Enemy)));
+                level.set_with_vec(transform.translation, Some(GameObject::new(entity, EntityType::EnemyHead)));
                 position.update_from_vec(transform.translation);
             }
         }

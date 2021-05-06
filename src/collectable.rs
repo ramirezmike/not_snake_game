@@ -16,11 +16,11 @@ pub fn check_collected(
     for (mut collectable, collectable_position, collectable_entity_type) in collectables.iter_mut().filter(|x| !x.0.collected) {
         for (_dude, dude_position) in dudes.iter() {
             if collectable_position == dude_position {
-                collectable.collected = true;
                 match collectable_entity_type {
                     EntityType::WinFlag => {
                         if score.current_level >= level.get_current_minimum_food() {
                             level_over_event_writer.send(level_over::LevelOverEvent {});
+                            collectable.collected = true;
                         }
                     }
                     _ => ()
