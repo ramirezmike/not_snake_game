@@ -96,6 +96,7 @@ pub fn spawn_enemy(
 
     let body_part_entity = generate_snake_body(commands, meshes, transform);
         
+    let snake_speed = level.snake_speed();
     let enemy_entity = 
     commands.spawn_bundle(PbrBundle {
                 transform,
@@ -112,7 +113,7 @@ pub fn spawn_enemy(
                                                           transform.translation.z), 
                                    rotation: Quat::IDENTITY },
                 ],
-                speed: 0.5, // there's another speed in path_find.rs. TODO: make them one
+                speed: snake_speed,
                 movement: None,
                 is_dead: false,
                 up: Vec3::Y,

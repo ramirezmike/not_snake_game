@@ -11,7 +11,7 @@ use serde::Deserialize;
 pub struct PositionChangeEvent(pub Position, pub Option::<GameObject>);
 pub struct NextLevelEvent;
 
-static START_LEVEL: usize = 4;
+static START_LEVEL: usize = 6;
 
 pub struct Level {
     pub game_objects: Vec::<Vec::<Vec::<Option::<GameObject>>>>,
@@ -33,6 +33,7 @@ pub struct LevelInfo {
     level: Vec::<Vec::<Vec::<usize>>>,
     is_food_random: bool,
     minimum_food: usize,
+    snake_speed: Option::<f32>,
     camera_x: f32,
     camera_y: f32,
     camera_z: f32,
@@ -108,6 +109,10 @@ impl Level {
 
     pub fn camera_behaviors(&self) -> &Vec::<CameraBehavior> {
         &self.level_info[self.current_level].camera_behaviors
+    }
+
+    pub fn snake_speed(&self) -> f32 {
+        self.level_info[self.current_level].snake_speed.unwrap_or(0.5)
     }
 
     pub fn load_stored_levels(&mut self, asset: LevelsAsset) {

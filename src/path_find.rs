@@ -71,7 +71,6 @@ impl PathFinder {
 
     // this should just get called for everything 
     fn update_position_in_graph(&mut self, position: &Position, level: &Res<Level>) {
-        println!("Updating path find...");
         if !level.is_inbounds(position.x, position.y, position.z) {
             return;
         }
@@ -428,10 +427,11 @@ pub fn update_path(
 
                 path_find.current_path = None;
 
-                snake.speed = 0.5;
+                let snake_speed = level.snake_speed();
+                snake.speed = snake_speed;
                 if let Ok((dude_transform, dude_position)) = dude.single() {
                     if dude_transform.translation.distance(snake_transform.translation) <= 1.5 {
-                        snake.speed = 0.4;
+                        snake.speed -= 0.1;
                         path_find.update_path(entity, &level, snake_position, 
                                               dude_position, &mut kill_snake_event_writer);
 

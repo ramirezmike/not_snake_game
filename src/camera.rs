@@ -17,7 +17,7 @@ pub struct CameraTarget;
 pub enum CameraBehavior {
     Static,
     FollowX,
-    FollowY,
+    FollowY(f32),
     FollowZ,
 }
 
@@ -91,6 +91,25 @@ fn update_camera(
                                 * 0.5 
                                 * time.delta_seconds();
                         }
+                    },
+                    CameraBehavior::FollowY(offset) => {
+                        camera_transform.translation.y += 
+                            (target_transform.translation.y - camera_transform.translation.y + offset) 
+                           * 0.8 
+                           * time.delta_seconds();
+//                      let y_distance = (target_transform.translation.y - camera_transform.translation.y).abs();
+//                      if y_distance > 8.0 {
+//                          camera_transform.translation.y += 
+//                              (target_transform.translation.y - camera_transform.translation.y + 6.0) 
+//                             * 0.5 
+//                             * time.delta_seconds();
+//                      } 
+//                      if y_distance < 6.0 {
+//                          camera_transform.translation.y -= 
+//                              (target_transform.translation.y - camera_transform.translation.y + 6.0) 
+//                              * 0.5 
+//                              * time.delta_seconds();
+//                      }
                     },
                     CameraBehavior::Static => (),
                     _ => ()
