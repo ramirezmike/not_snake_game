@@ -1,23 +1,19 @@
 use bevy::{prelude::*,};
-use crate::{GameObject, EntityType, Position, dude};
+use crate::{GameObject, EntityType, Position, dude, camera::CameraBehavior };
 use rand::seq::SliceRandom;
+
+use bevy::asset::{AssetLoader, LoadContext, LoadedAsset};
+use bevy::reflect::{TypeUuid};
+use bevy::utils::{BoxedFuture};
+use serde::Deserialize;
 
 #[derive(Debug)]
 pub struct PositionChangeEvent(pub Position, pub Option::<GameObject>);
 pub struct NextLevelEvent;
 
-
-static START_LEVEL: usize = 0;
-static M: usize = 2; // movable block
-static W: usize = 3; // win flag spawn point
-static D: usize = 4; // dude spawn point
-static S: usize = 5; // snake spawn point
-static F: usize = 6; // food spawn point
+static START_LEVEL: usize = 4;
 
 pub struct Level {
-    pub width: usize,
-    pub length: usize,
-    pub height: usize,
     pub game_objects: Vec::<Vec::<Vec::<Option::<GameObject>>>>,
     pub current_level: usize,
     frame_updates: Vec::<(usize, usize, usize)>,
@@ -25,233 +21,110 @@ pub struct Level {
     player_death_detected: bool,
 }
 
+#[derive(Debug, Clone, Deserialize, TypeUuid)]
+#[uuid = "39cadc56-aa9c-4543-8640-a018b74b5052"]
+pub struct LevelsAsset {
+    pub levels: Vec::<LevelInfo>,
+}
+
+#[derive(Debug, Clone, Deserialize, TypeUuid)]
+#[uuid = "49cadc56-aa9c-4543-8640-a018b74b5052"] // this needs to be actually generated
 pub struct LevelInfo {
-    pub width: usize,
-    pub length: usize,
-    pub height: usize,
     level: Vec::<Vec::<Vec::<usize>>>,
     is_food_random: bool,
     minimum_food: usize,
-    camera_position: Vec3,
-    camera_rotation: Quat,
+    camera_x: f32,
+    camera_y: f32,
+    camera_z: f32,
+    camera_rotation_x: f32,
+    camera_rotation_y: f32,
+    camera_rotation_z: f32,
+    camera_rotation_angle: f32,
+    camera_behaviors: Vec::<CameraBehavior>
 }
 
-impl LevelInfo {
-    pub fn new(level: Vec::<Vec::<Vec::<usize>>>, camera_position: Vec3, camera_rotation: Quat, minimum_food: usize) -> Self {
-        let is_food_random = !level.iter().any(|y| y.iter().any(|x| x.iter().any(|z| *z == F)));
+#[derive(Default)]
+pub struct LevelsAssetLoader;
 
-        LevelInfo { 
-            width: level[0].len(), 
-            height: level.len(), 
-            length: level[0][0].len(), 
-            level, 
-            camera_position, 
-            camera_rotation,
-            is_food_random,
-            minimum_food,
-        }
+impl AssetLoader for LevelsAssetLoader {
+    fn load<'a>(
+        &'a self,
+        bytes: &'a [u8],
+        load_context: &'a mut LoadContext,
+    ) -> BoxedFuture<'a, Result<(), anyhow::Error>> {
+        Box::pin(async move {
+            println!("Level asset reloaded");
+            let custom_asset = ron::de::from_bytes::<LevelsAsset>(bytes)?;
+            load_context.set_default_asset(LoadedAsset::new(custom_asset));
+            Ok(())
+        })
     }
+
+    fn extensions(&self) -> &[&str] {
+        &["custom"]
+    }
+}
+
+#[derive(Default)]
+pub struct LevelAssetState {
+    pub handle: Handle<LevelsAsset>,
 }
 
 impl Level {
     pub fn new() -> Self {
-        let empty = 
-                    vec![
-                        vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                        vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                        vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                        vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                        vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                        vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                    ];
-        let empty_3 = 
-                    vec![
-                        vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                        vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                        vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                    ];
-        let level_info = vec!(
-            // Level 1
-            LevelInfo::new(
-                vec![
-                    empty_3.clone(),
-                    empty_3.clone(),
-                    empty_3.clone(),
-                    empty_3.clone(),
-                    empty_3.clone(),
-                    vec![
-                        vec![0, 0, 0, 0, 0, M, 0, 0, 0, 0, 0, 0],
-                        vec![D, 0, F, M, 0, F, 0, M, 0, 0, 0, W],
-                        vec![0, 0, 0, 0, 0, M, 0, 0, 0, 0, 0, 0],
-                    ],
-                    vec![
-                        vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-                        vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-                        vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-                    ],
-                ],
-                Vec3::new(-7.0, 6.8, 5.3), 
-                Quat::from_axis_angle(Vec3::new(-0.21380125, -0.952698, -0.21599823), 1.6294433),
-                2, // minimum food
-            ),
-            LevelInfo::new(
-                vec![
-                    empty_3.clone(),
-                    empty_3.clone(),
-                    empty_3.clone(),
-                    empty_3.clone(),
-                    empty_3.clone(),
-                    vec![
-                        vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
-                        vec![D, 0, 0, 0, 0, S, 0, 0, 0, 0, 0, W],
-                        vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                    ],
-                    vec![
-                        vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-                        vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-                        vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-                    ],
-                ],
-                Vec3::new(-7.0, 6.8, 5.3), 
-                Quat::from_axis_angle(Vec3::new(-0.21380125, -0.952698, -0.21599823), 1.6294433),
-                5, // minimum food
-            ),
-            LevelInfo::new(
-                vec![
-                    empty_3.clone(),
-                    empty_3.clone(),
-                    empty_3.clone(),
-                    empty_3.clone(),
-                    empty_3.clone(),
-                    vec![
-                        vec![0, 0, M, 0, 0, M, 0, 0, M, 0, 1, 0],
-                        vec![D, 0, M, 0, 0, M, 0, 0, M, S, 0, W],
-                        vec![0, 0, M, 0, 0, M, 0, 0, M, 0, 0, 0],
-                    ],
-                    vec![
-                        vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-                        vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-                        vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-                    ],
-                ],
-                Vec3::new(-7.0, 6.8, 5.3), 
-                Quat::from_axis_angle(Vec3::new(-0.21380125, -0.952698, -0.21599823), 1.6294433),
-                5, // minimum food
-            ),
-//          // level 2
-//          LevelInfo::new(
-//              vec![
-//                  empty_1.clone(),
-//                  vec![
-//                      vec![d, 0, 0, 0, 0, m, 0, 0, 0, 0, f],
-//                  ],
-//                  vec![
-//                      vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-//                  ]
-//              ],
-//              Some(Vec3::new(-8.0, 5.0, 6.0)), 
-//              None, 
-//          ),
-//          // Level 3
-//          LevelInfo::new(
-//              vec![
-//                  empty.clone(),
-//                  empty.clone(),
-//                  empty.clone(),
-//                  empty.clone(),
-//                  empty.clone(),
-//                  empty.clone(),
-//                  empty.clone(),
-//                  empty.clone(),
-//                  empty.clone(),
-//                  empty.clone(),
-//                  empty.clone(),
-//                  vec![
-//                      vec![d, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-//                      vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-//                      vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-//                      vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-//                      vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-//                      vec![0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, f],
-//                  ],
-//                  vec![
-//                      vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-//                      vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-//                      vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-//                      vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-//                      vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-//                      vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-//                  ]
-//              ],
-//              None, 
-//              None, 
-//          ),
-            // Level 3
-//          LevelInfo::new(
-//              vec![
-//                  empty_3.clone(), 
-//                  empty_3.clone(), 
-//                  empty_3.clone(), 
-//                  vec![
-//                      vec![0, 0, m, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-//                      vec![d, 0, m, 0, 0, s, 0, 0, 0, 0, 0, f],
-//                      vec![0, 0, m, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-//                  ],
-//                  vec![
-//                      vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-//                      vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-//                      vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-//                  ]
-//              ],
-//              None, 
-//              None, 
-//          ),
-            // Level 4
-//          LevelInfo::new(
-//              vec![
-//                  empty_3.clone(), 
-//                  empty_3.clone(), 
-//                  empty_3.clone(), 
-//                  vec![
-//                      vec![0, 0, m, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-//                      vec![d, 0, m, 0, 0, s, 0, 0, 0, 0, 0, f],
-//                      vec![0, 0, m, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-//                  ],
-//                  vec![
-//                      vec![1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1],
-//                      vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-//                      vec![1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1],
-//                  ]
-//              ],
-//              None, 
-//              None, 
-//          )
-        );
-        let current_level = 0;
-        let width = level_info[current_level].width;
-        let length = level_info[current_level].length;
-        let height = level_info[current_level].height;
-
         Level { 
-            width,
-            length,
-            height,
-            game_objects: vec![vec![vec![None; length]; height]; width],
-            frame_updates: vec!(),
-            current_level: START_LEVEL,
-            level_info,
-            player_death_detected: false,
+          game_objects: vec!(),
+          frame_updates: vec!(),
+          current_level: START_LEVEL,
+          level_info: vec!(),
+          player_death_detected: false,
         }
+    }
+
+    pub fn width(&self) -> usize {
+        if let Some(info) = self.level_info.get(self.current_level) {
+            info.level[0].len()
+        } else {
+            0
+        }
+    }
+
+    pub fn length(&self) -> usize {
+        if let Some(info) = self.level_info.get(self.current_level) {
+            info.level[0][0].len()
+        } else {
+            0
+        }
+    }
+
+    pub fn height(&self) -> usize {
+        10 + // height buffer
+        if let Some(info) = self.level_info.get(self.current_level) {
+            info.level.len()
+        } else {
+            0
+        }
+    }
+
+    pub fn camera_behaviors(&self) -> &Vec::<CameraBehavior> {
+        &self.level_info[self.current_level].camera_behaviors
+    }
+
+    pub fn load_stored_levels(&mut self, asset: LevelsAsset) {
+        self.level_info = asset.levels;
+        self.game_objects = vec![vec![vec![None; self.length()]; self.height()]; self.width()];
+        self.frame_updates = vec!();
     }
 
     pub fn get_camera_position(&self) -> Vec3 {
         let current = &self.level_info[self.current_level];
-        current.camera_position
+        Vec3::new(current.camera_x, current.camera_y, current.camera_z)
     }
 
     pub fn get_camera_rotation(&self) -> Quat {
         let current = &self.level_info[self.current_level];
-        current.camera_rotation
+        Quat::from_axis_angle(Vec3::new(current.camera_rotation_x, current.camera_rotation_y, current.camera_rotation_z), 
+                              current.camera_rotation_angle)
     }
 
     pub fn is_food_random(&self) -> bool {
@@ -262,8 +135,16 @@ impl Level {
     pub fn get_level_info(&self, x: usize, y: usize, z: usize) -> usize {
         // in order to make writing the levels easier, they're stored weird
         // y and x are reversed and the vec is stored [y][x][z]
+        let height = self.height();
+        let width = self.width();
         let current = &self.level_info[self.current_level];
-        current.level[current.height - y - 1][current.width - x - 1][z]
+        
+        if y > current.level.len() - 1 && y < height + 1 {
+            0
+        } else {
+            let height = self.height() - 10;
+            current.level[height - y - 1][width - x - 1][z]
+        }
     }
 
     pub fn is_last_level(&self) -> bool {
@@ -272,17 +153,11 @@ impl Level {
 
     pub fn change_to_next_level(&mut self) {
         self.current_level += 1;
-        self.width = self.level_info[self.current_level].width;
-        self.length = self.level_info[self.current_level].length;
-        self.height = self.level_info[self.current_level].height;
-        self.game_objects = vec![vec![vec![None; self.length]; self.height]; self.width];
+        self.game_objects = vec![vec![vec![None; self.length()]; self.height()]; self.width()];
     }
 
     pub fn reset_level(&mut self) {
-        self.width = self.level_info[self.current_level].width;
-        self.length = self.level_info[self.current_level].length;
-        self.height = self.level_info[self.current_level].height;
-        self.game_objects = vec![vec![vec![None; self.length]; self.height]; self.width];
+        self.game_objects = vec![vec![vec![None; self.length()]; self.height()]; self.width()];
     }
 
     pub fn set_with_vec(&mut self, position: Vec3, game_object: Option::<GameObject>) {
@@ -344,9 +219,9 @@ impl Level {
     pub fn get_random_standable(&self) -> Position {
         let mut standables = vec!();
 
-        for x in 0..self.width {
-            for y in 0..self.height {
-                for z in 0..self.length {
+        for x in 0..self.width() {
+            for y in 0..self.height() {
+                for z in 0..self.length() {
                     if self.is_standable(x as i32, y as i32, z as i32) 
                     && (!self.is_inbounds(x as i32, y as i32 - 1, z as i32)
                         || !self.is_type(x as i32, y as i32 - 1, z as i32, Some(EntityType::Enemy)))
@@ -394,7 +269,7 @@ impl Level {
     }
 
     pub fn is_enterable(&self, x: i32, y: i32, z: i32) -> bool {
-        self.is_type(x, y, z, None) || self.is_collectable(x, y, z)
+        y != 0 && (self.is_type(x, y, z, None) || self.is_collectable(x, y, z))
     }
 
     pub fn is_position_entity(&self, position: &Position) -> bool {
@@ -495,9 +370,9 @@ pub fn print_level(
     if *time > 1.0 {
         *time = 0.0;
         println!("--------------------------");
-        for x in 0..level.width {
-            for y in 0..level.height {
-                for z in 0..level.length {
+        for x in 0..level.width() {
+            for y in 0..level.height() {
+                for z in 0..level.length() {
                     if let Some(game_object) = level.get(x as i32, y as i32, z as i32) {
                         println!("x: {} y: {} z: {} {:?}", x, y, z, game_object.entity_type);
                     }

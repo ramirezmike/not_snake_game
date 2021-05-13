@@ -40,6 +40,7 @@ pub fn spawn_player(
             .insert(Dude)
             .insert(Position { x: x as i32, y: y as i32, z: z as i32 })
             .insert(EntityType::Dude)
+            .insert(crate::camera::CameraTarget)
             .insert(holdable::Holder { holding: None })
             .insert(moveable::Moveable::new(0.1, inner_mesh_vertical_offset))
             .insert(Facing::new(Direction::Right, false))
@@ -63,11 +64,48 @@ fn player_input(
     time: Res<Time>, 
     mut lift_holdable_event_writer: EventWriter<holdable::LiftHoldableEvent>,
     mut dudes: Query<(Entity, &mut moveable::Moveable, &Facing), With<Dude>>, 
-    camera: Query<&crate::camera::fly_camera::FlyCamera>
+    camera: Query<&crate::camera::fly_camera::FlyCamera>,
+    mut kill_dude_event_writer: EventWriter<KillDudeEvent>,
+    mut up_buffer: Local<(usize, Option::<u128>)>,
+    mut down_buffer: Local<(usize, Option::<u128>)>,
+    mut right_buffer: Local<(usize, Option::<u128>)>,
+    mut left_buffer: Local<(usize, Option::<u128>)>,
 ) {
+    let buffer = 3;
+    let time_buffer = 200;
+    if keyboard_input.just_pressed(KeyCode::R) {
+        kill_dude_event_writer.send(KillDudeEvent);
+    }
+
     // this is for debugging. If we're flying, don't move the player
     if camera.iter().count() > 0 {
         return;
+    }
+
+    let time_since_startup = time.time_since_startup().as_millis();
+    if let Some(time_since_up) = up_buffer.1 {
+        if time_since_startup - time_since_up > time_buffer {
+            up_buffer.1 = None;
+            up_buffer.0 = 0;
+        }
+    }
+    if let Some(time_since_down) = down_buffer.1 {
+        if time_since_startup - time_since_down > time_buffer {
+            down_buffer.1 = None;
+            down_buffer.0 = 0;
+        }
+    }
+    if let Some(time_since_left) = left_buffer.1 {
+        if time_since_startup - time_since_left > time_buffer {
+            left_buffer.1 = None;
+            left_buffer.0 = 0;
+        }
+    }
+    if let Some(time_since_right) = right_buffer.1 {
+        if time_since_startup - time_since_right > time_buffer {
+            right_buffer.1 = None;
+            right_buffer.0 = 0;
+        }
     }
 
     for (entity, mut moveable, facing) in dudes.iter_mut() {
@@ -78,16 +116,44 @@ fn player_input(
 
         let mut move_dir = None;
         if keyboard_input.pressed(KeyCode::W) {
-            move_dir = Some(Direction::Up); 
+            if up_buffer.0 == 0 {
+                move_dir = Some(Direction::Up); 
+                up_buffer.1 = Some(time.time_since_startup().as_millis());
+            }
+            up_buffer.0 += 1; 
+            if up_buffer.0 > buffer {
+                up_buffer.0 = 0; 
+            }
         }
         if keyboard_input.pressed(KeyCode::S) {
-            move_dir = Some(Direction::Down); 
+            if down_buffer.0 == 0 {
+                move_dir = Some(Direction::Down); 
+                down_buffer.1 = Some(time.time_since_startup().as_millis());
+            }
+            down_buffer.0 += 1; 
+            if down_buffer.0 > buffer {
+                down_buffer.0 = 0; 
+            }
         }
         if keyboard_input.pressed(KeyCode::A) {
-            move_dir = Some(Direction::Left); 
+            if left_buffer.0 == 0 {
+                move_dir = Some(Direction::Left); 
+                left_buffer.1 = Some(time.time_since_startup().as_millis());
+            }
+            left_buffer.0 += 1; 
+            if left_buffer.0 > buffer {
+                left_buffer.0 = 0; 
+            }
         }
         if keyboard_input.pressed(KeyCode::D) {
-            move_dir = Some(Direction::Right); 
+            if right_buffer.0 == 0 {
+                move_dir = Some(Direction::Right); 
+                right_buffer.1 = Some(time.time_since_startup().as_millis());
+            }
+            right_buffer.0 += 1; 
+            if right_buffer.0 > buffer {
+                right_buffer.0 = 0; 
+            }
         }
 
         if let Some(move_dir) = move_dir {
@@ -103,8 +169,17 @@ fn push_block(
     level: Res<Level>,
     dudes: Query<(&Transform, &Position, &Facing)>, 
     mut blocks: Query<(&block::BlockObject, &mut moveable::Moveable)>,
+
+    mut kill_dude_event_writer: EventWriter<KillDudeEvent>,
 ) {
     for (_transform, position, facing) in dudes.iter() {
+        if position.y == 0 {
+            // dude has fallen. TODO This should be refactored when I move
+            // the dude-relevant Moveable code into here. This is just 
+            // here for now since it's convenient
+            kill_dude_event_writer.send(KillDudeEvent);
+        }
+
         if keyboard_input.just_pressed(KeyCode::K) {
             let (x, y, z) = match facing.direction {
                                 Direction::Up => (position.x + 1, position.y, position.z),
@@ -130,7 +205,6 @@ pub fn handle_kill_dude(
     mut commands: Commands,
     mut dudes: Query<Entity, With<Dude>>,
     mut kill_dude_event_reader: EventReader<KillDudeEvent>,
-
 ) {
     for _event in kill_dude_event_reader.iter() {
         for entity in dudes.iter_mut() {

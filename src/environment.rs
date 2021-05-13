@@ -74,6 +74,7 @@ impl Plugin for EnvironmentPlugin {
                .with_system(score::handle_food_eaten.system())
                .with_system(food::animate_food.system())
                .with_system(food::update_food.system())
+               .with_system(light_thing.system())
 //              .with_system(snake::add_body_part.system())
                .with_system(snake::add_body_parts.system())
                .with_system(snake::update_following.system())
@@ -133,6 +134,7 @@ pub fn load_assets(
     mut dude_meshes: ResMut<dude::DudeMeshes>,
     mut enemy_meshes: ResMut<snake::EnemyMeshes>,
     mut loading: ResMut<AssetsLoading>,
+    mut level_asset_state: ResMut<level::LevelAssetState>, 
 ) {
     dude_meshes.step1 = asset_server.load("models/dude.glb#Mesh0/Primitive0");
     dude_meshes.material = materials.add(Color::hex(crate::COLOR_DUDE).unwrap().into());
@@ -147,6 +149,9 @@ pub fn load_assets(
     loading.0.push(dude_meshes.step1.clone_untyped());
     loading.0.push(enemy_meshes.head.clone_untyped());
     loading.0.push(enemy_meshes.body.clone_untyped());
+
+    level_asset_state.handle = asset_server.load("data/test.custom");
+    asset_server.watch_for_changes().unwrap();
 }
 
 
@@ -200,9 +205,10 @@ pub fn cleanup_environment(
         }
     }
 
-    for entity in lights.iter() {
-        commands.entity(entity).despawn_recursive();
-    }
+    // light is on camera so don't need to despawn now?
+//  for entity in lights.iter() {
+//      commands.entity(entity).despawn_recursive();
+//  }
 
     for entity in ui_cameras.iter() {
         commands.entity(entity).despawn_recursive();
@@ -221,16 +227,27 @@ pub fn load_level(
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut score: ResMut<score::Score>,
     mut level_ready: ResMut<LevelReady>,
+    level_asset_state: Res<level::LevelAssetState>, 
+    levels_asset: ResMut<Assets<level::LevelsAsset>>,
     dude_meshes: Res<dude::DudeMeshes>,
     enemy_meshes: Res<snake::EnemyMeshes>, 
     entities: Query<Entity>,
-    transforms: Query<&Transform>,
+    mut camera: Query<&mut Transform, With<Camera>>,
 ) {
     println!("Starting to load level...");
     score.total = score.current_level;
     score.current_level = 0;
+    let levels_asset = levels_asset.get(&level_asset_state.handle);
+    level.load_stored_levels((*levels_asset.unwrap()).clone());
     level.reset_level();
     path_finder.load_level(&level);
+
+    for mut transform in camera.iter_mut() {
+        transform.translation = level.get_camera_position();
+        transform.rotation = level.get_camera_rotation();
+        println!("Camera: {:?}", transform.translation);
+    }
+
     let plane = meshes.add(Mesh::from(shape::Plane { size: 1.0 }));
     let cube = meshes.add(Mesh::from(shape::Cube { size: 1.0 }));
     let ground_1_material = materials.add(Color::hex(crate::COLOR_GROUND_1).unwrap().into());
@@ -242,9 +259,9 @@ pub fn load_level(
     commands.spawn_bundle(UiCameraBundle::default());
     let space_scale = 0.9;
 
-    for x in 0..level.width {
-        for y in 0..level.height {
-            for z in 0..level.length {
+    for x in 0..level.width() {
+        for y in 0..level.height() {
+            for z in 0..level.length() {
                 match level.get_level_info(x, y, z) {
                     1 => { // platform
                         let entity =
@@ -365,18 +382,51 @@ pub fn load_level(
         }
     }
 
-    commands.spawn_bundle(LightBundle {
-        transform: Transform::from_xyz(4.0, 8.0, 4.0),
-        ..Default::default()
-    });
-
     if level.is_food_random() {
         food::spawn_food(&mut commands, &mut level, &mut meshes, &mut materials, None);
     }
 
-    println!("Level is Loaded... Number of items{:?} {:?}", entities.iter().len(), transforms.iter().len());
+    println!("Level is Loaded... Number of items{:?}", entities.iter().len());
 
     level_ready.0 = true;
+}
+
+pub fn light_thing(
+    mut light: Query<&mut Light>,
+    keyboard_input: Res<Input<KeyCode>>,
+) {
+    if keyboard_input.just_pressed(KeyCode::T) {
+        if let Ok(mut light) = light.single_mut() {
+            light.intensity += 1.0;
+            println!("Intense: {}",light.intensity);
+        }
+    }
+
+    if keyboard_input.just_pressed(KeyCode::G) {
+        if let Ok(mut light) = light.single_mut() {
+            light.intensity -= 1.0;
+            println!("Intense: {}",light.intensity);
+        }
+    }
+
+    if keyboard_input.just_pressed(KeyCode::Y) {
+        if let Ok(mut light) = light.single_mut() {
+            light.range += 100.0;
+            println!("Range : {}",light.range);
+        }
+    }
+
+    if keyboard_input.just_pressed(KeyCode::H) {
+        if let Ok(mut light) = light.single_mut() {
+            light.range -= 100.0;
+            println!("Range : {}",light.range);
+        }
+    }
+}
+
+#[derive(Bundle)]
+pub struct MyLightBundle {
+    light: bevy::pbr::AmbientLight
 }
 
 pub struct DisplayText(pub String);

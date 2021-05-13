@@ -1221,6 +1221,7 @@ checksum = "0d8c1fef690941d3e7788d328517591fecc684c084084702d6ff1641e993699a"
 name = "bug_game"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "bevy 0.5.0",
  "bevy_mod_picking",
  "bevy_mod_raycast 0.1.1 (git+https://github.com/aevyrie/bevy_mod_raycast?rev=68626b7)",
@@ -1228,6 +1229,8 @@ dependencies = [
  "bevy_rapier3d",
  "petgraph",
  "rand 0.8.3",
+ "ron",
+ "serde",
 ]
 
 [[package]]

@@ -65,9 +65,11 @@ fn main() {
         .insert_resource(ClearColor(Color::hex(COLOR_BASE).unwrap()))
         .init_resource::<menu::ButtonMaterials>()
         .add_event::<credits::CreditsEvent>()
+
 //        .add_state(AppState::MainMenu)
 //        .add_state(AppState::InGame)
         .add_state(AppState::Loading)
+
         .add_system_set(SystemSet::on_enter(AppState::MainMenu).with_system(menu::setup_menu.system()))
         .add_system_set(SystemSet::on_update(AppState::MainMenu).with_system(menu::menu.system()))
         .add_system_set(SystemSet::on_exit(AppState::MainMenu).with_system(menu::cleanup_menu.system()))
@@ -81,6 +83,13 @@ fn main() {
         .add_system_set(SystemSet::on_exit(AppState::InGame).with_system(environment::cleanup_environment.system()))
         .add_plugin(EnvironmentPlugin)
         .add_plugin(DudePlugin)
+
+        .init_resource::<level::LevelAssetState>()
+        .add_asset::<level::LevelsAsset>()
+        .init_asset_loader::<level::LevelsAssetLoader>()
+      //.add_startup_system(setup.system())
+      //.add_system(print_on_load.system())
+
         .add_system(exit.system())
 //      .add_plugin(LogDiagnosticsPlugin::default())
 //      .add_plugin(FrameTimeDiagnosticsPlugin::default())

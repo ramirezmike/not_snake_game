@@ -194,6 +194,7 @@ pub fn update_moveable(
                         && previous_facing != queued_movement.0 
                         && (below_target_is_enterable || !target_is_enterable) {
                             ignore_movement = true; 
+                            println!("movement ignored!");
                         }
                     }
 

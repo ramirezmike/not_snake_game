@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use crate::{level::Level, level::PositionChangeEvent, EntityType, dude::Dude, camera::Camera,
-            environment::LevelReady, Position, snake, food::Food, win_flag::WinFlag, GameObject};
+            environment::LevelReady, Position, snake, food::Food,};
 use petgraph::{Graph, graph::NodeIndex, graph::EdgeIndex};
 use petgraph::algo::astar;
 use bevy_prototype_debug_lines::*; 
@@ -22,9 +22,9 @@ pub struct PathFinder {
 
 impl PathFinder {
     pub fn load_level(&mut self, level: &Level) {
-        let length = level.length;
-        let width = level.width;
-        let height = level.height;
+        let length = level.length();
+        let width = level.width();
+        let height = level.height();
         let mut indices: Vec::<Vec::<Vec::<NodeIndex<u32>>>> = vec![vec![vec![NodeIndex::new(0); length]; height]; width];
         let mut graph = Graph::<(i32, i32, i32), u32>::new();
         for x in 0..width {
@@ -71,6 +71,7 @@ impl PathFinder {
 
     // this should just get called for everything 
     fn update_position_in_graph(&mut self, position: &Position, level: &Res<Level>) {
+        println!("Updating path find...");
         if !level.is_inbounds(position.x, position.y, position.z) {
             return;
         }
@@ -247,7 +248,7 @@ impl PathFinder {
         level: &Res<Level>, 
         start: &Position, 
         goal: &Position,
-        mut kill_snake_event_writer: EventWriter::<snake::KillSnakeEvent>,
+        kill_snake_event_writer: &mut EventWriter::<snake::KillSnakeEvent>,
     ) {
         let start_index = self.indices[start.x as usize][start.y as usize][start.z as usize];
         let goal_index = self.indices[goal.x as usize][goal.y as usize][goal.z as usize];
@@ -320,9 +321,9 @@ pub fn show_path(
     if *should_draw {
         *b = !*b;
         if let Some(path) = &path_find.current_path {
-            for x in 0..level.width {
-                for y in 0..level.height {
-                    for z in 0..level.length {
+            for x in 0..level.width() {
+                for y in 0..level.height() {
+                    for z in 0..level.length() {
                         let current = path_find.indices[x][y][z];
                         if path.1.contains(&current) {
                             let start = Vec3::new(0.1 + x as f32, y as f32, z as f32);
@@ -403,8 +404,8 @@ pub fn update_path(
     mut path_find: ResMut<PathFinder>,
     mut snake: Query<(Entity, &mut snake::Enemy, &Position, &Transform), Without<Dude>>,
     dude: Query<(&Transform, &Position), (With<Dude>, Without<snake::Enemy>)>,
-    food: Query<(&Food, &Position)>,
-    kill_snake_event_writer: EventWriter::<snake::KillSnakeEvent>,
+    food: Query<(&Position, &Transform), With<Food>>,
+    mut kill_snake_event_writer: EventWriter::<snake::KillSnakeEvent>,
     level_ready: Res<LevelReady>,
 ) {
     if !level_ready.0 {
@@ -416,20 +417,23 @@ pub fn update_path(
         if let Ok((entity, mut snake, snake_position, snake_transform)) = snake.single_mut() {
             if !snake.is_dead {
 
-                for x in 0..level.width {
-                    for y in 0..level.height{
-                        for z in 0..level.length {
+                for x in 0..level.width() {
+                    for y in 0..level.height() {
+                        for z in 0..level.length() {
                             let p = Position { x: x as i32, y: y as i32, z: z as i32 };
                             path_find.update_position_in_graph(&p, &level);
                         }
                     }
                 }
 
+                path_find.current_path = None;
+
                 snake.speed = 0.5;
                 if let Ok((dude_transform, dude_position)) = dude.single() {
                     if dude_transform.translation.distance(snake_transform.translation) <= 1.5 {
                         snake.speed = 0.4;
-                        path_find.update_path(entity, &level, snake_position, dude_position, kill_snake_event_writer);
+                        path_find.update_path(entity, &level, snake_position, 
+                                              dude_position, &mut kill_snake_event_writer);
 
                         if path_find.current_path.is_none() {
                             snake.is_dead = true;
@@ -437,12 +441,33 @@ pub fn update_path(
                         return;
                     }
                 }
-                if let Ok((_food, food_position)) = food.single() {
-                    path_find.update_path(entity, &level, snake_position, food_position, kill_snake_event_writer);
 
-                    if path_find.current_path.is_none() {
-                        snake.is_dead = true;
+                if path_find.current_path.is_none() {
+                    let mut closest_food: Option::<(&Position, &Transform)> = None;
+                    for (food_position, food_transform) in food.iter() {
+                        if closest_food.is_none() 
+                        || closest_food.unwrap().1.translation.distance(snake_transform.translation)
+                           > food_transform.translation.distance(snake_transform.translation) {
+                            closest_food = Some((food_position, food_transform));
+                        } 
                     }
+                    if let Some((food_position, _food_transform)) = closest_food {
+                        path_find.update_path(entity, &level, snake_position, 
+                                              food_position, &mut kill_snake_event_writer);
+
+                    }
+                }
+
+                if path_find.current_path.is_none() {
+                    let random_goal = level.get_random_standable();
+
+                    path_find.update_path(entity, &level, snake_position, &random_goal, &mut kill_snake_event_writer);
+                }
+
+                // TODO: might be better to just check if the snake can move in at least
+                //       one unit in a "forward" direction?
+                if path_find.current_path.is_none() {
+                    snake.is_dead = true;
                 }
             }
         }

@@ -1,4 +1,6 @@
 use bevy::prelude::*;
+use serde::Deserialize;
+use bevy::reflect::{TypeUuid};
 //  use bevy_mod_picking::*;
 //  use bevy_rapier3d::rapier::geometry::ColliderBuilder;
 //  use bevy_rapier3d::rapier::dynamics::{RigidBodyBuilder,RigidBodySet};
@@ -7,6 +9,17 @@ use bevy::prelude::*;
 use crate::{level::Level, dude};
 
 pub mod fly_camera;
+
+pub struct CameraTarget;
+
+#[derive(Debug, Clone, Deserialize, TypeUuid)]
+#[uuid = "59cadc56-aa9c-4543-8640-a018b74b5052"] // this needs to be actually generated
+pub enum CameraBehavior {
+    Static,
+    FollowX,
+    FollowY,
+    FollowZ,
+}
 
 use fly_camera::*;
 
@@ -33,15 +46,57 @@ impl Plugin for CameraPlugin {
            )
            .add_plugin(FlyCameraPlugin)
            
-//           .add_system(update_camera.system())
+           .add_system(update_camera.system())
            //.add_system(update_camera_collisions.system());
            ;
     }
 }
     
-fn update_camera(cameras: Query<(Entity, &Camera, &Transform)>) {
-    for (_e, _camera, transform) in cameras.iter() {
-        println!("Position: {:?} Rotation: {:?} {:?}", transform.translation, transform.rotation.to_axis_angle(), transform.rotation);
+fn update_camera(
+    mut cameras: Query<(Entity, &Camera, &mut Transform)>,
+    level: Res<Level>,
+    target: Query<&Transform, (With<CameraTarget>, Without<Camera>)>,
+    keyboard_input: Res<Input<KeyCode>>,
+    time: Res<Time>,
+) {
+    if keyboard_input.just_pressed(KeyCode::P) {
+        for (_e, _camera, transform) in cameras.iter_mut() {
+            let translation = transform.translation;
+            let (rotation, axis) = transform.rotation.to_axis_angle();
+            println!("camera_x: {:?},", translation.x); 
+            println!("camera_y: {:?},", translation.y); 
+            println!("camera_z: {:?},", translation.z); 
+            println!("camera_rotation_x: {:?},", rotation.x); 
+            println!("camera_rotation_y: {:?},", rotation.y); 
+            println!("camera_rotation_z: {:?},", rotation.z); 
+            println!("camera_rotation_angle: {:?},", axis); 
+        }
+    }
+
+    for (_, _, mut camera_transform) in cameras.iter_mut() {
+        if let Ok(target_transform) = target.single() {
+            for behavior in level.camera_behaviors() {
+                match behavior {
+                    CameraBehavior::FollowX => {
+                        let x_distance = (target_transform.translation.x - camera_transform.translation.x).abs();
+                        if x_distance > 8.0 {
+                            camera_transform.translation.x += 
+                                (target_transform.translation.x - camera_transform.translation.x + 6.0) 
+                               * 0.5 
+                               * time.delta_seconds();
+                        } 
+                        if x_distance < 6.0 {
+                            camera_transform.translation.x -= 
+                                (target_transform.translation.x - camera_transform.translation.x + 6.0) 
+                                * 0.5 
+                                * time.delta_seconds();
+                        }
+                    },
+                    CameraBehavior::Static => (),
+                    _ => ()
+                }
+            }
+        }
     }
 }
 
@@ -78,13 +133,9 @@ fn create_camera(
     mut windows: ResMut<Windows>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    level: Res<Level>,
 ) {
     println!("Creating camera!");
-    let mut transform = Transform::default();
-    transform.translation = level.get_camera_position();
-    transform.rotation = level.get_camera_rotation();
-
+    let transform = Transform::default();
     let plane = meshes.add(Mesh::from(shape::Cube { size: 1.0 }));
     let mut material:StandardMaterial = Color::hex(crate::COLOR_ENEMY).unwrap().into();
     material.unlit = true;
@@ -95,7 +146,7 @@ fn create_camera(
             ..Default::default()
         })
         .with_children(|parent| {
-            let distance_from_camera = -1.5;
+            let distance_from_camera = -1.7;
             let distance_from_each_other = 1.0;
             let start_buffer = 5.00;
             let end_buffer = 0.45;
@@ -143,6 +194,19 @@ fn create_camera(
                 transform: Transform::from_translation(lower_right.start),
                 ..Default::default()
             }).insert(lower_right);
+
+
+            parent.spawn_bundle(LightBundle {
+                transform: Transform::from_xyz(0.0, 8.0, 0.0),
+                light: Light {
+                    fov: 180.0,
+                    intensity: 1000.0,
+                    range: 100.0,
+                    ..Default::default()
+                },
+                ..Default::default()
+            });
+
         })
         .insert(Camera)
  //       .with(PickSource::default());
