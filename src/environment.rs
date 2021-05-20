@@ -5,6 +5,7 @@ use crate::{level::Level, Position, collectable, dude, snake, level, hud_pass,
             EntityType, GameObject, holdable, win_flag, moveable, food, score,
             camera::MainCamera,
             level_over, credits, block, camera, path_find, path_find::PathFinder};
+//use bevy_mod_debugdump::print_schedule_runner;
 
 // material.shaded = false
 pub struct Shadow;
@@ -94,6 +95,9 @@ impl Plugin for EnvironmentPlugin {
 //               .with_system(update_text_position.system())
                .with_system(level::broadcast_changes.system().after("handle_moveables"))
            );
+//        println!("{}", schedule_graph(&app.app.schedule));
+
+//        app.set_runner(print_schedule_runner);
     }
 }
 

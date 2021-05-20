@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use crate::{level, level::Level, Position, EntityType, GameObject};
+use crate::{level, level::Level, Position, EntityType, GameObject, environment::HudFoodMesh};
 
 pub struct Food { }
 pub struct FoodInnerMesh { }
@@ -48,7 +48,7 @@ pub fn spawn_food(
 }
 
 pub fn animate_food(
-    mut foods: Query<&mut Transform, With<FoodInnerMesh>>,
+    mut foods: Query<&mut Transform, Or<(With<FoodInnerMesh>, With<HudFoodMesh>)>>,
     time: Res<Time>,
 ) {
     for mut transform in foods.iter_mut() {

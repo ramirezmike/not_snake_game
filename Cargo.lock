@@ -645,6 +645,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_mod_debugdump"
+version = "0.2.1"
+source = "git+https://github.com/jakobhellermann/bevy_mod_debugdump#78f21f27cb55a237136e7d4593814063c329aa17"
+dependencies = [
+ "bevy 0.5.0",
+ "itertools",
+ "pretty-type-name",
+]
+
+[[package]]
 name = "bevy_mod_picking"
 version = "0.3.8-alpha.0"
 source = "git+https://github.com/aevyrie/bevy_mod_picking?rev=30a9124#30a91240a28ca3ff8fa5b2cb7334ed0fa771f13b"
@@ -1223,6 +1233,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bevy 0.5.0",
+ "bevy_mod_debugdump",
  "bevy_mod_picking",
  "bevy_mod_raycast 0.1.1 (git+https://github.com/aevyrie/bevy_mod_raycast?rev=68626b7)",
  "bevy_prototype_debug_lines",
@@ -2372,6 +2383,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "itertools"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "37d572918e350e82412fe766d24b15e6682fb2ed2bbe018280caa810397cb319"
+dependencies = [
+ "either",
+]
+
+[[package]]
 name = "itoa"
 version = "0.4.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3146,6 +3166,12 @@ name = "ppv-lite86"
 version = "0.2.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ac74c624d6b2d21f425f752262f42188365d7b8ff1aff74c82e45136510a4857"
+
+[[package]]
+name = "pretty-type-name"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a8815d101cfb4cb491154896bdab292a395a7ac9ab185a9941a2f5be0135900d"
 
 [[package]]
 name = "proc-macro-crate"

@@ -12,6 +12,7 @@ pub struct PositionChangeEvent(pub Position, pub Option::<GameObject>);
 pub struct NextLevelEvent;
 
 static HEIGHT_BUFFER: usize = 3;
+static INITIAL_LEVEL: usize = 99999;
 
 pub struct Level {
     pub game_objects: Vec::<Vec::<Vec::<Option::<GameObject>>>>,
@@ -78,7 +79,7 @@ impl Level {
         Level { 
           game_objects: vec!(),
           frame_updates: vec!(),
-          current_level: 0,
+          current_level: INITIAL_LEVEL,
           level_info: vec!(),
           player_death_detected: false,
         }
@@ -123,7 +124,7 @@ impl Level {
 
     pub fn load_stored_levels(&mut self, asset: LevelsAsset) {
         self.level_info = asset.levels;
-        self.current_level = asset.start_level;
+        self.current_level = if self.current_level == INITIAL_LEVEL { asset.start_level } else { self.current_level };
         self.game_objects = vec![vec![vec![None; self.length()]; self.height()]; self.width()];
         self.frame_updates = vec!();
     }
