@@ -18,7 +18,7 @@ pub enum CameraBehavior {
     Static,
     FollowX,
     FollowY(f32),
-    FollowZ,
+    FollowZ(f32),
 }
 
 use fly_camera::*;
@@ -53,9 +53,9 @@ impl Plugin for CameraPlugin {
 }
     
 fn update_camera(
-    mut cameras: Query<(Entity, &Camera, &mut Transform)>,
+    mut cameras: Query<(Entity, &MainCamera, &mut Transform)>,
     level: Res<Level>,
-    target: Query<&Transform, (With<CameraTarget>, Without<Camera>)>,
+    target: Query<&Transform, (With<CameraTarget>, Without<MainCamera>)>,
     keyboard_input: Res<Input<KeyCode>>,
     time: Res<Time>,
 ) {
@@ -97,22 +97,14 @@ fn update_camera(
                             (target_transform.translation.y - camera_transform.translation.y + offset) 
                            * 0.8 
                            * time.delta_seconds();
-//                      let y_distance = (target_transform.translation.y - camera_transform.translation.y).abs();
-//                      if y_distance > 8.0 {
-//                          camera_transform.translation.y += 
-//                              (target_transform.translation.y - camera_transform.translation.y + 6.0) 
-//                             * 0.5 
-//                             * time.delta_seconds();
-//                      } 
-//                      if y_distance < 6.0 {
-//                          camera_transform.translation.y -= 
-//                              (target_transform.translation.y - camera_transform.translation.y + 6.0) 
-//                              * 0.5 
-//                              * time.delta_seconds();
-//                      }
+                    },
+                    CameraBehavior::FollowZ(offset) => {
+                        camera_transform.translation.z += 
+                            (target_transform.translation.z - camera_transform.translation.z + offset) 
+                           * 0.8 
+                           * time.delta_seconds();
                     },
                     CameraBehavior::Static => (),
-                    _ => ()
                 }
             }
         }
@@ -121,7 +113,7 @@ fn update_camera(
 
 fn destroy_camera(
     mut commands: Commands,
-    cameras: Query<Entity, With<Camera>>
+    cameras: Query<Entity, With<MainCamera>>
 ) {
     for camera in cameras.iter() {
         commands.entity(camera).despawn_recursive();
@@ -227,7 +219,7 @@ fn create_camera(
             });
 
         })
-        .insert(Camera)
+        .insert(MainCamera)
  //       .with(PickSource::default());
             ;
 
@@ -239,7 +231,7 @@ fn create_camera(
 #[derive(Bundle)]
 struct Player { }
 
-pub struct Camera;
+pub struct MainCamera;
 
 pub fn handle_player_death(
     mut state: ResMut<State<crate::AppState>>,
@@ -305,7 +297,7 @@ fn toggle_fly(
     mut commands: Commands, 
     keys: Res<Input<KeyCode>>, 
     mut windows: ResMut<Windows>,
-    mut camera: Query<(Entity, &mut Camera, Option<&FlyCamera>, &mut Transform)>,
+    mut camera: Query<(Entity, &mut MainCamera, Option<&FlyCamera>, &mut Transform)>,
     mut cooldown: Local<f32>,
     timer: Res<Time>,
 ) {

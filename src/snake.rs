@@ -1,6 +1,9 @@
 use bevy::prelude::*;
 use crate::{Direction, EntityType, GameObject, level::Level, path_find::PathFinder, dude,
             Position, food::FoodEatenEvent};
+use petgraph::{graph::NodeIndex};
+use bevy::reflect::{TypeUuid};
+use serde::Deserialize;
 
 #[derive(Default)]
 pub struct EnemyMeshes {
@@ -9,6 +12,15 @@ pub struct EnemyMeshes {
     pub shadow: Handle<Mesh>,
     pub material: Handle<StandardMaterial>,
     pub shadow_material: Handle<StandardMaterial>,
+}
+
+#[derive(Debug, Clone, Deserialize, TypeUuid)]
+#[uuid = "60cadc56-aa9c-4543-8640-a018b74b5052"] // this needs to be actually generated
+pub enum SnakeTarget {
+    Normal,
+    OnlyFood,
+    OnlyDude,
+    OnlyRandom,
 }
 
 pub struct BodyPosition {
@@ -24,6 +36,7 @@ pub struct Enemy {
     pub is_dead: bool,
     up: Vec3,
     forward: Vec3,
+    pub current_path: Option<(u32, Vec<NodeIndex<u32>>)>,
 }
 
 pub struct Snake;
@@ -118,6 +131,7 @@ pub fn spawn_enemy(
                 is_dead: false,
                 up: Vec3::Y,
                 forward: -Vec3::X,
+                current_path: None,
             })
             .with_children(|parent|  {
                 parent.spawn_bundle(PbrBundle {
@@ -205,7 +219,7 @@ pub fn update_enemy(
                 let is_ai_controlled = true;
                 let mut new_target = None;
                 if is_ai_controlled  {
-                    let (_, path) = path_find.get_path();
+                    let (_, path) = enemy.current_path.clone().unwrap_or((0, vec!()));
                     let mut found_next = false;
                     let mut found_target = None;
 

@@ -1,0 +1,9 @@
+- snake heads sometimes go backward 
+- setup something to cull out of view blocks
+- make eye shape level
+- make yellow electric snake
+- redo level 2 to add places that player can fall 
+- set snake path find to chase nearby player
+- add meta stuff to hot reload like start level
+- animate HUD
+- fix 40/60 fps issue

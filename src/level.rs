@@ -1,5 +1,5 @@
 use bevy::{prelude::*,};
-use crate::{GameObject, EntityType, Position, dude, camera::CameraBehavior };
+use crate::{GameObject, EntityType, Position, dude, camera::CameraBehavior, snake };
 use rand::seq::SliceRandom;
 
 use bevy::asset::{AssetLoader, LoadContext, LoadedAsset};
@@ -11,7 +11,7 @@ use serde::Deserialize;
 pub struct PositionChangeEvent(pub Position, pub Option::<GameObject>);
 pub struct NextLevelEvent;
 
-static START_LEVEL: usize = 6;
+static HEIGHT_BUFFER: usize = 3;
 
 pub struct Level {
     pub game_objects: Vec::<Vec::<Vec::<Option::<GameObject>>>>,
@@ -24,6 +24,7 @@ pub struct Level {
 #[derive(Debug, Clone, Deserialize, TypeUuid)]
 #[uuid = "39cadc56-aa9c-4543-8640-a018b74b5052"]
 pub struct LevelsAsset {
+    pub start_level: usize,
     pub levels: Vec::<LevelInfo>,
 }
 
@@ -34,6 +35,7 @@ pub struct LevelInfo {
     is_food_random: bool,
     minimum_food: usize,
     snake_speed: Option::<f32>,
+    snake_target: Option::<snake::SnakeTarget>, 
     camera_x: f32,
     camera_y: f32,
     camera_z: f32,
@@ -76,7 +78,7 @@ impl Level {
         Level { 
           game_objects: vec!(),
           frame_updates: vec!(),
-          current_level: START_LEVEL,
+          current_level: 0,
           level_info: vec!(),
           player_death_detected: false,
         }
@@ -99,7 +101,7 @@ impl Level {
     }
 
     pub fn height(&self) -> usize {
-        10 + // height buffer
+        HEIGHT_BUFFER + // height buffer
         if let Some(info) = self.level_info.get(self.current_level) {
             info.level.len()
         } else {
@@ -115,8 +117,13 @@ impl Level {
         self.level_info[self.current_level].snake_speed.unwrap_or(0.5)
     }
 
+    pub fn snake_target(&self) -> snake::SnakeTarget {
+        self.level_info[self.current_level].snake_target.clone().unwrap_or(snake::SnakeTarget::Normal)
+    }
+
     pub fn load_stored_levels(&mut self, asset: LevelsAsset) {
         self.level_info = asset.levels;
+        self.current_level = asset.start_level;
         self.game_objects = vec![vec![vec![None; self.length()]; self.height()]; self.width()];
         self.frame_updates = vec!();
     }
@@ -147,7 +154,7 @@ impl Level {
         if y > current.level.len() - 1 && y < height + 1 {
             0
         } else {
-            let height = self.height() - 10;
+            let height = self.height() - HEIGHT_BUFFER;
             current.level[height - y - 1][width - x - 1][z]
         }
     }
@@ -295,7 +302,7 @@ impl Level {
 
     pub fn is_standable(&self, x: i32, y: i32, z: i32) -> bool {
         // this is awful
-        self.is_type(x, y - 1, z, Some(EntityType::Block)) || y - 1 < 0
+        self.is_type(x, y - 1, z, Some(EntityType::Block)) //|| y - 1 < 0
             || self.is_type(x, y - 1, z, Some(EntityType::Enemy)) 
     }
 

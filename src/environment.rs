@@ -1,13 +1,15 @@
 use bevy::prelude::*;
 use bevy::render::camera::Camera;
 
-use crate::{level::Level, Position, collectable, dude, snake, level,
+use crate::{level::Level, Position, collectable, dude, snake, level, hud_pass,
             EntityType, GameObject, holdable, win_flag, moveable, food, score,
+            camera::MainCamera,
             level_over, credits, block, camera, path_find, path_find::PathFinder};
 
 // material.shaded = false
 pub struct Shadow;
 pub struct PlatformMesh;
+pub struct BlockMesh;
 pub struct LevelReady(pub bool);
 pub struct EnvironmentPlugin;
 impl Plugin for EnvironmentPlugin {
@@ -21,6 +23,7 @@ impl Plugin for EnvironmentPlugin {
            .init_resource::<camera::CameraMouthMovement>()
            .init_resource::<AssetsLoading>()
            .add_plugin(camera::CameraPlugin)
+           .add_plugin(hud_pass::HUDPassPlugin)
            .add_event::<holdable::LiftHoldableEvent>()
            .add_event::<level::PositionChangeEvent>()
            .add_event::<level_over::LevelOverEvent>()
@@ -67,6 +70,7 @@ impl Plugin for EnvironmentPlugin {
                .with_system(moveable::update_moveable.system().label("handle_moveables"))
                .with_system(win_flag::update_flag.system())
                .with_system(collectable::check_collected.system())
+               .with_system(update_hud_text_position.system())
                .with_system(level_over::level_over_check.system())
                .with_system(path_find::show_path.system())
                .with_system(snake::update_enemy.system())
@@ -74,7 +78,8 @@ impl Plugin for EnvironmentPlugin {
                .with_system(score::handle_food_eaten.system())
                .with_system(food::animate_food.system())
                .with_system(food::update_food.system())
-               .with_system(light_thing.system())
+               .with_system(hide_blocks.system())
+//               .with_system(light_thing.system())
 //              .with_system(snake::add_body_part.system())
                .with_system(snake::add_body_parts.system())
                .with_system(snake::update_following.system())
@@ -191,6 +196,8 @@ pub fn cleanup_environment(
     entities: Query<(Entity, &EntityType)>,
     lights: Query<Entity, With<Light>>,
     platforms: Query<Entity, With<PlatformMesh>>,
+    hud_entities: Query<Entity, With<hud_pass::HUDPass>>,
+    hud_cameras: Query<Entity, With<Hud3DCamera>>,
     ui_cameras: Query<Entity, With<bevy::render::camera::OrthographicProjection>>,
 ) {
     level_ready.0 = false;
@@ -210,7 +217,15 @@ pub fn cleanup_environment(
 //      commands.entity(entity).despawn_recursive();
 //  }
 
+    for entity in hud_entities.iter() {
+        commands.entity(entity).despawn_recursive();
+    }
+
     for entity in ui_cameras.iter() {
+        commands.entity(entity).despawn_recursive();
+    }
+
+    for entity in hud_cameras.iter() {
         commands.entity(entity).despawn_recursive();
     }
 
@@ -232,7 +247,8 @@ pub fn load_level(
     dude_meshes: Res<dude::DudeMeshes>,
     enemy_meshes: Res<snake::EnemyMeshes>, 
     entities: Query<Entity>,
-    mut camera: Query<&mut Transform, With<Camera>>,
+    mut camera: Query<&mut Transform, With<MainCamera>>,
+    asset_server: Res<AssetServer>,
 ) {
     println!("Starting to load level...");
     score.total = score.current_level;
@@ -282,6 +298,7 @@ pub fn load_level(
                                 },
                                 ..Default::default()
                             })
+                            .insert(BlockMesh)
                             .insert(EntityType::Block)
                             .id();
                         level.set(x as i32, y as i32, z as i32, Some(GameObject::new(entity, EntityType::Block)));
@@ -386,9 +403,114 @@ pub fn load_level(
         food::spawn_food(&mut commands, &mut level, &mut meshes, &mut materials, None);
     }
 
+    create_hud(&mut commands, &mut meshes, &mut materials, &asset_server);
+
     println!("Level is Loaded... Number of items{:?}", entities.iter().len());
 
     level_ready.0 = true;
+}
+
+pub struct Hud3DCamera;
+pub struct HudFoodMesh;
+fn create_hud(
+    commands: &mut Commands,
+    meshes: &mut ResMut<Assets<Mesh>>,
+    materials: &mut ResMut<Assets<StandardMaterial>>,
+    asset_server: &Res<AssetServer>,
+) {
+    commands.spawn_bundle(UiCameraBundle::default());
+    let food_color = Color::hex(crate::COLOR_FOOD).unwrap();
+    let food_color = Color::rgba(food_color.r(), food_color.g(), food_color.b(), 1.0);
+    commands.spawn_bundle(hud_pass::HUDPbrBundle {
+        mesh: meshes.add(Mesh::from(shape::Icosphere { radius: 0.25, subdivisions: 0 })),
+        material: materials.add(food_color.into()),
+        transform: Transform::from_translation(Vec3::new(0.0, 5.2, -9.5)),
+        ..Default::default()
+    })
+    .insert(HudFoodMesh);
+
+    commands.spawn_bundle(hud_pass::HUDCameraBundle {
+        transform: Transform::from_translation(Vec3::new(-15.0, 0.0, 0.0))
+            .looking_at(Vec3::ZERO, Vec3::Y),
+        ..Default::default()
+    })
+    .insert(Hud3DCamera);
+
+    // Set up UI labels for clarity
+    let font = asset_server.load("fonts/FiraSans-Bold.ttf");
+
+    commands
+        .spawn_bundle(TextBundle {
+            style: Style {
+                align_self: AlignSelf::FlexEnd,
+                position_type: PositionType::Absolute,
+                position: Rect {
+                    bottom: Val::Px(5.0),
+                    left: Val::Px(15.0),
+                    ..Default::default()
+                },
+                size: Size {
+                    //width: Val::Px(200.0),
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
+            text: Text::with_section(
+                "blah".to_string(),
+                TextStyle {
+                    font,
+                    font_size: 50.0,
+                    color: Color::WHITE,
+                },
+                TextAlignment {
+                    ..Default::default()
+                }
+            ),
+            ..Default::default()
+        })
+        .insert(FollowText);
+
+
+    println!("Added HUD");
+}
+
+fn update_hud_text_position(
+    windows: Res<Windows>,
+    mut text_query: Query<(&mut Style, &CalculatedSize, &mut Text), With<FollowText>>,
+    mesh_query: Query<&Transform, With<HudFoodMesh>>,
+    camera_query: Query<(&Camera, &GlobalTransform), With<Hud3DCamera>>,
+    score: Res<score::Score>,
+    level: Res<Level>,
+) {
+    for (camera, camera_transform) in camera_query.iter() {
+        for mesh_position in mesh_query.iter() {
+            for (mut style, calculated, mut text) in text_query.iter_mut() {
+                text.sections[0].value = format!("{} / {}", score.current_level, level.get_current_minimum_food()).into();
+                match camera.world_to_screen(&windows, camera_transform, mesh_position.translation)
+                {
+                    Some(coords) => {
+                        style.position.left = Val::Px(coords.x + 100.0 - calculated.size.width / 2.0);
+                        style.position.bottom = Val::Px(coords.y - calculated.size.height / 2.0);
+                    }
+                    None => {
+                        // A hack to hide the text when the cube is behind the camera
+                        style.position.bottom = Val::Px(-1000.0);
+                    }
+                }
+            }
+        }
+    }
+}
+
+pub fn hide_blocks(
+    mut blocks: Query<&mut Visible>,
+    keyboard_input: Res<Input<KeyCode>>,
+) {
+    if keyboard_input.just_pressed(KeyCode::T) {
+        for mut visible in blocks.iter_mut() {
+            visible.is_visible = false;
+        }
+    }
 }
 
 pub fn light_thing(
@@ -430,62 +552,4 @@ pub struct MyLightBundle {
 }
 
 pub struct DisplayText(pub String);
-pub struct FollowText(Entity);
-
-fn create_follow_text(entity: Entity, font: Handle<Font>) -> (TextBundle, FollowText) {
-    (TextBundle {
-            style: Style {
-                align_self: AlignSelf::FlexEnd,
-                position_type: PositionType::Absolute,
-                position: Rect {
-                    bottom: Val::Px(5.0),
-                    left: Val::Px(15.0),
-                    ..Default::default()
-                },
-                size: Size {
-                    width: Val::Px(200.0),
-                    ..Default::default()
-                },
-                ..Default::default()
-            },
-            text: Text::with_section(
-                "1".to_string(),
-                TextStyle {
-                    font,
-                    font_size: 50.0,
-                    color: Color::WHITE,
-                    
-                },
-                TextAlignment {
-                    ..Default::default()
-                },
-            ),
-            ..Default::default()
-        }, FollowText(entity))
-}
-
-fn update_text_position(
-    windows: Res<Windows>,
-    mut text_query: Query<(&mut Style, &CalculatedSize, &FollowText, &mut Text)>,
-    entity_query: Query<(&Transform, &DisplayText)>,
-    camera_query: Query<(&Camera, &GlobalTransform), With<crate::camera::Camera>>,
-) {
-    for (camera, camera_transform) in camera_query.iter() {
-        for (mut style, calculated, follow_text, mut text) in text_query.iter_mut() {
-            if let Ok((entity_transform, display_text)) = entity_query.get(follow_text.0) {
-                text.sections[0].value = display_text.0.clone();
-                match camera.world_to_screen(&windows, camera_transform, entity_transform.translation)
-                {
-                    Some(coords) => {
-                        style.position.left = Val::Px(coords.x - calculated.size.width / 2.0);
-                        style.position.bottom = Val::Px(coords.y - calculated.size.height / 2.0);
-                    }
-                    None => {
-                        // hide the text when the mesh is behind the camera
-                        style.position.bottom = Val::Px(-1000.0);
-                    }
-                }
-            }
-        }
-    }
-}
+pub struct FollowText;

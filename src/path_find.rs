@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use crate::{level::Level, level::PositionChangeEvent, EntityType, dude::Dude, camera::Camera,
+use crate::{level::Level, level::PositionChangeEvent, EntityType, dude::Dude, camera::MainCamera,
             environment::LevelReady, Position, snake, food::Food,};
 use petgraph::{Graph, graph::NodeIndex, graph::EdgeIndex};
 use petgraph::algo::astar;
@@ -17,7 +17,6 @@ use bevy_prototype_debug_lines::*;
 pub struct PathFinder {
     indices: Vec::<Vec::<Vec::<NodeIndex<u32>>>>,
     graph: Graph::<(i32, i32, i32), u32>,
-    current_path: Option<(u32, Vec<NodeIndex<u32>>)>,
 }
 
 impl PathFinder {
@@ -47,14 +46,12 @@ impl PathFinder {
         }
         self.indices = indices;
         self.graph = graph;
-        self.current_path = None;
     }
 
     pub fn new() -> Self {
         PathFinder {
             indices: vec!(),
             graph: Graph::<(i32, i32, i32), u32>::new(),
-            current_path: None,
         }
     }
 
@@ -106,7 +103,8 @@ impl PathFinder {
         let weight = match level.get(x as i32, y as i32 - 1, z as i32) {
                         Some(game_object) => {
                             match game_object.entity_type {
-                                EntityType::Enemy | EntityType::EnemyHead => 3, // try to prevent snakes from climbing on themselves
+                                EntityType::EnemyHead => 99,
+                                EntityType::Enemy => 3, // try to prevent snakes from climbing on themselves
                                 _ => 1
                             }
                         },
@@ -243,15 +241,19 @@ impl PathFinder {
     }
 
     pub fn update_path(&mut self,       
+        claimed_nodes: &Vec::<NodeIndex<u32>>,
         requesting_entity: Entity, // probably a snake
         level: &Res<Level>, 
         start: &Position, 
         goal: &Position,
         kill_snake_event_writer: &mut EventWriter::<snake::KillSnakeEvent>,
-    ) {
+    ) -> Option<(u32, Vec<NodeIndex<u32>>)> {
         let start_index = self.indices[start.x as usize][start.y as usize][start.z as usize];
         let goal_index = self.indices[goal.x as usize][goal.y as usize][goal.z as usize];
-        let mut path = astar(&self.graph, start_index, |finish| finish == goal_index, |e| *e.weight(), |_| 0);
+        let mut path = astar(&self.graph, start_index, 
+                             |finish| finish == goal_index, 
+                             |e| *e.weight(), 
+                             |n| if claimed_nodes.iter().any(|claimed| *claimed == n) { 99 } else { 0 });
 
         let mut attempts = 0;
         let max_attempts = 10;
@@ -260,7 +262,10 @@ impl PathFinder {
             println!("Trying to find new random spot... {}", attempts);
             let random_goal = level.get_random_standable();
             let goal_index = self.indices[random_goal.x as usize][random_goal.y as usize][random_goal.z as usize];
-            path = astar(&self.graph, start_index, |finish| finish == goal_index, |e| *e.weight(), |_| 0);
+            path = astar(&self.graph, start_index, 
+                         |finish| finish == goal_index, 
+                         |e| *e.weight(), 
+                         |n| if claimed_nodes.iter().any(|claimed| *claimed == n) { 99 } else { 0 });
             attempts += 1; 
 
             if attempts >= max_attempts {
@@ -270,7 +275,7 @@ impl PathFinder {
             }
         }
 
-        self.current_path = path;
+        path
     }
 
 //  pub fn get_weight(&self, position: &Position) -> Position {
@@ -284,10 +289,6 @@ impl PathFinder {
         let weight = *self.graph.node_weight(index)
                                 .expect("Node doesn't exist");
         Position { x: weight.0, y: weight.1, z: weight.2 }
-    }
-
-    pub fn get_path(&self) -> (u32, Vec<NodeIndex<u32>>) {
-        self.current_path.clone().unwrap_or((0, vec!()))
     }
 
     pub fn get_edges(&self) -> Vec::<(Position, Position)> {
@@ -304,10 +305,9 @@ impl PathFinder {
 }
 
 pub fn show_path(
-    windows: Res<Windows>,
     keyboard_input: Res<Input<KeyCode>>,
-    camera_query: Query<(&Camera, &GlobalTransform), With<crate::camera::Camera>>,
     path_find: Res<PathFinder>,
+    snakes: Query<&snake::Enemy>,
     level: Res<Level>,
     mut should_draw: Local<bool>,
     mut b: Local<bool>,
@@ -319,21 +319,23 @@ pub fn show_path(
     
     if *should_draw {
         *b = !*b;
-        if let Some(path) = &path_find.current_path {
-            for x in 0..level.width() {
-                for y in 0..level.height() {
-                    for z in 0..level.length() {
-                        let current = path_find.indices[x][y][z];
-                        if path.1.contains(&current) {
-                            let start = Vec3::new(0.1 + x as f32, y as f32, z as f32);
-                            let end = Vec3::new(x as f32, 1.0 + y as f32, z as f32);
-                            let thickness = 0.01;
-                            if *b {
-                                lines.line_gradient(start, end, thickness, Color::WHITE, Color::RED);
-                            } else {
-                                lines.line_gradient(start, end, thickness, Color::WHITE, Color::YELLOW);
-                            }
-                        } 
+        for snake in snakes.iter() {
+            if let Some(path) = &snake.current_path {
+                for x in 0..level.width() {
+                    for y in 0..level.height() {
+                        for z in 0..level.length() {
+                            let current = path_find.indices[x][y][z];
+                            if path.1.contains(&current) {
+                                let start = Vec3::new(0.1 + x as f32, y as f32, z as f32);
+                                let end = Vec3::new(x as f32, 1.0 + y as f32, z as f32);
+                                let thickness = 0.01;
+                                if *b {
+                                    lines.line_gradient(start, end, thickness, Color::WHITE, Color::RED);
+                                } else {
+                                    lines.line_gradient(start, end, thickness, Color::WHITE, Color::YELLOW);
+                                }
+                            } 
+                        }
                     }
                 }
             }
@@ -382,6 +384,9 @@ pub fn draw_edges(
             for (p1, p2) in path_find.get_edges().iter() {
                     let start = Vec3::new(0.1 + p1.x as f32, 0.8 + p1.y as f32, p1.z as f32);
                     let end = Vec3::new(p2.x as f32, 0.2 + p2.y as f32, p2.z as f32);
+
+//                    let end = Vec3::new(p2.x as f32, 0.2 + p2.y as f32, p2.z as f32);
+//                    let start = Vec3::new(end.x, 0.8 + end.y as f32, end.z);
                     let thickness = 0.01;
                     
                     //if !(p1.x == p2.x && p1.z == p2.z && p1.y > p2.y) {
@@ -412,62 +417,113 @@ pub fn update_path(
     }
     *time += timer.delta_seconds();
 
-    if *time > 0.2 {
-        if let Ok((entity, mut snake, snake_position, snake_transform)) = snake.single_mut() {
+    if *time > 0.0 {
+        for x in 0..level.width() {
+            for y in 0..level.height() {
+                for z in 0..level.length() {
+                    let p = Position { x: x as i32, y: y as i32, z: z as i32 };
+                    path_find.update_position_in_graph(&p, &level);
+                }
+            }
+        }
+
+        let snake_speed = level.snake_speed();
+        let (seek_food, seek_dude, mut seek_random) 
+            = match level.snake_target() {
+                  snake::SnakeTarget::Normal => (true, true, true),
+                  snake::SnakeTarget::OnlyFood => (true, false, false),
+                  snake::SnakeTarget::OnlyRandom => (false, false, true),
+                  snake::SnakeTarget::OnlyDude => (false, true, false),
+              };
+
+        let mut claimed_nodes = vec!();
+        let mut claimed_targets = vec!();
+        for (entity, mut snake, snake_position, snake_transform) in snake.iter_mut() {
             if !snake.is_dead {
+                if let Some((_, current_path)) = &snake.current_path {
+                    let is_still_valid = current_path
+                                           .iter().skip(1)
+                                           .zip(current_path.iter().skip(2))
+                                           .all(|(current, next)| path_find.graph.contains_edge(*current, *next));
+                    let path_contains_snake_position =
+                                         current_path
+                                           .iter()
+                                           .any(|p| path_find.get_position(*p) == *snake_position);
 
-                for x in 0..level.width() {
-                    for y in 0..level.height() {
-                        for z in 0..level.length() {
-                            let p = Position { x: x as i32, y: y as i32, z: z as i32 };
-                            path_find.update_position_in_graph(&p, &level);
-                        }
-                    }
-                }
-
-                path_find.current_path = None;
-
-                let snake_speed = level.snake_speed();
+                    if is_still_valid && current_path.len() > 2 && path_contains_snake_position {
+//                      println!("Path valid {} {}", is_still_valid, current_path.len());
+//                      println!("First: {:?} Snake: {:?} Pos{:?}", 
+//                                  path_find.get_position(current_path[0]), 
+//                                  snake_position,
+//                                  path_contains_snake_position);
+                        continue;
+                    } 
+//                  println!("Path no longer valid {} {} {}", is_still_valid, current_path.len(), path_contains_snake_position);
+                } 
+                snake.current_path = None;
                 snake.speed = snake_speed;
-                if let Ok((dude_transform, dude_position)) = dude.single() {
-                    if dude_transform.translation.distance(snake_transform.translation) <= 1.5 {
-                        snake.speed -= 0.1;
-                        path_find.update_path(entity, &level, snake_position, 
-                                              dude_position, &mut kill_snake_event_writer);
 
-                        if path_find.current_path.is_none() {
-                            snake.is_dead = true;
+                if seek_dude {
+                    if let Ok((dude_transform, dude_position)) = dude.single() {
+                        if claimed_targets.iter().any(|x| path_find.get_position(*x) == *dude_position) {
+                            // dude is claimed by another snake, so just seek random for a step
+                            seek_random = true;
                         }
-                        return;
+
+                        if (!seek_food && !seek_random)
+                        || dude_transform.translation.distance(snake_transform.translation) <= 1.5 {
+                            snake.speed -= 0.1;
+                            snake.current_path = path_find.update_path(&claimed_nodes, entity, &level, snake_position, 
+                                                                       dude_position, &mut kill_snake_event_writer);
+                        }
                     }
                 }
 
-                if path_find.current_path.is_none() {
+                // TODO: this needs to be rewritten because snakes can get stuck 
+                //       between two foods that are the same distance apart
+                if seek_food && snake.current_path.is_none() {
                     let mut closest_food: Option::<(&Position, &Transform)> = None;
                     for (food_position, food_transform) in food.iter() {
-                        if closest_food.is_none() 
-                        || closest_food.unwrap().1.translation.distance(snake_transform.translation)
-                           > food_transform.translation.distance(snake_transform.translation) {
-                            closest_food = Some((food_position, food_transform));
-                        } 
+                        if !claimed_targets.iter().any(|x| path_find.get_position(*x) == *food_position) {
+                            if closest_food.is_none() 
+                            || closest_food.unwrap().1.translation.distance(snake_transform.translation)
+                               > food_transform.translation.distance(snake_transform.translation) {
+                                closest_food = Some((food_position, food_transform));
+                            } 
+                        } else {
+                            // go to next food but potentially seek random to fallback on if no food
+                            // is available
+                            seek_random = true;
+                        }
                     }
-                    if let Some((food_position, _food_transform)) = closest_food {
-                        path_find.update_path(entity, &level, snake_position, 
-                                              food_position, &mut kill_snake_event_writer);
 
+                    if let Some((food_position, _food_transform)) = closest_food {
+                        println!("Found food {:?}", food_position);
+                        snake.current_path = path_find.update_path(&claimed_nodes, entity, &level, snake_position, 
+                                                                   food_position, &mut kill_snake_event_writer);
                     }
                 }
 
-                if path_find.current_path.is_none() {
+                if seek_random && snake.current_path.is_none() {
                     let random_goal = level.get_random_standable();
 
-                    path_find.update_path(entity, &level, snake_position, &random_goal, &mut kill_snake_event_writer);
+                    println!("looking for random");
+                    snake.current_path = path_find.update_path(&claimed_nodes, entity, &level, 
+                                                               snake_position, &random_goal, 
+                                                               &mut kill_snake_event_writer);
                 }
 
                 // TODO: might be better to just check if the snake can move in at least
                 //       one unit in a "forward" direction?
-                if path_find.current_path.is_none() {
+                if snake.current_path.is_none() {
                     snake.is_dead = true;
+                } else {
+                    let current_path = snake.current_path.as_ref().unwrap().1.iter().cloned();
+                    if current_path.len() == 3 {
+                        println!("Something got claimed!");
+                        claimed_targets.push(current_path.clone().last().unwrap()); 
+                    }
+                    claimed_nodes.extend(current_path);
                 }
             }
         }

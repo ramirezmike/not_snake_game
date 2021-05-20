@@ -21,6 +21,7 @@ pub mod win_flag;
 pub mod food;
 pub mod score;
 pub mod path_find;
+pub mod hud_pass;
 mod menu;
 
 use camera::*;
@@ -91,8 +92,8 @@ fn main() {
       //.add_system(print_on_load.system())
 
         .add_system(exit.system())
-//      .add_plugin(LogDiagnosticsPlugin::default())
-//      .add_plugin(FrameTimeDiagnosticsPlugin::default())
+        .add_plugin(LogDiagnosticsPlugin::default())
+        .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .run();
 }
 
