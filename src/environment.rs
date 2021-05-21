@@ -393,9 +393,9 @@ pub fn load_level(
                     },
                     4 => dude::spawn_player(&mut commands, &dude_meshes, &mut level, x, y, z),
                     5 => snake::spawn_enemy(&mut commands, &enemy_meshes, &mut level, x, y, z),
-                    6 => {
+                    x @ 6 | x @ 7 => {
                         food::spawn_food(&mut commands, &mut level, &mut meshes, &mut materials, 
-                                         Some(Position{ x: x as i32, y: y as i32, z: z as i32 }))
+                                         Some(Position{ x: x as i32, y: y as i32, z: z as i32 }), x == 6)
                     }
                     _ => ()
                 }
@@ -404,7 +404,7 @@ pub fn load_level(
     }
 
     if level.is_food_random() {
-        food::spawn_food(&mut commands, &mut level, &mut meshes, &mut materials, None);
+        food::spawn_food(&mut commands, &mut level, &mut meshes, &mut materials, None, true);
     }
 
     create_hud(&mut commands, &mut meshes, &mut materials, &asset_server);

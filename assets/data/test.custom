@@ -6,7 +6,7 @@
 // S: usize = 5; snake spawn point
 // F: usize = 6; food spawn point
 LevelsAsset (
-    start_level: 9,
+    start_level: 0,
     levels: [
         LevelInfo (
             level: [[
@@ -772,7 +772,7 @@ LevelsAsset (
         LevelInfo (
             level: [[
     [0, 0, 0, 0 ],
-    [4, 0, 0, 0 ],
+    [4, 0, 6, 7 ],
     [0, 0, 0, 0 ],
 ], [
     [1, 1, 1, 1 ],

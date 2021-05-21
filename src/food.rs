@@ -11,6 +11,7 @@ pub fn spawn_food(
     meshes: &mut ResMut<Assets<Mesh>>,
     materials: &mut ResMut<Assets<StandardMaterial>>,
     position: Option::<Position>,
+    show_shadow: bool,
 ) {
     let food_color = Color::hex(crate::COLOR_FOOD).unwrap();
     let food_color = Color::rgba(food_color.r(), food_color.g(), food_color.b(), 1.0);
@@ -31,13 +32,15 @@ pub fn spawn_food(
             })
             .insert(FoodInnerMesh {});
 
-            parent.spawn_bundle(PbrBundle {
-                mesh: meshes.add(Mesh::from(shape::Plane { size: 0.25 })),
-                material: materials.add(shaded_food_color.into()),
-                transform: Transform::from_xyz(0.0, 0.05, 0.0),
-                ..Default::default()
-            })
-            .insert(FoodInnerMesh {});
+            if show_shadow {
+                parent.spawn_bundle(PbrBundle {
+                    mesh: meshes.add(Mesh::from(shape::Plane { size: 0.25 })),
+                    material: materials.add(shaded_food_color.into()),
+                    transform: Transform::from_xyz(0.0, 0.05, 0.0),
+                    ..Default::default()
+                })
+                .insert(FoodInnerMesh {});
+            }
         })
         .insert(Food {})
         .insert(EntityType::Food)

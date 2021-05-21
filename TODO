@@ -6,8 +6,6 @@ TODO
 - make a layered donut level?
 - make yellow electric snake
 - set snake path find to chase nearby player
-- add meta stuff to hot reload like start level
-- fix 40/60 fps issue
 - add controller support
 - make foods without shadows
 - make multiple colors/shades of blocks?
@@ -16,8 +14,11 @@ TODO
 - make exit and food announce their spawning somehow
 - fix dude movement so that it isn't frame based but also doesn't let you kick and then jump right after
 
+will not fix
+- fix 40/60 fps issue (may be just what it is on this laptop)
 
 
 Done
 - animate HUD
 - redo level 2 to add places that player can fall 
+- add meta stuff to hot reload like start level
