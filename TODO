@@ -7,7 +7,6 @@ TODO
 - make yellow electric snake
 - set snake path find to chase nearby player
 - add controller support
-- make foods without shadows
 - make multiple colors/shades of blocks?
 - freeze player when they die finish level
 - change exit flag to a different shape
@@ -22,3 +21,4 @@ Done
 - animate HUD
 - redo level 2 to add places that player can fall 
 - add meta stuff to hot reload like start level
+- make foods without shadows

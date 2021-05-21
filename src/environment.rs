@@ -393,9 +393,9 @@ pub fn load_level(
                     },
                     4 => dude::spawn_player(&mut commands, &dude_meshes, &mut level, x, y, z),
                     5 => snake::spawn_enemy(&mut commands, &enemy_meshes, &mut level, x, y, z),
-                    x @ 6 | x @ 7 => {
+                    item @ 6 | item @ 7 => {
                         food::spawn_food(&mut commands, &mut level, &mut meshes, &mut materials, 
-                                         Some(Position{ x: x as i32, y: y as i32, z: z as i32 }), x == 6)
+                                         Some(Position{ x: x as i32, y: y as i32, z: z as i32 }), item == 6)
                     }
                     _ => ()
                 }
