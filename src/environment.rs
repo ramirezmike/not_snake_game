@@ -194,6 +194,7 @@ fn check_assets_ready(
     }
 }
 
+// this could probably just be one large query with ORs on the Withs
 pub fn cleanup_environment(
     mut commands: Commands, 
     mut level_ready: ResMut<LevelReady>,
@@ -203,6 +204,7 @@ pub fn cleanup_environment(
     hud_entities: Query<Entity, With<hud_pass::HUDPass>>,
     hud_cameras: Query<Entity, With<Hud3DCamera>>,
     ui_cameras: Query<Entity, With<bevy::render::camera::OrthographicProjection>>,
+    texts: Query<Entity, With<Text>>,
 ) {
     level_ready.0 = false;
     for (entity, entity_type) in entities.iter() {
@@ -234,6 +236,10 @@ pub fn cleanup_environment(
     }
 
     for entity in platforms.iter() {
+        commands.entity(entity).despawn_recursive();
+    }
+    
+    for entity in texts.iter() {
         commands.entity(entity).despawn_recursive();
     }
 }

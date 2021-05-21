@@ -1,17 +1,19 @@
 TODO
 - snake heads sometimes go backward 
 - setup something to cull out of view blocks
-- make eye shape level
-- make a tunnel level
-- make a layered donut level?
 - make yellow electric snake
 - set snake path find to chase nearby player
 - add controller support
 - make multiple colors/shades of blocks?
-- freeze player when they die finish level
 - change exit flag to a different shape
 - make exit and food announce their spawning somehow
+- add lights around food? (maybe make level-configurable size)
 - fix dude movement so that it isn't frame based but also doesn't let you kick and then jump right after
+
+Level Ideas
+- make eye shape level
+- make a tunnel level
+- make a layered donut level?
 
 will not fix
 - fix 40/60 fps issue (may be just what it is on this laptop)
@@ -22,3 +24,5 @@ Done
 - redo level 2 to add places that player can fall 
 - add meta stuff to hot reload like start level
 - make foods without shadows
+- freeze player when they die/finish level
+- hide text when the game is over

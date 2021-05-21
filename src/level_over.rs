@@ -1,5 +1,5 @@
 use bevy::{prelude::*,};
-use crate::{credits, level};
+use crate::{credits, level, dude, moveable};
 
 pub struct LevelOverEvent {}
 pub struct LevelOverText {}
@@ -52,6 +52,8 @@ pub fn level_over_check(
     mut game_is_over: Local<bool>,
     level: ResMut<level::Level>,
     time: Res<Time>, 
+    mut commands: Commands,
+    mut dudes: Query<Entity, With<dude::Dude>>,
     mut credits_delay: ResMut<credits::CreditsDelay>,
     mut credits_event_writer: EventWriter<crate::credits::CreditsEvent>,
 ) {
@@ -59,6 +61,9 @@ pub fn level_over_check(
         println!("LEVEL IS OVER!");
         if level.is_last_level() {
             for mut text in query.iter_mut() {
+                for entity in dudes.iter_mut() {
+                    commands.entity(entity).remove::<moveable::Moveable>();
+                }
                 text.sections[0].value = "YOU WIN!".to_string();
                 *game_is_over = true;
                 credits_delay.0.reset();
