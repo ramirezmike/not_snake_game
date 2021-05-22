@@ -6,9 +6,9 @@ TODO
 - add controller support
 - make multiple colors/shades of blocks?
 - change exit flag to a different shape
-- make exit and food announce their spawning somehow
 - add lights around food? (maybe make level-configurable size)
 - fix dude movement so that it isn't frame based but also doesn't let you kick and then jump right after
+- make exit announce their spawning somehow
 
 Level Ideas
 - make eye shape level
@@ -26,3 +26,4 @@ Done
 - make foods without shadows
 - freeze player when they die/finish level
 - hide text when the game is over
+- make food announce spawning somehow

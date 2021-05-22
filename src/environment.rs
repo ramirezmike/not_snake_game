@@ -94,6 +94,7 @@ impl Plugin for EnvironmentPlugin {
 //               .with_system(level::print_level.system())
 //               .with_system(update_text_position.system())
                .with_system(level::broadcast_changes.system().after("handle_moveables"))
+               .with_system(food::animate_spawn_particles.system())
            );
 //        println!("{}", schedule_graph(&app.app.schedule));
 

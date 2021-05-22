@@ -498,7 +498,6 @@ pub fn update_path(
                     }
 
                     if let Some((food_position, _food_transform)) = closest_food {
-                        println!("Found food {:?}", food_position);
                         snake.current_path = path_find.update_path(&claimed_nodes, entity, &level, snake_position, 
                                                                    food_position, &mut kill_snake_event_writer);
                     }
