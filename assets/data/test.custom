@@ -1,12 +1,13 @@
-//            0; empty
-//            1; unmovable block
-// M: usize = 2; movable block
-// W: usize = 3; win flag spawn point
-// D: usize = 4; dude spawn point
-// S: usize = 5; snake spawn point
-// F: usize = 6; food spawn point
+// 0; empty
+// 1; unmovable block
+// 2; movable block
+// 3; win flag spawn point
+// 4; dude spawn point
+// 5; snake spawn point
+// 6; food with shadow spawn point
+// 7; food without shadow spawn point
 LevelsAsset (
-    start_level: 5,
+    start_level: 9,
     levels: [
         LevelInfo (
             level: [[
@@ -771,18 +772,22 @@ LevelsAsset (
         ),
         LevelInfo (
             level: [[
-    [0, 0, 0, 3 ],
-    [4, 0, 6, 0 ],
-    [0, 0, 0, 0 ],
+    [0, 0, 0, 0, 0, 0, 0, 0 ],
+    [0, 0, 0, 0, 0, 0, 6, 0 ],
+    [0, 0, 0, 0, 0, 0, 0, 0 ],
 ], [
-    [1, 1, 1, 1 ],
-    [1, 1, 1, 1 ],
-    [1, 1, 1, 1 ],
+    [0, 0, 0, 0, 0, 0, 0, 0 ],
+    [4, 0, 0, 0, 0, 0, 0, 0 ],
+    [0, 0, 0, 0, 0, 0, 0, 0 ],
+], [
+    [1, 1, 1, 1, 1, 1, 1, 1 ],
+    [1, 1, 1, 1, 1, 1, 1, 1 ],
+    [1, 1, 1, 1, 1, 1, 1, 1 ],
 ],
             ],
-            is_food_random: true,
+            is_food_random: false,
             minimum_food: 0,
-            snake_speed: None,
+            snake_speed: Some(2.0),
             snake_target: None,
             camera_x: -7.0, 
             camera_y: 6.8, 

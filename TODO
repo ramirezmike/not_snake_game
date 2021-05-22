@@ -1,14 +1,15 @@
 TODO
-- snake heads sometimes go backward 
 - setup something to cull out of view blocks
+- fix dude movement so that it isn't frame based but also doesn't let you kick and then jump right after
+- make exit announce their spawning somehow
 - make yellow electric snake
-- set snake path find to chase nearby player
 - add controller support
+- add sounds and music
 - make multiple colors/shades of blocks?
 - change exit flag to a different shape
 - add lights around food? (maybe make level-configurable size)
-- fix dude movement so that it isn't frame based but also doesn't let you kick and then jump right after
-- make exit announce their spawning somehow
+- make dude shrink when killed
+- add camera shake
 
 Level Ideas
 - make eye shape level
@@ -18,7 +19,6 @@ Level Ideas
 will not fix
 - fix 40/60 fps issue (may be just what it is on this laptop)
 
-
 Done
 - animate HUD
 - redo level 2 to add places that player can fall 
@@ -27,3 +27,6 @@ Done
 - freeze player when they die/finish level
 - hide text when the game is over
 - make food announce spawning somehow
+- set snake path find to chase nearby player
+- snake heads sometimes go backward 
+- add FPS viewer

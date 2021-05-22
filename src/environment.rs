@@ -1,5 +1,7 @@
 use bevy::prelude::*;
 use bevy::render::camera::Camera;
+use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, Diagnostics, LogDiagnosticsPlugin};
+
 
 use crate::{level::Level, Position, collectable, dude, snake, level, hud_pass,
             EntityType, GameObject, holdable, win_flag, moveable, food, score,
@@ -30,6 +32,9 @@ impl Plugin for EnvironmentPlugin {
            .add_event::<level_over::LevelOverEvent>()
            .add_event::<snake::AddBodyPartEvent>()
            .add_event::<snake::KillSnakeEvent>()
+           .add_plugin(FrameTimeDiagnosticsPlugin::default())
+//           .add_plugin(LogDiagnosticsPlugin::default())
+           .add_plugin(FrameTimeDiagnosticsPlugin::default())
            .add_event::<dude::KillDudeEvent>()
            .add_event::<food::FoodEatenEvent>()
            .add_event::<level::NextLevelEvent>()
@@ -95,6 +100,7 @@ impl Plugin for EnvironmentPlugin {
 //               .with_system(update_text_position.system())
                .with_system(level::broadcast_changes.system().after("handle_moveables"))
                .with_system(food::animate_spawn_particles.system())
+               .with_system(update_fps.system())
            );
 //        println!("{}", schedule_graph(&app.app.schedule));
 
@@ -469,7 +475,7 @@ fn create_hud(
             text: Text::with_section(
                 "blah".to_string(),
                 TextStyle {
-                    font,
+                    font: font.clone(),
                     font_size: 50.0,
                     color: Color::WHITE,
                 },
@@ -481,9 +487,53 @@ fn create_hud(
         })
         .insert(FollowText);
 
+        commands
+        .spawn_bundle(TextBundle {
+            style: Style {
+                align_self: AlignSelf::FlexEnd,
+                ..Default::default()
+            },
+            // Use `Text` directly
+            text: Text {
+                // Construct a `Vec` of `TextSection`s
+                sections: vec![
+                    TextSection {
+                        value: "FPS: ".to_string(),
+                        style: TextStyle {
+                            font: font.clone(),
+                            font_size: 20.0,
+                            color: Color::WHITE,
+                        },
+                    },
+                    TextSection {
+                        value: "".to_string(),
+                        style: TextStyle {
+                            font: font.clone(),
+                            font_size: 20.0,
+                            color: Color::GOLD,
+                        },
+                    },
+                ],
+                ..Default::default()
+            },
+            ..Default::default()
+        })
+        .insert(FpsText);
+
 
     println!("Added HUD");
 }
+
+fn update_fps(diagnostics: Res<Diagnostics>, mut query: Query<&mut Text, With<FpsText>>) {
+    for mut text in query.iter_mut() {
+        if let Some(fps) = diagnostics.get(FrameTimeDiagnosticsPlugin::FPS) {
+            if let Some(average) = fps.average() {
+                text.sections[1].value = format!("{:.2}", average);
+            }
+        }
+    }
+}
+
 
 fn update_hud_text_position(
     windows: Res<Windows>,
@@ -564,3 +614,4 @@ pub struct MyLightBundle {
 
 pub struct DisplayText(pub String);
 pub struct FollowText;
+pub struct FpsText;

@@ -39,6 +39,12 @@ pub struct Enemy {
     pub current_path: Option<(u32, Vec<NodeIndex<u32>>)>,
 }
 
+impl Enemy {
+    pub fn get_first_body(&self) -> Position {
+        Position::from_vec(self.body_positions[0].translation)
+    }
+}
+
 pub struct Snake;
 pub struct SnakeBody;
 pub struct SnakeInnerMesh;
