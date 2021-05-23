@@ -2,8 +2,9 @@ use bevy::prelude::*;
 use bevy_kira_audio::{Audio, AudioChannel, AudioPlugin, AudioSource};
 use std::collections::HashMap;
 
+pub struct SoundEvent(pub Sounds);
+
 pub struct AudioState {
-    audio_loaded: bool,
     channels: HashMap<AudioChannel, ChannelAudioState>,
     sound_channel: AudioChannel,
     pickup_handle: Handle<AudioSource>,
@@ -49,7 +50,6 @@ impl AudioState {
         );
 
         AudioState {
-            audio_loaded: false,
             sound_channel,
             channels,
             pickup_handle: asset_server.load("sounds/pickup.wav")
@@ -62,15 +62,24 @@ impl AudioState {
         )
     }
 
-    pub fn play(&mut self, sound: Sounds, audio: &Res<Audio>) {
-//      if !self.audio_loaded {
-//          return;
-//      }
-
+    pub fn play(&mut self, sound: &Sounds, audio: &Res<Audio>) {
         let mut channel_audio_state = self.channels.get_mut(&self.sound_channel).unwrap();
         channel_audio_state.paused = false;
         channel_audio_state.stopped = false;
-        audio.play_in_channel(self.pickup_handle.clone(), &self.sound_channel);
+
+        let sound_to_play = match sound {
+                                Sounds::Pickup => self.pickup_handle.clone(),
+                            };
+        audio.play_in_channel(sound_to_play, &self.sound_channel);
     }
 }
 
+pub fn play_sounds(
+    audio: Res<Audio>,
+    mut audio_state: ResMut<AudioState>,
+    mut sound_reader: EventReader<SoundEvent>
+) {
+    for sound in sound_reader.iter() {
+        audio_state.play(&sound.0, &audio);
+    }
+}

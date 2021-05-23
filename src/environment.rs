@@ -34,6 +34,7 @@ impl Plugin for EnvironmentPlugin {
            .add_event::<level_over::LevelOverEvent>()
            .add_event::<snake::AddBodyPartEvent>()
            .add_event::<snake::KillSnakeEvent>()
+           .add_event::<sounds::SoundEvent>()
            .add_plugin(FrameTimeDiagnosticsPlugin::default())
 //           .add_plugin(LogDiagnosticsPlugin::default())
            .add_plugin(FrameTimeDiagnosticsPlugin::default())
@@ -102,6 +103,7 @@ impl Plugin for EnvironmentPlugin {
 //               .with_system(update_text_position.system())
                .with_system(level::broadcast_changes.system().after("handle_moveables"))
                .with_system(food::animate_spawn_particles.system())
+               .with_system(sounds::play_sounds.system())
                .with_system(update_fps.system())
            );
 //        println!("{}", schedule_graph(&app.app.schedule));
