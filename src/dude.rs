@@ -66,13 +66,13 @@ fn player_input(
     mut dudes: Query<(Entity, &mut moveable::Moveable, &Facing), With<Dude>>, 
     camera: Query<&crate::camera::fly_camera::FlyCamera>,
     mut kill_dude_event_writer: EventWriter<KillDudeEvent>,
-    mut up_buffer: Local<(usize, Option::<u128>)>,
-    mut down_buffer: Local<(usize, Option::<u128>)>,
-    mut right_buffer: Local<(usize, Option::<u128>)>,
-    mut left_buffer: Local<(usize, Option::<u128>)>,
+    mut action_buffer: Local<Option::<u128>>,
+    mut up_buffer: Local<Option::<u128>>,
+    mut down_buffer: Local<Option::<u128>>,
+    mut right_buffer: Local<Option::<u128>>,
+    mut left_buffer: Local<Option::<u128>>,
 ) {
-    let buffer = 3;
-    let time_buffer = 200;
+    let time_buffer = 100;
     if keyboard_input.just_pressed(KeyCode::R) {
         kill_dude_event_writer.send(KillDudeEvent);
     }
@@ -83,77 +83,59 @@ fn player_input(
     }
 
     let time_since_startup = time.time_since_startup().as_millis();
-    if let Some(time_since_up) = up_buffer.1 {
+    if let Some(time_since_up) = *up_buffer {
         if time_since_startup - time_since_up > time_buffer {
-            up_buffer.1 = None;
-            up_buffer.0 = 0;
+            *up_buffer = None;
         }
     }
-    if let Some(time_since_down) = down_buffer.1 {
+    if let Some(time_since_down) = *down_buffer {
         if time_since_startup - time_since_down > time_buffer {
-            down_buffer.1 = None;
-            down_buffer.0 = 0;
+            *down_buffer = None;
         }
     }
-    if let Some(time_since_left) = left_buffer.1 {
+    if let Some(time_since_left) = *left_buffer {
         if time_since_startup - time_since_left > time_buffer {
-            left_buffer.1 = None;
-            left_buffer.0 = 0;
+            *left_buffer = None;
         }
     }
-    if let Some(time_since_right) = right_buffer.1 {
+    if let Some(time_since_right) = *right_buffer {
         if time_since_startup - time_since_right > time_buffer {
-            right_buffer.1 = None;
-            right_buffer.0 = 0;
+            *right_buffer = None;
+        }
+    }
+    if let Some(time_since_action) = *action_buffer {
+        if time_since_startup - time_since_action > time_buffer {
+            *action_buffer = None;
         }
     }
 
     for (entity, mut moveable, facing) in dudes.iter_mut() {
-        if keyboard_input.just_pressed(KeyCode::J) && !moveable.is_moving() {
+        if keyboard_input.just_pressed(KeyCode::J) && !moveable.is_moving() && action_buffer.is_none() {
             lift_holdable_event_writer.send(holdable::LiftHoldableEvent(entity, facing.direction));
+            *action_buffer = Some(time.time_since_startup().as_millis());
+            continue;
+        }
+
+        if !action_buffer.is_none() {
             continue;
         }
 
         let mut move_dir = None;
-        if keyboard_input.pressed(KeyCode::W) {
-            if up_buffer.0 == 0 {
-                move_dir = Some(Direction::Up); 
-                up_buffer.1 = Some(time.time_since_startup().as_millis());
-            }
-            up_buffer.0 += 1; 
-            if up_buffer.0 > buffer {
-                up_buffer.0 = 0; 
-            }
+        if keyboard_input.pressed(KeyCode::W) && up_buffer.is_none() {
+            move_dir = Some(Direction::Up); 
+            *up_buffer = Some(time.time_since_startup().as_millis());
         }
-        if keyboard_input.pressed(KeyCode::S) {
-            if down_buffer.0 == 0 {
-                move_dir = Some(Direction::Down); 
-                down_buffer.1 = Some(time.time_since_startup().as_millis());
-            }
-            down_buffer.0 += 1; 
-            if down_buffer.0 > buffer {
-                down_buffer.0 = 0; 
-            }
+        if keyboard_input.pressed(KeyCode::S) && down_buffer.is_none() {
+            move_dir = Some(Direction::Down); 
+            *down_buffer = Some(time.time_since_startup().as_millis());
         }
-        if keyboard_input.pressed(KeyCode::A) {
-            if left_buffer.0 == 0 {
-                move_dir = Some(Direction::Left); 
-                left_buffer.1 = Some(time.time_since_startup().as_millis());
-            }
-            left_buffer.0 += 1; 
-            if left_buffer.0 > buffer {
-                left_buffer.0 = 0; 
-            }
+        if keyboard_input.pressed(KeyCode::A) && right_buffer.is_none() {
+            move_dir = Some(Direction::Left); 
+            *right_buffer = Some(time.time_since_startup().as_millis());
         }
-        if keyboard_input.pressed(KeyCode::D) {
-            if right_buffer.0 == 0 {
-                move_dir = Some(Direction::Right); 
-                right_buffer.1 = Some(time.time_since_startup().as_millis());
-            }
-            right_buffer.0 += 1; 
-            if right_buffer.0 > buffer {
-                right_buffer.0 = 0; 
-            }
+        if keyboard_input.pressed(KeyCode::D) && left_buffer.is_none() {
+            move_dir = Some(Direction::Right); 
+            *left_buffer = Some(time.time_since_startup().as_millis());
         }
 
         if let Some(move_dir) = move_dir {

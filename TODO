@@ -1,6 +1,5 @@
 TODO
 - setup something to cull out of view blocks
-- fix dude movement so that it isn't frame based but also doesn't let you kick and then jump right after
 - make exit announce their spawning somehow
 - make yellow electric snake
 - add controller support
@@ -30,3 +29,4 @@ Done
 - set snake path find to chase nearby player
 - snake heads sometimes go backward 
 - add FPS viewer
+- fix dude movement so that it isn't frame based but also doesn't let you kick and then jump right after

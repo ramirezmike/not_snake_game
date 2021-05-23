@@ -773,11 +773,11 @@ LevelsAsset (
         LevelInfo (
             level: [[
     [0, 0, 0, 0, 0, 0, 0, 0 ],
-    [0, 0, 0, 0, 0, 0, 6, 0 ],
+    [0, 0, 0, 0, 0, 0, 0, 0 ],
     [0, 0, 0, 0, 0, 0, 0, 0 ],
 ], [
     [0, 0, 0, 0, 0, 0, 0, 0 ],
-    [4, 0, 0, 0, 0, 0, 0, 0 ],
+    [4, 0, 1, 1, 1, 0, 2, 0 ],
     [0, 0, 0, 0, 0, 0, 0, 0 ],
 ], [
     [1, 1, 1, 1, 1, 1, 1, 1 ],
@@ -789,13 +789,13 @@ LevelsAsset (
             minimum_food: 0,
             snake_speed: Some(2.0),
             snake_target: None,
-            camera_x: -7.0, 
-            camera_y: 6.8, 
-            camera_z: 5.3,
-            camera_rotation_x: -0.21380125, 
-            camera_rotation_y: -0.952698,
-            camera_rotation_z: -0.21599823,
-            camera_rotation_angle: 1.6294433,
+            camera_x: -4.0576925,
+            camera_y: 5.8081317,
+            camera_z: 3.4490414,
+            camera_rotation_x: -0.31373575,
+            camera_rotation_y: -0.89795923,
+            camera_rotation_z: -0.30860817,
+            camera_rotation_angle: 1.6618222,
             camera_behaviors: [ Static ],
         ),
     ]
