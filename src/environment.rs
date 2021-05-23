@@ -1,11 +1,12 @@
 use bevy::prelude::*;
 use bevy::render::camera::Camera;
-use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, Diagnostics, LogDiagnosticsPlugin};
-
+use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, Diagnostics};
+use bevy_kira_audio::{Audio, AudioChannel, AudioPlugin, AudioSource};
+use std::collections::HashMap;
 
 use crate::{level::Level, Position, collectable, dude, snake, level, hud_pass,
             EntityType, GameObject, holdable, win_flag, moveable, food, score,
-            camera::MainCamera,
+            camera::MainCamera, sounds,
             level_over, credits, block, camera, path_find, path_find::PathFinder};
 //use bevy_mod_debugdump::print_schedule_runner;
 
@@ -25,6 +26,7 @@ impl Plugin for EnvironmentPlugin {
            .init_resource::<snake::EnemyMeshes>()
            .init_resource::<camera::CameraMouthMovement>()
            .init_resource::<AssetsLoading>()
+           .add_plugin(AudioPlugin)
            .add_plugin(camera::CameraPlugin)
            .add_plugin(hud_pass::HUDPassPlugin)
            .add_event::<holdable::LiftHoldableEvent>()
@@ -144,6 +146,7 @@ pub fn change_level_screen(
 }
 
 pub fn load_assets(
+    mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
@@ -162,12 +165,16 @@ pub fn load_assets(
     enemy_meshes.shadow_material = materials.add(Color::rgba(enemy_color.r(), enemy_color.g(), enemy_color.b(), 0.4).into());
     enemy_meshes.shadow = meshes.add(Mesh::from(shape::Plane { size: 0.75 }));
 
+    let audio_state = sounds::AudioState::new(&asset_server);
+
     loading.0.push(dude_meshes.step1.clone_untyped());
     loading.0.push(enemy_meshes.head.clone_untyped());
     loading.0.push(enemy_meshes.body.clone_untyped());
+    loading.0.append(&mut audio_state.get_sound_handles());
 
     level_asset_state.handle = asset_server.load("data/test.custom");
     asset_server.watch_for_changes().unwrap();
+    commands.insert_resource(audio_state);
 }
 
 

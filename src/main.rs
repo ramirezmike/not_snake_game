@@ -22,6 +22,7 @@ pub mod food;
 pub mod score;
 pub mod path_find;
 pub mod hud_pass;
+pub mod sounds;
 mod menu;
 
 use camera::*;
