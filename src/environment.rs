@@ -296,6 +296,7 @@ pub fn load_level(
     let ground_2_material = materials.add(Color::hex(crate::COLOR_GROUND_2).unwrap().into());
     let block_material = materials.add(Color::hex(crate::COLOR_BLOCK).unwrap().into());
     let flag_color = Color::hex(crate::COLOR_FLAG).unwrap();
+    let outer_flag_color = Color::rgba(flag_color.r(), flag_color.g(), flag_color.b(), 0.3);
     let flag_color = Color::rgba(flag_color.r(), flag_color.g(), flag_color.b(), 1.0);
                     
     commands.spawn_bundle(UiCameraBundle::default());
@@ -385,7 +386,6 @@ pub fn load_level(
                     },
                     3 => { // win_flag
                         let transform = Transform::from_xyz(x as f32, y as f32, z as f32);
-                        println!("{} {} {}", x, y, z);
                         let position = Position::from_vec(transform.translation);
                         let entity =
                             commands.spawn_bundle(PbrBundle {
@@ -404,6 +404,18 @@ pub fn load_level(
                                     ..Default::default()
                                 })
                                 .insert(win_flag::WinFlagInnerMesh {});
+
+                                parent.spawn_bundle(PbrBundle {
+                                    mesh: meshes.add(Mesh::from(shape::Icosphere { radius: 0.25, subdivisions: 0 })),
+                                    material: materials.add(outer_flag_color.into()),
+                                    visible: Visible {
+                                        is_visible: false,
+                                        is_transparent: true,
+                                    },
+                                    transform: Transform::from_xyz(0.0, 0.5, 0.0),
+                                    ..Default::default()
+                                })
+                                .insert(win_flag::WinFlagOuterMesh { });
                             })
                             .insert(collectable::Collectable { collected: false }) 
                             .insert(win_flag::WinFlag {})

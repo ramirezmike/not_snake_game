@@ -1,14 +1,22 @@
 TODO
 - setup something to cull out of view blocks
-- make exit announce their spawning somehow
 - make yellow electric snake
 - add controller support
-- add sounds and music
 - make multiple colors/shades of blocks?
 - change exit flag to a different shape
 - add lights around food? (maybe make level-configurable size)
 - make dude shrink when killed
 - add camera shake
+
+Sounds to add
+- slide block
+- enemy eat food/dude
+- jump sound
+- landing?
+- flag grab 
+
+Music to add
+- everything
 
 Level Ideas
 - make eye shape level
@@ -30,3 +38,5 @@ Done
 - snake heads sometimes go backward 
 - add FPS viewer
 - fix dude movement so that it isn't frame based but also doesn't let you kick and then jump right after
+- add sound system
+- make exit announce spawning 
