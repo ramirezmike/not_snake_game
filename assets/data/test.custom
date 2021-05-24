@@ -6,8 +6,9 @@
 // 5; snake spawn point
 // 6; food with shadow spawn point
 // 7; food without shadow spawn point
+// 8; unmovable block different color
 LevelsAsset (
-    start_level: 0,
+    start_level: 9,
     levels: [
         LevelInfo (
             level: [[
@@ -772,11 +773,11 @@ LevelsAsset (
         ),
         LevelInfo (
             level: [[
-    [0, 0, 0, 0, 0, 0, 0, 0 ],
+    [0, 0, 8, 8, 8, 0, 0, 0 ],
     [0, 0, 0, 0, 0, 0, 0, 0 ],
     [0, 0, 0, 0, 0, 0, 0, 0 ],
 ], [
-    [0, 0, 0, 0, 0, 0, 0, 0 ],
+    [0, 0, 8, 8, 8, 0, 0, 0 ],
     [4, 0, 1, 1, 1, 0, 3, 0 ],
     [0, 0, 0, 0, 0, 0, 0, 0 ],
 ], [

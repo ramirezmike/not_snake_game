@@ -307,11 +307,11 @@ pub fn load_level(
         for y in 0..level.height() {
             for z in 0..level.length() {
                 match level.get_level_info(x, y, z) {
-                    1 => { // platform
+                    item @ 1 | item @ 8 => { // platform
                         let entity =
                             commands.spawn_bundle(PbrBundle {
                                 mesh: if y == 0 { plane.clone() } else { cube.clone() },
-                                material: if (x + z + 1) % 2 == 0 { ground_2_material.clone() } else { ground_2_material.clone() },
+                                material: if item == 1 { ground_2_material.clone() } else { ground_1_material.clone() },
                                 transform: { 
                                     let mut transform = 
                                     Transform::from_translation(Vec3::new(x as f32, 
