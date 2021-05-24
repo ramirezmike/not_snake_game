@@ -8,7 +8,7 @@
 // 7; food without shadow spawn point
 // 8; unmovable block different color
 LevelsAsset (
-    start_level: 9,
+    start_level: 3,
     levels: [
         LevelInfo (
             level: [[

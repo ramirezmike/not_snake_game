@@ -1,12 +1,11 @@
 TODO
 - setup something to cull out of view blocks
-- make yellow electric snake
-- change exit flag to a different shape
-- add lights around food? (maybe make level-configurable size)
-- make dude shrink when killed
-- add camera shake
 - add pause screen
+- make yellow electric snake
+- add lights around food? (maybe make level-configurable size)
+- add camera shake
 - make death animation for falling out of bounds
+- change exit flag to a different shape
 
 Sounds to add
 - slide block
@@ -42,3 +41,4 @@ Done
 - make exit announce spawning 
 - add controller support
 - make multiple colors/shades of blocks?
+- make dude shrink when killed

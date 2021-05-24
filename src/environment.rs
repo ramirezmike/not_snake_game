@@ -106,6 +106,7 @@ impl Plugin for EnvironmentPlugin {
                .with_system(sounds::play_sounds.system())
                .with_system(game_controller::gamepad_connections.system())
                .with_system(update_fps.system())
+               .with_system(shrink_shrinkables.system())
            );
 //        println!("{}", schedule_graph(&app.app.schedule));
 
@@ -122,6 +123,22 @@ pub fn material_test(
     }
 }
 */
+
+pub struct Shrink;
+pub fn shrink_shrinkables(
+    mut shrinkables: Query<&mut Transform, With<Shrink>>,
+    time: Res<Time>,
+) {
+    for mut transform in shrinkables.iter_mut() {
+        if transform.scale.x <= 0.0 {
+            continue;
+        }
+
+        transform.scale -= Vec3::splat(time.delta_seconds() * 0.3);
+    }
+}
+
+
 
 pub fn cleanup_change_level_screen(
     mut commands: Commands,

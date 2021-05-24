@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use crate::{Direction, EntityType, GameObject, level::Level, game_controller,
-            Position, holdable, block, moveable, facing::Facing};
+            environment, Position, holdable, block, moveable, facing::Facing};
 
 pub struct DudePlugin;
 impl Plugin for DudePlugin {
@@ -200,6 +200,7 @@ pub fn handle_kill_dude(
     for _event in kill_dude_event_reader.iter() {
         for entity in dudes.iter_mut() {
             commands.entity(entity).remove::<moveable::Moveable>();
+            commands.entity(entity).insert(environment::Shrink { });
         }
     }
 }
