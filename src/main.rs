@@ -23,6 +23,7 @@ pub mod score;
 pub mod path_find;
 pub mod hud_pass;
 pub mod sounds;
+pub mod game_controller;
 mod menu;
 
 use camera::*;

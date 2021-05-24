@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use crate::{Direction, EntityType, GameObject, level::Level, 
+use crate::{Direction, EntityType, GameObject, level::Level, game_controller,
             Position, holdable, block, moveable, facing::Facing};
 
 pub struct DudePlugin;
@@ -71,6 +71,9 @@ fn player_input(
     mut down_buffer: Local<Option::<u128>>,
     mut right_buffer: Local<Option::<u128>>,
     mut left_buffer: Local<Option::<u128>>,
+    axes: Res<Axis<GamepadAxis>>,
+    buttons: Res<Input<GamepadButton>>,
+    gamepad: Option<Res<game_controller::GameController>>,
 ) {
     let time_buffer = 100;
     if keyboard_input.just_pressed(KeyCode::R) {
@@ -109,8 +112,10 @@ fn player_input(
         }
     }
 
+    let pressed_buttons = game_controller::get_pressed_buttons(&axes, &buttons, gamepad);
     for (entity, mut moveable, facing) in dudes.iter_mut() {
-        if keyboard_input.just_pressed(KeyCode::J) && !moveable.is_moving() && action_buffer.is_none() {
+        if (keyboard_input.just_pressed(KeyCode::J) || pressed_buttons.contains(&game_controller::GameButton::Action))
+           && !moveable.is_moving() && action_buffer.is_none() {
             lift_holdable_event_writer.send(holdable::LiftHoldableEvent(entity, facing.direction));
             *action_buffer = Some(time.time_since_startup().as_millis());
             continue;
@@ -121,21 +126,25 @@ fn player_input(
         }
 
         let mut move_dir = None;
-        if keyboard_input.pressed(KeyCode::W) && up_buffer.is_none() {
+        if (keyboard_input.pressed(KeyCode::W) || pressed_buttons.contains(&game_controller::GameButton::Up))
+           && up_buffer.is_none() {
             move_dir = Some(Direction::Up); 
             *up_buffer = Some(time.time_since_startup().as_millis());
         }
-        if keyboard_input.pressed(KeyCode::S) && down_buffer.is_none() {
+        if (keyboard_input.pressed(KeyCode::S) || pressed_buttons.contains(&game_controller::GameButton::Down))
+           && down_buffer.is_none() {
             move_dir = Some(Direction::Down); 
             *down_buffer = Some(time.time_since_startup().as_millis());
         }
-        if keyboard_input.pressed(KeyCode::A) && right_buffer.is_none() {
+        if (keyboard_input.pressed(KeyCode::A) || pressed_buttons.contains(&game_controller::GameButton::Left))
+           && left_buffer.is_none() {
             move_dir = Some(Direction::Left); 
-            *right_buffer = Some(time.time_since_startup().as_millis());
-        }
-        if keyboard_input.pressed(KeyCode::D) && left_buffer.is_none() {
-            move_dir = Some(Direction::Right); 
             *left_buffer = Some(time.time_since_startup().as_millis());
+        }
+        if (keyboard_input.pressed(KeyCode::D) || pressed_buttons.contains(&game_controller::GameButton::Right))
+           && right_buffer.is_none() {
+            move_dir = Some(Direction::Right); 
+            *right_buffer= Some(time.time_since_startup().as_millis());
         }
 
         if let Some(move_dir) = move_dir {

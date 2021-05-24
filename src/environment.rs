@@ -6,7 +6,7 @@ use std::collections::HashMap;
 
 use crate::{level::Level, Position, collectable, dude, snake, level, hud_pass,
             EntityType, GameObject, holdable, win_flag, moveable, food, score,
-            camera::MainCamera, sounds,
+            camera::MainCamera, sounds, game_controller,
             level_over, credits, block, camera, path_find, path_find::PathFinder};
 //use bevy_mod_debugdump::print_schedule_runner;
 
@@ -104,6 +104,7 @@ impl Plugin for EnvironmentPlugin {
                .with_system(level::broadcast_changes.system().after("handle_moveables"))
                .with_system(food::animate_spawn_particles.system())
                .with_system(sounds::play_sounds.system())
+               .with_system(game_controller::gamepad_connections.system())
                .with_system(update_fps.system())
            );
 //        println!("{}", schedule_graph(&app.app.schedule));
