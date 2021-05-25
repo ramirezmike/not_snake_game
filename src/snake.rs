@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use crate::{Direction, EntityType, GameObject, level::Level, path_find::PathFinder, dude,
-            Position, food::FoodEatenEvent};
+            sounds, Position, food::FoodEatenEvent};
 use petgraph::{graph::NodeIndex};
 use bevy::reflect::{TypeUuid};
 use serde::Deserialize;
@@ -906,10 +906,12 @@ pub fn handle_food_eaten(
     mut food_eaten_event_reader: EventReader<FoodEatenEvent>,
     mut body_part_writer: EventWriter<AddBodyPartEvent>,
     snakes: Query<Entity, With<Snake>>,
+    mut sound_writer: EventWriter<sounds::SoundEvent>,
 ) {
     for eater in food_eaten_event_reader.iter() {
         if let Ok(entity) = snakes.get(eater.0) {
             body_part_writer.send(AddBodyPartEvent { snake: entity });
+            sound_writer.send(sounds::SoundEvent(sounds::Sounds::Bite));
         }
     }
 }

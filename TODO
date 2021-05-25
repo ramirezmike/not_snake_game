@@ -1,18 +1,17 @@
 TODO
-- setup something to cull out of view blocks
-- add pause screen
 - make yellow electric snake
-- add lights around food? (maybe make level-configurable size)
+- add pause screen
 - add camera shake
 - make death animation for falling out of bounds
+- fix snake death animation
 - change exit flag to a different shape
 
+Stretch Goals
+- add lights around food? (maybe make level-configurable size)
+
 Sounds to add
-- slide block
-- enemy eat food/dude
-- jump sound
 - landing?
-- flag grab 
+- lifting/dropping blocks
 
 Music to add
 - everything
@@ -42,3 +41,4 @@ Done
 - add controller support
 - make multiple colors/shades of blocks?
 - make dude shrink when killed
+- setup something to cull out of view blocks

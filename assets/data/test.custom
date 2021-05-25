@@ -8,7 +8,7 @@
 // 7; food without shadow spawn point
 // 8; unmovable block different color
 LevelsAsset (
-    start_level: 3,
+    start_level: 4,
     levels: [
         LevelInfo (
             level: [[
@@ -42,6 +42,9 @@ LevelsAsset (
             camera_rotation_z: -0.21599823,
             camera_rotation_angle: 1.6294433,
             camera_behaviors: [ Static ],
+            camera_cull_x: None,
+            camera_cull_y: None,
+            camera_cull_z: None,
         ),
         LevelInfo (
             level: [[
@@ -78,6 +81,9 @@ LevelsAsset (
             camera_rotation_z: -0.243863,
             camera_rotation_angle: 1.6364791,
             camera_behaviors: [ Static ],
+            camera_cull_x: None,
+            camera_cull_y: None,
+            camera_cull_z: None,
         ), 
         LevelInfo (
             level: [[
@@ -126,6 +132,9 @@ LevelsAsset (
             camera_rotation_z: -0.21599823,
             camera_rotation_angle: 1.6294433,
             camera_behaviors: [ Static ],
+            camera_cull_x: None,
+            camera_cull_y: None,
+            camera_cull_z: None,
         ),
         LevelInfo (
             level: [[
@@ -174,6 +183,9 @@ LevelsAsset (
             camera_rotation_z: -0.21599823,
             camera_rotation_angle: 1.6294433,
             camera_behaviors: [ Static ],
+            camera_cull_x: None,
+            camera_cull_y: None,
+            camera_cull_z: None,
         ), 
         LevelInfo (
             level: [[
@@ -352,6 +364,9 @@ LevelsAsset (
             camera_rotation_angle: 1.627894,
             camera_behaviors: [ FollowX ],
 //          camera_behaviors: [ Static ],
+            camera_cull_x: Some((-4.0, 22.0)),
+            camera_cull_y: None,
+            camera_cull_z: None,
         ),
         LevelInfo (
             level: [[
@@ -410,6 +425,9 @@ LevelsAsset (
             camera_rotation_z: -0.34832737,
             camera_rotation_angle: 1.7104243,
             camera_behaviors: [ Static ],
+            camera_cull_x: None,
+            camera_cull_y: None,
+            camera_cull_z: None,
         ),
         LevelInfo (
             level: [[
@@ -594,6 +612,9 @@ LevelsAsset (
             camera_rotation_z: -0.2671214,
             camera_rotation_angle: 1.6440253,
             camera_behaviors: [ FollowY(6.0) ],
+            camera_cull_x: None,
+            camera_cull_y: None,
+            camera_cull_z: None,
         ),
         LevelInfo (
             level: [[
@@ -699,6 +720,9 @@ LevelsAsset (
             camera_rotation_angle: 1.4181129,
             camera_behaviors: [ FollowZ(2), FollowY(4) ],
 //            camera_behaviors: [ Static ],
+            camera_cull_x: None,
+            camera_cull_y: None,
+            camera_cull_z: None,
         ),
         LevelInfo (
             level: [[
@@ -770,6 +794,9 @@ LevelsAsset (
             camera_rotation_z: -0.33210248,
             camera_rotation_angle: 1.6947873,
             camera_behaviors: [ Static ],
+            camera_cull_x: None,
+            camera_cull_y: None,
+            camera_cull_z: None,
         ),
         LevelInfo (
             level: [[
@@ -797,7 +824,11 @@ LevelsAsset (
             camera_rotation_y: -0.89795923,
             camera_rotation_z: -0.30860817,
             camera_rotation_angle: 1.6618222,
-            camera_behaviors: [ Static ],
+//            camera_behaviors: [ Static ],
+            camera_behaviors: [ FollowZ(1) ],
+            camera_cull_x: None,
+            camera_cull_y: None,
+            camera_cull_z: Some((5.0, 2.0)),
         ),
     ]
 )

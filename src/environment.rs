@@ -1,8 +1,7 @@
 use bevy::prelude::*;
 use bevy::render::camera::Camera;
 use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, Diagnostics};
-use bevy_kira_audio::{Audio, AudioChannel, AudioPlugin, AudioSource};
-use std::collections::HashMap;
+use bevy_kira_audio::AudioPlugin;
 
 use crate::{level::Level, Position, collectable, dude, snake, level, hud_pass,
             EntityType, GameObject, holdable, win_flag, moveable, food, score,
@@ -106,6 +105,7 @@ impl Plugin for EnvironmentPlugin {
                .with_system(sounds::play_sounds.system())
                .with_system(game_controller::gamepad_connections.system())
                .with_system(update_fps.system())
+               .with_system(camera::cull_blocks.system())
                .with_system(shrink_shrinkables.system())
            );
 //        println!("{}", schedule_graph(&app.app.schedule));
@@ -137,8 +137,6 @@ pub fn shrink_shrinkables(
         transform.scale -= Vec3::splat(time.delta_seconds() * 0.3);
     }
 }
-
-
 
 pub fn cleanup_change_level_screen(
     mut commands: Commands,

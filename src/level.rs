@@ -1,5 +1,5 @@
 use bevy::{prelude::*,};
-use crate::{GameObject, EntityType, Position, dude, camera::CameraBehavior, snake };
+use crate::{GameObject, EntityType, Position, dude, camera::CameraBehavior, snake, sounds };
 use rand::seq::SliceRandom;
 
 use bevy::asset::{AssetLoader, LoadContext, LoadedAsset};
@@ -44,7 +44,10 @@ pub struct LevelInfo {
     camera_rotation_y: f32,
     camera_rotation_z: f32,
     camera_rotation_angle: f32,
-    camera_behaviors: Vec::<CameraBehavior>
+    camera_behaviors: Vec::<CameraBehavior>,
+    camera_cull_x: Option<(f32, f32)>,
+    camera_cull_y: Option<(f32, f32)>,
+    camera_cull_z: Option<(f32, f32)>,
 }
 
 #[derive(Default)]
@@ -127,6 +130,18 @@ impl Level {
         self.current_level = if self.current_level == INITIAL_LEVEL { asset.start_level } else { self.current_level };
         self.game_objects = vec![vec![vec![None; self.length()]; self.height()]; self.width()];
         self.frame_updates = vec!();
+    }
+
+    pub fn get_level_cull_x(&self) -> Option::<(f32, f32)> {
+        self.level_info[self.current_level].camera_cull_x
+    }
+
+    pub fn get_level_cull_y(&self) -> Option::<(f32, f32)> {
+        self.level_info[self.current_level].camera_cull_y
+    }
+
+    pub fn get_level_cull_z(&self) -> Option::<(f32, f32)> {
+        self.level_info[self.current_level].camera_cull_z
     }
 
     pub fn get_camera_position(&self) -> Vec3 {
@@ -400,6 +415,7 @@ pub fn broadcast_changes(
     mut event_writer: EventWriter<PositionChangeEvent>,
     mut kill_dude_event_writer: EventWriter<dude::KillDudeEvent>,
     mut level: ResMut<Level>,
+    mut sound_writer: EventWriter<sounds::SoundEvent>,
 ) {
     for (position, game_object) in level.drain_frame_updates().iter() {
 //        println!("position changed!");
@@ -408,5 +424,6 @@ pub fn broadcast_changes(
     if level.player_death_detected {
         level.player_death_detected = false;
         kill_dude_event_writer.send(dude::KillDudeEvent);
+        sound_writer.send(sounds::SoundEvent(sounds::Sounds::Bite));
     }
 }

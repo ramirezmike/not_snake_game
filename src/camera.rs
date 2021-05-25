@@ -6,7 +6,7 @@ use bevy::reflect::{TypeUuid};
 //  use bevy_rapier3d::rapier::dynamics::{RigidBodyBuilder,RigidBodySet};
 //  use bevy_rapier3d::physics::RigidBodyHandleComponent;
 //  use bevy_rapier3d::rapier::math::Isometry;
-use crate::{level::Level, dude};
+use crate::{level::Level, dude, environment};
 
 pub mod fly_camera;
 
@@ -45,10 +45,40 @@ impl Plugin for CameraPlugin {
                          .with_system(toggle_fly.system())
            )
            .add_plugin(FlyCameraPlugin)
-           
            .add_system(update_camera.system())
            //.add_system(update_camera_collisions.system());
            ;
+    }
+}
+
+pub fn cull_blocks(
+    level: Res<Level>,
+    camera: Query<&Transform, With<MainCamera>>,
+    mut blocks: Query<(&Transform, &mut Visible), 
+                        (Without<MainCamera>, 
+                            Or<(With<environment::BlockMesh>, With<environment::PlatformMesh>)>)>
+) {
+    let cull_x = level.get_level_cull_x();
+    let cull_y = level.get_level_cull_y();
+    let cull_z = level.get_level_cull_z();
+
+    for camera_transform in camera.iter() {
+        for (block_transform, mut visible) in blocks.iter_mut() {
+            let mut is_visible = true;
+            if let Some((min_x, max_x)) = cull_x {
+                is_visible = block_transform.translation.x < camera_transform.translation.x + max_x 
+                                  && block_transform.translation.x > camera_transform.translation.x - min_x;
+            } 
+            if let Some((min_y, max_y)) = cull_y {
+                is_visible = block_transform.translation.y < camera_transform.translation.y + max_y 
+                                  && block_transform.translation.y > camera_transform.translation.y - min_y;
+            } 
+            if let Some((min_z, max_z)) = cull_z {
+                is_visible = block_transform.translation.z < camera_transform.translation.z + max_z 
+                                  && block_transform.translation.z > camera_transform.translation.z - min_z;
+            } 
+            visible.is_visible = is_visible;
+        }
     }
 }
     

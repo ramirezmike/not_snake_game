@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use crate::{Direction, level::Level, Position, EntityType, GameObject, facing::Facing, dude};
+use crate::{Direction, level::Level, Position, EntityType, GameObject, facing::Facing, sounds};
 
 #[derive(Debug)]
 pub struct Moveable {
@@ -64,6 +64,7 @@ pub fn update_moveable(
     mut inner_meshes: Query<&mut Transform, Without<Moveable>>,
     mut inner_meshes_visibility: Query<&mut Visible, Without<Moveable>>,
     mut level: ResMut<Level>,
+    mut sound_writer: EventWriter<sounds::SoundEvent>,
     time: Res<Time>,
 ) {
     for (entity, mut moveable, mut transform, mut position, entity_type, maybe_facing, children) in moveables.iter_mut() {
@@ -217,6 +218,7 @@ pub fn update_moveable(
                                           transform.translation, MovementType::Step));
                                 moveable.set_movement(direction, MovementType::Step);
                                 moveable.is_climbing = true;
+                                sound_writer.send(sounds::SoundEvent(sounds::Sounds::Jump));
                                 continue;
                             }
                         }
@@ -243,6 +245,7 @@ pub fn update_moveable(
                             };
                         if level.is_enterable(next_position.0, next_position.1, next_position.2) {
                             target_position = Position { x: next_position.0, y: next_position.1, z: next_position.2 };
+                            sound_writer.send(sounds::SoundEvent(sounds::Sounds::Slide));
                             number_of_steps += 1; 
                         } else {
                             keep_going = false;

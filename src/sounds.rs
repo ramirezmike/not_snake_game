@@ -8,6 +8,11 @@ pub struct AudioState {
     channels: HashMap<AudioChannel, ChannelAudioState>,
     sound_channel: AudioChannel,
     pickup_handle: Handle<AudioSource>,
+    bite_handle: Handle<AudioSource>,
+    jump_handle: Handle<AudioSource>,
+    land_handle: Handle<AudioSource>,
+    level_end_handle: Handle<AudioSource>,
+    slide_handle: Handle<AudioSource>,
 }
 
 struct ChannelAudioState {
@@ -29,7 +34,12 @@ impl Default for ChannelAudioState {
 }
 
 pub enum Sounds {
-    Pickup
+    Pickup,
+    Bite,
+    Jump,
+    Land,
+    LevelEnd,
+    Slide,
 }
 
 impl AudioState {
@@ -52,13 +62,23 @@ impl AudioState {
         AudioState {
             sound_channel,
             channels,
-            pickup_handle: asset_server.load("sounds/pickup.wav")
+            pickup_handle: asset_server.load("sounds/pickup.wav"),
+            bite_handle: asset_server.load("sounds/bite.wav"),
+            jump_handle: asset_server.load("sounds/jump.wav"),
+            land_handle: asset_server.load("sounds/land.wav"),
+            level_end_handle: asset_server.load("sounds/levelend.wav"),
+            slide_handle: asset_server.load("sounds/slide.wav"),
         }
     }
 
     pub fn get_sound_handles(&self) -> Vec<HandleUntyped> {
         vec!(
-            self.pickup_handle.clone_untyped()
+            self.pickup_handle.clone_untyped(),
+            self.bite_handle.clone_untyped(),
+            self.jump_handle.clone_untyped(),
+            self.land_handle.clone_untyped(),
+            self.level_end_handle.clone_untyped(),
+            self.slide_handle.clone_untyped(),
         )
     }
 
@@ -69,6 +89,11 @@ impl AudioState {
 
         let sound_to_play = match sound {
                                 Sounds::Pickup => self.pickup_handle.clone(),
+                                Sounds::Bite => self.bite_handle.clone(),
+                                Sounds::Jump => self.jump_handle.clone(),
+                                Sounds::Land => self.land_handle.clone(),
+                                Sounds::LevelEnd => self.level_end_handle.clone(),
+                                Sounds::Slide => self.slide_handle.clone(),
                             };
         audio.play_in_channel(sound_to_play, &self.sound_channel);
     }
