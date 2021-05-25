@@ -17,6 +17,8 @@ pub struct KillDudeEvent;
 #[derive(Default)]
 pub struct DudeMeshes {
     pub step1: Handle<Mesh>,
+    pub head: Handle<Mesh>,
+    pub body: Handle<Mesh>,
     pub material: Handle<StandardMaterial>,
 }
 
@@ -29,9 +31,9 @@ pub fn spawn_player(
     z: usize,
 ) {
     let mut transform = Transform::from_translation(Vec3::new(x as f32, y as f32, z as f32));
-    transform.apply_non_uniform_scale(Vec3::new(0.25, 0.25, 0.25)); 
+    transform.apply_non_uniform_scale(Vec3::new(0.36, 0.36, 0.36)); 
     transform.rotate(Quat::from_axis_angle(Vec3::new(0.0, 1.0, 0.0), std::f32::consts::PI));
-    let inner_mesh_vertical_offset = 0.5;
+    let inner_mesh_vertical_offset = 1.0;
     let player_entity = 
     commands.spawn_bundle(PbrBundle {
                 transform,
@@ -46,10 +48,12 @@ pub fn spawn_player(
             .insert(Facing::new(Direction::Right, false))
             .with_children(|parent|  {
                 parent.spawn_bundle(PbrBundle {
-                    mesh: meshes.step1.clone(),
+                    mesh: meshes.body.clone(),
                     material: meshes.material.clone(),
                     transform: {
-                        let mut transform = Transform::from_rotation(Quat::from_axis_angle(Vec3::new(0.0, 1.0, 0.0), 1.57079632679));
+                        let mut transform = Transform::from_rotation(Quat::from_axis_angle(Vec3::new(0.0, 1.0, 0.0), 
+                                (3.0 * std::f32::consts::PI) / 2.0));
+
                         transform.translation = Vec3::new(0.0, inner_mesh_vertical_offset, 0.0);
                         transform
                     },

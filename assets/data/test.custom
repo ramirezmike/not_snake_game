@@ -8,7 +8,7 @@
 // 7; food without shadow spawn point
 // 8; unmovable block different color
 LevelsAsset (
-    start_level: 4,
+    start_level: 5,
     levels: [
         LevelInfo (
             level: [[
@@ -414,7 +414,7 @@ LevelsAsset (
 ],
             ],
             is_food_random: true,
-            minimum_food: 20,
+            minimum_food: 10,
             snake_speed: Some(0.25),
             snake_target: None,
             camera_x: -5.049999,
@@ -824,8 +824,8 @@ LevelsAsset (
             camera_rotation_y: -0.89795923,
             camera_rotation_z: -0.30860817,
             camera_rotation_angle: 1.6618222,
-//            camera_behaviors: [ Static ],
-            camera_behaviors: [ FollowZ(1) ],
+            camera_behaviors: [ Static ],
+//            camera_behaviors: [ FollowZ(1) ],
             camera_cull_x: None,
             camera_cull_y: None,
             camera_cull_z: Some((5.0, 2.0)),

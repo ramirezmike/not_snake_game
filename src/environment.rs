@@ -174,6 +174,8 @@ pub fn load_assets(
     mut level_asset_state: ResMut<level::LevelAssetState>, 
 ) {
     dude_meshes.step1 = asset_server.load("models/dude.glb#Mesh0/Primitive0");
+    dude_meshes.body = asset_server.load("models/chip.glb#Mesh0/Primitive0");
+    dude_meshes.head = asset_server.load("models/chip.glb#Mesh1/Primitive0");
     dude_meshes.material = materials.add(Color::hex(crate::COLOR_DUDE).unwrap().into());
 
     enemy_meshes.head = asset_server.load("models/snake.glb#Mesh0/Primitive0");
@@ -186,6 +188,8 @@ pub fn load_assets(
     let audio_state = sounds::AudioState::new(&asset_server);
 
     loading.0.push(dude_meshes.step1.clone_untyped());
+    loading.0.push(dude_meshes.head.clone_untyped());
+    loading.0.push(dude_meshes.body.clone_untyped());
     loading.0.push(enemy_meshes.head.clone_untyped());
     loading.0.push(enemy_meshes.body.clone_untyped());
     loading.0.append(&mut audio_state.get_sound_handles());
