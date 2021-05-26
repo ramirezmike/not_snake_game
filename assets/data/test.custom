@@ -9,6 +9,27 @@
 // 8; unmovable block different color
 LevelsAsset (
     start_level: 0,
+    palette: Palette (
+    //https://lospec.com/palette-list/funkyfuture-8
+    //  base:     "2b0f54",
+    //  ground_1: "2b0f54",
+    //  ground_2: "3368dc",
+    //  dude:     "C46333",
+    //  enemy:    "ff4f69",
+    //  block:    "49e7ec",
+    //  flag:     "fff7f8",
+    //  food:     "ffda45",
+
+    //https://lospec.com/palette-list/chasm
+        base:     "4593a5",
+        ground_1: "463c5e",
+        ground_2: "444774",
+        dude:     "f3a787",
+        enemy:    "ff4f69",
+        block:    "85daeb",
+        flag:     "fff7f8",
+        food:     "fdfe89",
+    ),
     levels: [
         LevelInfo (
             level: [[
@@ -845,12 +866,12 @@ LevelsAsset (
         ),
         LevelInfo (
             level: [[
-    [0, 0, 8, 8, 8, 0, 0, 0 ],
+    [0, 0, 8, 2, 8, 0, 0, 0 ],
     [0, 0, 0, 0, 0, 0, 0, 0 ],
     [0, 0, 0, 0, 0, 0, 0, 0 ],
 ], [
     [0, 0, 8, 8, 8, 0, 0, 0 ],
-    [4, 0, 1, 1, 1, 0, 3, 0 ],
+    [4, 6, 1, 1, 1, 0, 3, 0 ],
     [0, 0, 0, 0, 0, 0, 0, 0 ],
 ], [
     [1, 1, 1, 1, 1, 1, 1, 1 ],
@@ -873,7 +894,7 @@ LevelsAsset (
 //            camera_behaviors: [ FollowZ(1) ],
             camera_cull_x: None,
             camera_cull_y: None,
-            camera_cull_z: Some((5.0, 2.0)),
+            camera_cull_z: None,
         ),
     ]
 )

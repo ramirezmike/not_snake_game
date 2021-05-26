@@ -17,6 +17,7 @@ static INITIAL_LEVEL: usize = 99999;
 pub struct Level {
     pub game_objects: Vec::<Vec::<Vec::<Option::<GameObject>>>>,
     pub current_level: usize,
+    pub palette: Palette,
     frame_updates: Vec::<(usize, usize, usize)>,
     level_info: Vec::<LevelInfo>,
     player_death_detected: bool,
@@ -26,7 +27,21 @@ pub struct Level {
 #[uuid = "39cadc56-aa9c-4543-8640-a018b74b5052"]
 pub struct LevelsAsset {
     pub start_level: usize,
+    pub palette: Palette,
     pub levels: Vec::<LevelInfo>,
+}
+
+#[derive(Debug, Clone, Deserialize, TypeUuid)]
+#[uuid = "99cadc56-aa9c-4543-8640-a018b74b5052"] // this needs to be actually generated 
+pub struct Palette {
+    pub base: String, 
+    pub ground_1: String,
+    pub ground_2: String,
+    pub dude: String,
+    pub enemy: String,
+    pub block: String,
+    pub flag: String,
+    pub food: String,
 }
 
 #[derive(Debug, Clone, Deserialize, TypeUuid)]
@@ -82,6 +97,16 @@ impl Level {
         Level { 
           game_objects: vec!(),
           frame_updates: vec!(),
+          palette: Palette {
+              base: "000000".to_string(),
+              ground_1: "000000".to_string(),
+              ground_2: "000000".to_string(),
+              dude: "000000".to_string(),
+              enemy: "000000".to_string(),
+              block: "000000".to_string(),
+              flag: "000000".to_string(),
+              food: "000000".to_string(),
+          },
           current_level: INITIAL_LEVEL,
           level_info: vec!(),
           player_death_detected: false,
@@ -127,6 +152,7 @@ impl Level {
 
     pub fn load_stored_levels(&mut self, asset: LevelsAsset) {
         self.level_info = asset.levels;
+        self.palette = asset.palette;
         self.current_level = if self.current_level == INITIAL_LEVEL { asset.start_level } else { self.current_level };
         self.game_objects = vec![vec![vec![None; self.length()]; self.height()]; self.width()];
         self.frame_updates = vec!();

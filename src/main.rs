@@ -30,25 +30,7 @@ use camera::*;
 use environment::*;
 use dude::*;
 
-// 01
-//  pub static COLOR_BLACK: &str = "000000";
-//  pub static COLOR_BASE: &str = "343f56";//"";
-//  pub static COLOR_GROUND_1: &str = "387c6d";
-//  pub static COLOR_GROUND_2: &str = "214A41";//"f8f5f1";
-//  pub static COLOR_DUDE: &str = "f8f5f1";
-//  pub static COLOR_BLOCK: &str = "e9896a";
-//  pub static COLOR_FLAG: &str = "80E895"; //"92DB56"; //40DBB7
-
-// 02
 pub static COLOR_BLACK: &str = "000000";
-pub static COLOR_BASE: &str = "142d4c";//"";
-pub static COLOR_GROUND_1: &str = "142d4c";
-pub static COLOR_GROUND_2: &str = "385170";//"f8f5f1";
-pub static COLOR_DUDE: &str = "ececec";
-pub static COLOR_ENEMY: &str = "ee5656";
-pub static COLOR_BLOCK: &str = "9fd3c7";
-pub static COLOR_FLAG: &str = "7A5C57"; //"92DB56"; //40DBB7
-pub static COLOR_FOOD: &str = "F6DF2C";
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum AppState {
@@ -65,7 +47,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugin(DebugLinesPlugin)
         .insert_resource(Msaa { samples: 1 })
-        .insert_resource(ClearColor(Color::hex(COLOR_BASE).unwrap()))
+        .insert_resource(ClearColor(Color::hex(COLOR_BLACK).unwrap()))
         .init_resource::<menu::ButtonMaterials>()
         .add_event::<credits::CreditsEvent>()
 

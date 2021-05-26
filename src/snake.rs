@@ -65,7 +65,7 @@ static INNER_MESH_VERTICAL_OFFSET: f32 = 1.0;
 
 pub fn generate_snake_body(
     commands: &mut Commands,
-    meshes: &Res<EnemyMeshes>, 
+    meshes: &ResMut<EnemyMeshes>, 
     transform: Transform,
 ) -> Entity {
     commands.spawn_bundle(PbrBundle {
@@ -102,7 +102,7 @@ pub fn generate_snake_body(
 
 pub fn spawn_enemy(
     commands: &mut Commands, 
-    meshes: &Res<EnemyMeshes>, 
+    meshes: &ResMut<EnemyMeshes>, 
     level: &mut ResMut<Level>,
     x: usize,
     y: usize,
@@ -178,7 +178,7 @@ pub fn add_body_parts(
     mut body_part_reader: EventReader<AddBodyPartEvent>,
     mut snake_enemies: Query<&mut Enemy>,
     mut commands: Commands, 
-    meshes: Res<EnemyMeshes>, 
+    meshes: ResMut<EnemyMeshes>, 
 ) {
     for part_to_add in body_part_reader.iter() {
         if let Ok(mut snake_enemy) = snake_enemies.get_mut(part_to_add.snake) {
@@ -881,7 +881,7 @@ pub fn update_following(
 
                     for child in children.iter() {
                         if let Ok(mut transform) = inner_meshes.get_mut(*child) {
-                            let rotation_rate = (snake.speed * 0.5) / 1.0;
+                            let rotation_rate = (snake.speed * 0.60) / 1.0;
                             let rotation_distance = transform.rotation.angle_between(target.rotation);
                             let new_rotation = transform.rotation.lerp(target.rotation, 
                                                                        time.delta_seconds() / (rotation_distance * rotation_rate));

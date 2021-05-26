@@ -7,12 +7,15 @@ pub struct SoundEvent(pub Sounds);
 pub struct AudioState {
     channels: HashMap<AudioChannel, ChannelAudioState>,
     sound_channel: AudioChannel,
+    music_channel: AudioChannel,
     pickup_handle: Handle<AudioSource>,
     bite_handle: Handle<AudioSource>,
     jump_handle: Handle<AudioSource>,
     land_handle: Handle<AudioSource>,
     level_end_handle: Handle<AudioSource>,
     slide_handle: Handle<AudioSource>,
+    fall_handle: Handle<AudioSource>,
+    music_1_handle: Handle<AudioSource>,
 }
 
 struct ChannelAudioState {
@@ -40,14 +43,20 @@ pub enum Sounds {
     Land,
     LevelEnd,
     Slide,
+    Fall,
 }
 
 impl AudioState {
     pub fn new(asset_server: &Res<AssetServer>) -> AudioState {
         let mut channels = HashMap::new();
         let sound_channel = AudioChannel::new("first".to_owned());
+        let music_channel = AudioChannel::new("music".to_owned());
         channels.insert(
             sound_channel.clone(),
+            ChannelAudioState::default(),
+        );
+        channels.insert(
+            music_channel.clone(),
             ChannelAudioState::default(),
         );
         channels.insert(
@@ -61,6 +70,7 @@ impl AudioState {
 
         AudioState {
             sound_channel,
+            music_channel,
             channels,
             pickup_handle: asset_server.load("sounds/pickup.wav"),
             bite_handle: asset_server.load("sounds/bite.wav"),
@@ -68,6 +78,8 @@ impl AudioState {
             land_handle: asset_server.load("sounds/land.wav"),
             level_end_handle: asset_server.load("sounds/levelend.wav"),
             slide_handle: asset_server.load("sounds/slide.wav"),
+            fall_handle: asset_server.load("sounds/fall.wav"),
+            music_1_handle: asset_server.load("music/drum_and_bell.wav"),
         }
     }
 
@@ -79,6 +91,8 @@ impl AudioState {
             self.land_handle.clone_untyped(),
             self.level_end_handle.clone_untyped(),
             self.slide_handle.clone_untyped(),
+            self.fall_handle.clone_untyped(),
+            self.music_1_handle.clone_untyped(),
         )
     }
 
@@ -94,17 +108,32 @@ impl AudioState {
                                 Sounds::Land => self.land_handle.clone(),
                                 Sounds::LevelEnd => self.level_end_handle.clone(),
                                 Sounds::Slide => self.slide_handle.clone(),
+                                Sounds::Fall => self.fall_handle.clone(),
                             };
         audio.play_in_channel(sound_to_play, &self.sound_channel);
+    }
+
+    pub fn play_music(&mut self, audio: &Res<Audio>) {
+        let mut channel_audio_state = self.channels.get_mut(&self.music_channel).unwrap();
+        channel_audio_state.paused = false;
+        channel_audio_state.stopped = false;
+
+        audio.play_looped_in_channel(self.music_1_handle.clone(), &self.music_channel);
     }
 }
 
 pub fn play_sounds(
     audio: Res<Audio>,
     mut audio_state: ResMut<AudioState>,
-    mut sound_reader: EventReader<SoundEvent>
+    mut sound_reader: EventReader<SoundEvent>,
+    mut playing_music: Local<bool>,
 ) {
     for sound in sound_reader.iter() {
         audio_state.play(&sound.0, &audio);
+    }
+
+    if !*playing_music {
+        audio_state.play_music(&audio);
+        *playing_music = true;
     }
 }

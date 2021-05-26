@@ -174,11 +174,12 @@ fn create_camera(
     mut windows: ResMut<Windows>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
+    level: Res<Level>,
 ) {
     println!("Creating camera!");
     let transform = Transform::default();
     let plane = meshes.add(Mesh::from(shape::Cube { size: 1.0 }));
-    let mut material:StandardMaterial = Color::hex(crate::COLOR_ENEMY).unwrap().into();
+    let mut material:StandardMaterial = Color::hex(level.palette.enemy.clone()).unwrap().into();
     material.unlit = true;
     let block_material = materials.add(material);
     commands

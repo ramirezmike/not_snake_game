@@ -23,6 +23,7 @@ impl Plugin for EnvironmentPlugin {
            .insert_resource(score::Score::new())
            .init_resource::<dude::DudeMeshes>()
            .init_resource::<snake::EnemyMeshes>()
+           .init_resource::<win_flag::WinFlagMeshes>()
            .init_resource::<camera::CameraMouthMovement>()
            .init_resource::<AssetsLoading>()
            .add_plugin(AudioPlugin)
@@ -170,20 +171,19 @@ pub fn load_assets(
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut dude_meshes: ResMut<dude::DudeMeshes>,
     mut enemy_meshes: ResMut<snake::EnemyMeshes>,
+    mut flag_meshes: ResMut<win_flag::WinFlagMeshes>,
     mut loading: ResMut<AssetsLoading>,
     mut level_asset_state: ResMut<level::LevelAssetState>, 
 ) {
     dude_meshes.step1 = asset_server.load("models/dude.glb#Mesh0/Primitive0");
     dude_meshes.body = asset_server.load("models/chip.glb#Mesh0/Primitive0");
     dude_meshes.head = asset_server.load("models/chip.glb#Mesh1/Primitive0");
-    dude_meshes.material = materials.add(Color::hex(crate::COLOR_DUDE).unwrap().into());
 
     enemy_meshes.head = asset_server.load("models/snake.glb#Mesh0/Primitive0");
     enemy_meshes.body = asset_server.load("models/snake.glb#Mesh1/Primitive0");
-    let enemy_color = Color::hex(crate::COLOR_ENEMY).unwrap();
-    enemy_meshes.material = materials.add(enemy_color.into());
-    enemy_meshes.shadow_material = materials.add(Color::rgba(enemy_color.r(), enemy_color.g(), enemy_color.b(), 0.4).into());
     enemy_meshes.shadow = meshes.add(Mesh::from(shape::Plane { size: 0.75 }));
+
+    flag_meshes.flag = asset_server.load("models/winflag.glb#Mesh0/Primitive0");
 
     let audio_state = sounds::AudioState::new(&asset_server);
 
@@ -192,6 +192,7 @@ pub fn load_assets(
     loading.0.push(dude_meshes.body.clone_untyped());
     loading.0.push(enemy_meshes.head.clone_untyped());
     loading.0.push(enemy_meshes.body.clone_untyped());
+    loading.0.push(flag_meshes.flag.clone_untyped());
     loading.0.append(&mut audio_state.get_sound_handles());
 
     level_asset_state.handle = asset_server.load("data/test.custom");
@@ -290,11 +291,13 @@ pub fn load_level(
     mut level_ready: ResMut<LevelReady>,
     level_asset_state: Res<level::LevelAssetState>, 
     levels_asset: ResMut<Assets<level::LevelsAsset>>,
-    dude_meshes: Res<dude::DudeMeshes>,
-    enemy_meshes: Res<snake::EnemyMeshes>, 
+    mut dude_meshes: ResMut<dude::DudeMeshes>,
+    mut enemy_meshes: ResMut<snake::EnemyMeshes>,
+    mut flag_meshes: ResMut<win_flag::WinFlagMeshes>,
     entities: Query<Entity>,
     mut camera: Query<&mut Transform, With<MainCamera>>,
     asset_server: Res<AssetServer>,
+    mut clear_color: ResMut<ClearColor>,
 ) {
     println!("Starting to load level...");
     score.total = score.current_level;
@@ -304,6 +307,14 @@ pub fn load_level(
     level.reset_level();
     path_finder.load_level(&level);
 
+    let palette = &level.palette;
+
+    clear_color.0 = Color::hex(palette.base.clone()).unwrap();
+    dude_meshes.material = materials.add(Color::hex(palette.dude.clone()).unwrap().into());
+    let enemy_color = Color::hex(palette.enemy.clone()).unwrap();
+    enemy_meshes.material = materials.add(enemy_color.into());
+    enemy_meshes.shadow_material = materials.add(Color::rgba(enemy_color.r(), enemy_color.g(), enemy_color.b(), 0.4).into());
+
     for mut transform in camera.iter_mut() {
         transform.translation = level.get_camera_position();
         transform.rotation = level.get_camera_rotation();
@@ -312,12 +323,12 @@ pub fn load_level(
 
     let plane = meshes.add(Mesh::from(shape::Plane { size: 1.0 }));
     let cube = meshes.add(Mesh::from(shape::Cube { size: 1.0 }));
-    let ground_1_material = materials.add(Color::hex(crate::COLOR_GROUND_1).unwrap().into());
-    let ground_2_material = materials.add(Color::hex(crate::COLOR_GROUND_2).unwrap().into());
-    let block_material = materials.add(Color::hex(crate::COLOR_BLOCK).unwrap().into());
-    let flag_color = Color::hex(crate::COLOR_FLAG).unwrap();
+    let ground_1_material = materials.add(Color::hex(palette.ground_1.clone()).unwrap().into());
+    let ground_2_material = materials.add(Color::hex(palette.ground_2.clone()).unwrap().into());
+    let block_material = materials.add(Color::hex(palette.block.clone()).unwrap().into());
+    let flag_color = Color::hex(palette.flag.clone()).unwrap();
     let outer_flag_color = Color::rgba(flag_color.r(), flag_color.g(), flag_color.b(), 0.3);
-    let flag_color = Color::rgba(flag_color.r(), flag_color.g(), flag_color.b(), 1.0);
+    let flag_color = Color::rgba(flag_color.r(), flag_color.g(), flag_color.b(), 0.3);
                     
     commands.spawn_bundle(UiCameraBundle::default());
     let space_scale = 0.9;
@@ -405,8 +416,10 @@ pub fn load_level(
                         level.set(x as i32, y as i32, z as i32, Some(GameObject::new(block_entity, EntityType::Block)));
                     },
                     3 => { // win_flag
-                        let transform = Transform::from_xyz(x as f32, y as f32, z as f32);
+                        let mut transform = Transform::from_xyz(x as f32, y as f32, z as f32);
+                        transform.apply_non_uniform_scale(Vec3::new(0.25, 0.25, 0.25)); 
                         let position = Position::from_vec(transform.translation);
+
                         let entity =
                             commands.spawn_bundle(PbrBundle {
                               transform,
@@ -414,28 +427,20 @@ pub fn load_level(
                             })
                             .with_children(|parent| {
                                 parent.spawn_bundle(PbrBundle {
-                                    mesh: meshes.add(Mesh::from(shape::Icosphere { radius: 0.25, subdivisions: 0 })),
+                                    mesh: flag_meshes.flag.clone(),
                                     material: materials.add(flag_color.into()),
-                                    visible: Visible {
-                                        is_visible: false,
-                                        is_transparent: false,
-                                    },
-                                    transform: Transform::from_xyz(0.0, 0.5, 0.0),
-                                    ..Default::default()
-                                })
-                                .insert(win_flag::WinFlagInnerMesh {});
-
-                                parent.spawn_bundle(PbrBundle {
-                                    mesh: meshes.add(Mesh::from(shape::Icosphere { radius: 0.25, subdivisions: 0 })),
-                                    material: materials.add(outer_flag_color.into()),
                                     visible: Visible {
                                         is_visible: false,
                                         is_transparent: true,
                                     },
-                                    transform: Transform::from_xyz(0.0, 0.5, 0.0),
+                                    transform: {
+                                        let mut t = Transform::from_xyz(0.0, 1.50, 0.0);
+                                        t.apply_non_uniform_scale(Vec3::new(1.0, 0.1, 1.0)); 
+                                        t
+                                    },
                                     ..Default::default()
                                 })
-                                .insert(win_flag::WinFlagOuterMesh { });
+                                .insert(win_flag::WinFlagInnerMesh {});
                             })
                             .insert(collectable::Collectable { collected: false }) 
                             .insert(win_flag::WinFlag {})
@@ -461,7 +466,7 @@ pub fn load_level(
         food::spawn_food(&mut commands, &mut level, &mut meshes, &mut materials, None, true);
     }
 
-    create_hud(&mut commands, &mut meshes, &mut materials, &asset_server);
+    create_hud(&mut commands, &mut meshes, &mut materials, &asset_server, &level);
 
     println!("Level is Loaded... Number of items{:?}", entities.iter().len());
 
@@ -475,9 +480,10 @@ fn create_hud(
     meshes: &mut ResMut<Assets<Mesh>>,
     materials: &mut ResMut<Assets<StandardMaterial>>,
     asset_server: &Res<AssetServer>,
+    level: &ResMut<Level>,
 ) {
     commands.spawn_bundle(UiCameraBundle::default());
-    let food_color = Color::hex(crate::COLOR_FOOD).unwrap();
+    let food_color = Color::hex(level.palette.food.clone()).unwrap();
     let food_color = Color::rgba(food_color.r(), food_color.g(), food_color.b(), 1.0);
     commands.spawn_bundle(hud_pass::HUDPbrBundle {
         mesh: meshes.add(Mesh::from(shape::Icosphere { radius: 0.25, subdivisions: 0 })),

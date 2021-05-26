@@ -24,7 +24,7 @@ pub struct DudeMeshes {
 
 pub fn spawn_player(
     commands: &mut Commands, 
-    meshes: &Res<DudeMeshes>, 
+    meshes: &ResMut<DudeMeshes>, 
     level: &mut ResMut<Level>,
     x: usize,
     y: usize,
