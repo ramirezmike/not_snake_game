@@ -4,7 +4,6 @@ TODO
 - add camera shake
 - make death animation for falling out of bounds
 - fix snake death animation
-- change exit flag to a different shape
 
 Stretch Goals
 - add lights around food? (maybe make level-configurable size)
@@ -42,3 +41,4 @@ Done
 - make multiple colors/shades of blocks?
 - make dude shrink when killed
 - setup something to cull out of view blocks
+- change exit flag to a different shape

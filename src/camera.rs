@@ -179,7 +179,7 @@ fn create_camera(
     println!("Creating camera!");
     let transform = Transform::default();
     let plane = meshes.add(Mesh::from(shape::Cube { size: 1.0 }));
-    let mut material:StandardMaterial = Color::hex(level.palette.enemy.clone()).unwrap().into();
+    let mut material:StandardMaterial = Color::hex(level.get_palette().enemy.clone()).unwrap().into();
     material.unlit = true;
     let block_material = materials.add(material);
     commands
@@ -254,9 +254,9 @@ fn create_camera(
  //       .with(PickSource::default());
             ;
 
-    let window = windows.get_primary_mut().unwrap();
-    window.set_cursor_lock_mode(true);
-    window.set_cursor_visibility(false);
+//   let window = windows.get_primary_mut().unwrap();
+//  window.set_cursor_lock_mode(true);
+//  window.set_cursor_visibility(false);
 }
 
 #[derive(Bundle)]

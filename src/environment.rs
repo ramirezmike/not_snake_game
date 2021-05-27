@@ -307,7 +307,7 @@ pub fn load_level(
     level.reset_level();
     path_finder.load_level(&level);
 
-    let palette = &level.palette;
+    let palette = &level.get_palette();
 
     clear_color.0 = Color::hex(palette.base.clone()).unwrap();
     dude_meshes.material = materials.add(Color::hex(palette.dude.clone()).unwrap().into());
@@ -327,8 +327,7 @@ pub fn load_level(
     let ground_2_material = materials.add(Color::hex(palette.ground_2.clone()).unwrap().into());
     let block_material = materials.add(Color::hex(palette.block.clone()).unwrap().into());
     let flag_color = Color::hex(palette.flag.clone()).unwrap();
-    let outer_flag_color = Color::rgba(flag_color.r(), flag_color.g(), flag_color.b(), 0.3);
-    let flag_color = Color::rgba(flag_color.r(), flag_color.g(), flag_color.b(), 0.3);
+    let flag_color = Color::rgba(flag_color.r(), flag_color.g(), flag_color.b(), 0.7);
                     
     commands.spawn_bundle(UiCameraBundle::default());
     let space_scale = 0.9;
@@ -483,7 +482,7 @@ fn create_hud(
     level: &ResMut<Level>,
 ) {
     commands.spawn_bundle(UiCameraBundle::default());
-    let food_color = Color::hex(level.palette.food.clone()).unwrap();
+    let food_color = Color::hex(level.get_palette().food.clone()).unwrap();
     let food_color = Color::rgba(food_color.r(), food_color.g(), food_color.b(), 1.0);
     commands.spawn_bundle(hud_pass::HUDPbrBundle {
         mesh: meshes.add(Mesh::from(shape::Icosphere { radius: 0.25, subdivisions: 0 })),

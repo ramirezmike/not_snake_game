@@ -51,7 +51,7 @@ fn main() {
         .init_resource::<menu::ButtonMaterials>()
         .add_event::<credits::CreditsEvent>()
 
-//        .add_state(AppState::MainMenu)
+//       .add_state(AppState::MainMenu)
 //        .add_state(AppState::InGame)
         .add_state(AppState::Loading)
 

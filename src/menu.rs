@@ -29,7 +29,7 @@ pub fn setup_menu(
             // Use the `Text::with_section` constructor
             text: Text::with_section(
                 // Accepts a `String` or any type that converts into a `String`, such as `&str`
-                "     No, Snake, \nThat's My Food!",
+                "     That's My Food!",
                 TextStyle {
                     font: asset_server.load("fonts/FiraSans-Bold.ttf"),
                     font_size: 300.0,

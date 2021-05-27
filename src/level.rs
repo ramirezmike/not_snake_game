@@ -17,7 +17,7 @@ static INITIAL_LEVEL: usize = 99999;
 pub struct Level {
     pub game_objects: Vec::<Vec::<Vec::<Option::<GameObject>>>>,
     pub current_level: usize,
-    pub palette: Palette,
+    palette: Palette,
     frame_updates: Vec::<(usize, usize, usize)>,
     level_info: Vec::<LevelInfo>,
     player_death_detected: bool,
@@ -50,6 +50,7 @@ pub struct LevelInfo {
     level: Vec::<Vec::<Vec::<usize>>>,
     is_food_random: bool,
     minimum_food: usize,
+    palette: Option::<Palette>,
     snake_speed: Option::<f32>,
     snake_target: Option::<snake::SnakeTarget>, 
     camera_x: f32,
@@ -111,6 +112,16 @@ impl Level {
           level_info: vec!(),
           player_death_detected: false,
         }
+    }
+
+    pub fn get_palette(&self) -> Palette {
+        if let Some(info) = self.level_info.get(self.current_level) {
+            if let Some(palette) = &info.palette {
+                return palette.clone();
+            }
+        } 
+
+        self.palette.clone()
     }
 
     pub fn width(&self) -> usize {
