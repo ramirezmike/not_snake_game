@@ -51,12 +51,16 @@ fn main() {
         .init_resource::<menu::ButtonMaterials>()
         .add_event::<credits::CreditsEvent>()
 
-//       .add_state(AppState::MainMenu)
+       .add_state(AppState::MainMenu)
 //        .add_state(AppState::InGame)
-        .add_state(AppState::Loading)
+//        .add_state(AppState::Loading)
 
         .add_system_set(SystemSet::on_enter(AppState::MainMenu).with_system(menu::setup_menu.system()))
-        .add_system_set(SystemSet::on_update(AppState::MainMenu).with_system(menu::menu.system()))
+        .add_system_set(
+            SystemSet::on_update(AppState::MainMenu)
+                .with_system(menu::menu.system())
+                .with_system(game_controller::gamepad_connections.system())
+        )
         .add_system_set(SystemSet::on_exit(AppState::MainMenu).with_system(menu::cleanup_menu.system()))
         .add_system_set(
             SystemSet::on_enter(AppState::Credits)
