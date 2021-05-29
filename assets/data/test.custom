@@ -7,8 +7,9 @@
 // 6; food with shadow spawn point
 // 7; food without shadow spawn point
 // 8; unmovable block different color
+// 9; electric snake spawn point
 LevelsAsset (
-    start_level: 10,
+    start_level: 0,
     palette: Palette (
     //https://lospec.com/palette-list/funkyfuture-8
     //  base:     "2b0f54",
@@ -909,6 +910,60 @@ LevelsAsset (
             camera_cull_y: None,
             camera_cull_z: None,
             palette: None,
+        ), LevelInfo (
+            level: [[
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [4, 0, 0, 0, 9, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0],
+], [
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+],
+            ],
+            is_food_random: true,
+            minimum_food: 10,
+            snake_speed: Some(0.35),
+            snake_target: None,
+            camera_x: -5.049999,
+            camera_y: 10.838599,
+            camera_z: 5.5154386,
+            camera_rotation_x: -0.3478674,
+            camera_rotation_y: -0.8704345,
+            camera_rotation_z: -0.34832737,
+            camera_rotation_angle: 1.7104243,
+            camera_behaviors: [ Static ],
+            camera_cull_x: None,
+            camera_cull_y: None,
+            camera_cull_z: None,
+            palette: Some(Palette (
+                base:     "b4be05",
+                ground_1: "2D2B31",
+                ground_2: "6f6100",
+                dude:     "f3a787",
+                enemy:    "ff4f69",
+                block:    "d8e2dc",//"85daeb",
+                flag:     "fdfe89",
+                food:     "fdfe89",
+            )),
         ), LevelInfo (
             level: [[
     [0, 0, 8, 2, 8, 0, 0, 0 ],

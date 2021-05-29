@@ -1,4 +1,13 @@
-use bevy::prelude::*;
+use bevy::{
+    prelude::*,
+    render::{
+        pipeline::{PipelineDescriptor, RenderPipeline},
+        render_graph::{base, RenderGraph, RenderResourcesNode},
+        renderer::RenderResources,
+        shader::{ShaderStage, ShaderStages},
+    },
+};
+use bevy::reflect::{TypeUuid};
 use bevy::render::camera::Camera;
 use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, Diagnostics};
 use bevy_kira_audio::AudioPlugin;
@@ -24,6 +33,7 @@ impl Plugin for EnvironmentPlugin {
            .init_resource::<dude::DudeMeshes>()
            .init_resource::<snake::EnemyMeshes>()
            .init_resource::<win_flag::WinFlagMeshes>()
+           .init_resource::<GameShaders>()
            .init_resource::<camera::CameraMouthMovement>()
            .init_resource::<AssetsLoading>()
            .add_plugin(AudioPlugin)
@@ -68,6 +78,7 @@ impl Plugin for EnvironmentPlugin {
            .add_system_set(
                SystemSet::on_enter(crate::AppState::InGame)
                          .with_system(load_level.system())
+                         .with_system(reset_score.system())
                          .with_system(level_over::setup_level_over_screen.system())
            )
 
@@ -107,6 +118,7 @@ impl Plugin for EnvironmentPlugin {
                .with_system(game_controller::gamepad_connections.system())
                .with_system(update_fps.system())
                .with_system(camera::cull_blocks.system())
+               .with_system(animate_shader.system())
                .with_system(shrink_shrinkables.system())
            );
 //        println!("{}", schedule_graph(&app.app.schedule));
@@ -174,6 +186,11 @@ pub fn load_assets(
     mut flag_meshes: ResMut<win_flag::WinFlagMeshes>,
     mut loading: ResMut<AssetsLoading>,
     mut level_asset_state: ResMut<level::LevelAssetState>, 
+    mut pipelines: ResMut<Assets<PipelineDescriptor>>,
+    mut game_shaders: ResMut<GameShaders>,
+    mut shaders: ResMut<Assets<Shader>>,
+    mut render_graph: ResMut<RenderGraph>,
+
 ) {
     dude_meshes.step1 = asset_server.load("models/dude.glb#Mesh0/Primitive0");
     dude_meshes.body = asset_server.load("models/chip.glb#Mesh0/Primitive0");
@@ -185,6 +202,25 @@ pub fn load_assets(
 
     flag_meshes.flag = asset_server.load("models/winflag.glb#Mesh0/Primitive0");
 
+    // Create a new shader pipeline.
+    game_shaders.electric = pipelines.add(PipelineDescriptor::default_config(ShaderStages {
+        vertex: asset_server.load::<Shader, _>("shaders/hot.vert"),
+        fragment: Some(asset_server.load::<Shader, _>("shaders/hot.frag")),
+    }));
+
+    // Add a `RenderResourcesNode` to our `RenderGraph`. This will bind `TimeComponent` to our
+    // shader.
+    render_graph.add_system_node(
+        "time_uniform",
+        RenderResourcesNode::<TimeUniform>::new(true),
+    );
+
+    // Add a `RenderGraph` edge connecting our new "time_component" node to the main pass node. This
+    // ensures that "time_component" runs before the main pass.
+    render_graph
+        .add_node_edge("time_uniform", base::node::MAIN_PASS)
+        .unwrap();
+
     let audio_state = sounds::AudioState::new(&asset_server);
 
     loading.0.push(dude_meshes.step1.clone_untyped());
@@ -193,6 +229,7 @@ pub fn load_assets(
     loading.0.push(enemy_meshes.head.clone_untyped());
     loading.0.push(enemy_meshes.body.clone_untyped());
     loading.0.push(flag_meshes.flag.clone_untyped());
+//    loading.0.push(game_shaders.electric.clone_untyped());
     loading.0.append(&mut audio_state.get_sound_handles());
 
     level_asset_state.handle = asset_server.load("data/test.custom");
@@ -281,27 +318,32 @@ pub fn cleanup_environment(
     }
 }
 
+pub fn reset_score(
+    mut score: ResMut<score::Score>,
+) {
+    score.total = score.current_level;
+    score.current_level = 0;
+}
+
 pub fn load_level(
     mut commands: Commands,
     mut level: ResMut<Level>,
     mut path_finder: ResMut<PathFinder>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    mut score: ResMut<score::Score>,
     mut level_ready: ResMut<LevelReady>,
     level_asset_state: Res<level::LevelAssetState>, 
     levels_asset: ResMut<Assets<level::LevelsAsset>>,
     mut dude_meshes: ResMut<dude::DudeMeshes>,
     mut enemy_meshes: ResMut<snake::EnemyMeshes>,
     mut flag_meshes: ResMut<win_flag::WinFlagMeshes>,
+    game_shaders: Res<GameShaders>,
     entities: Query<Entity>,
     mut camera: Query<&mut Transform, With<MainCamera>>,
     asset_server: Res<AssetServer>,
     mut clear_color: ResMut<ClearColor>,
 ) {
     println!("Starting to load level...");
-    score.total = score.current_level;
-    score.current_level = 0;
     let levels_asset = levels_asset.get(&level_asset_state.handle);
     level.load_stored_levels((*levels_asset.unwrap()).clone());
     level.reset_level();
@@ -450,7 +492,9 @@ pub fn load_level(
                         level.set(x as i32, y as i32, z as i32, Some(GameObject::new(entity, EntityType::WinFlag)));
                     },
                     4 => dude::spawn_player(&mut commands, &dude_meshes, &mut level, x, y, z),
-                    5 => snake::spawn_enemy(&mut commands, &enemy_meshes, &mut level, x, y, z),
+                    item @ 5 | item @ 9 => {
+                        snake::spawn_enemy(&mut commands, &enemy_meshes, &mut level, &game_shaders, x, y, z, item == 9)
+                    },
                     item @ 6 | item @ 7 => {
                         food::spawn_food(&mut commands, &mut level, &mut meshes, &mut materials, 
                                          Some(Position{ x: x as i32, y: y as i32, z: z as i32 }), item == 6)
@@ -661,3 +705,20 @@ pub struct MyLightBundle {
 pub struct DisplayText(pub String);
 pub struct FollowText;
 pub struct FpsText;
+
+#[derive(RenderResources, Default, TypeUuid)]
+#[uuid = "463e4b8a-d555-4fc2-ba9f-4c880063ba92"]
+pub struct TimeUniform {
+    pub value: f32,
+}
+
+#[derive(Default)]
+pub struct GameShaders {
+    pub electric: Handle<PipelineDescriptor>
+}
+
+fn animate_shader(time: Res<Time>, mut query: Query<&mut TimeUniform>) {
+    for mut time_uniform in query.iter_mut() {
+        time_uniform.value = time.seconds_since_startup() as f32;
+    }
+}

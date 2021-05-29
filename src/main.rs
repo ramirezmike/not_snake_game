@@ -51,9 +51,9 @@ fn main() {
         .init_resource::<menu::ButtonMaterials>()
         .add_event::<credits::CreditsEvent>()
 
-       .add_state(AppState::MainMenu)
+        .add_state(AppState::MainMenu)
 //        .add_state(AppState::InGame)
-//        .add_state(AppState::Loading)
+//       .add_state(AppState::Loading)
 
         .add_system_set(SystemSet::on_enter(AppState::MainMenu).with_system(menu::setup_menu.system()))
         .add_system_set(
