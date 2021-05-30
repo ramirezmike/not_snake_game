@@ -45,10 +45,14 @@ vec3 make_beam(
 }
 
 void main() {
-    vec3 beam_1 = make_beam(v_Uv, time, 6.0, 2.0, 2.0, 15.0);
-    vec3 beam_2 = make_beam(v_Uv, time, 5.0, 3.0, 2.0, 9.0);
+    vec3 beam_1 = make_beam(v_Uv, time, 6.0, 2.0, 2.0, 12.0);
+    vec3 beam_2 = make_beam(v_Uv, time, 5.0, 3.0, 2.0, 13.0);
 
     o_Target = vec4(beam_1, 1.0);
     o_Target = mix(o_Target, vec4(beam_2, 1.0), 0.5);
+
+    if (o_Target.x < 0.2) {
+        discard;
+    }
 
 }
