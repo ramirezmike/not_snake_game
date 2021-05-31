@@ -119,6 +119,7 @@ impl Plugin for EnvironmentPlugin {
                .with_system(update_fps.system())
                .with_system(camera::cull_blocks.system())
                .with_system(animate_shader.system())
+               .with_system(snake::detect_dude_on_electric_snake.system())
                .with_system(shrink_shrinkables.system())
            );
 //        println!("{}", schedule_graph(&app.app.schedule));

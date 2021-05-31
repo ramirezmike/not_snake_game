@@ -44,13 +44,23 @@ pub struct Enemy {
     pub is_dead: bool,
     up: Vec3,
     forward: Vec3,
-    is_electric: bool,
+    pub is_electric: bool,
     pub current_path: Option<(u32, Vec<NodeIndex<u32>>)>,
 }
 
 impl Enemy {
     pub fn get_first_body(&self) -> Position {
         Position::from_vec(self.body_positions[0].translation)
+    }
+
+    pub fn is_in_vec(&self, position: Vec3) -> bool {
+        for body_position in self.body_positions.iter() {
+            if body_position.translation == position {
+                return true;
+            }
+        }
+
+        false
     }
 }
 
@@ -1043,4 +1053,19 @@ pub fn handle_kill_snake(
     *dying_snakes = flashing;
 }
 
+pub fn detect_dude_on_electric_snake(
+    snakes: Query<&Enemy>,
+    dudes: Query<&Transform, With<dude::Dude>>,
+    mut kill_dude_event_writer: EventWriter<dude::KillDudeEvent>,
+) {
+    for transform in dudes.iter() {
+        let below_dude = Vec3::new(transform.translation.x, transform.translation.y - 1.0, transform.translation.z);
+        for snake in snakes.iter() {
+            if snake.is_electric && snake.is_in_vec(below_dude) {
+                kill_dude_event_writer.send(dude::KillDudeEvent);
+                return;
+            }
+        }
+    }
+}
 

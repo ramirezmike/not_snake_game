@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use crate::{Direction, level::Level, Position, EntityType, GameObject, facing::Facing, sounds};
+use crate::{Direction, level::Level, Position, EntityType, GameObject, facing::Facing, sounds, snake, dude};
 
 #[derive(Debug)]
 pub struct Moveable {
@@ -65,6 +65,8 @@ pub fn update_moveable(
     mut inner_meshes_visibility: Query<&mut Visible, Without<Moveable>>,
     mut level: ResMut<Level>,
     mut sound_writer: EventWriter<sounds::SoundEvent>,
+    mut kill_dude_event_writer: EventWriter<dude::KillDudeEvent>,
+    enemies: Query<&snake::Enemy>,
     time: Res<Time>,
 ) {
     for (entity, mut moveable, mut transform, mut position, entity_type, maybe_facing, children) in moveables.iter_mut() {
@@ -148,6 +150,7 @@ pub fn update_moveable(
                                 _ => if facing.can_face_verticals { queued_movement.0 } else { facing.direction }
                             };
                         for child in children.iter() {
+                            // TODO: this code was for snake movement but may no longer be needed?
                             // this is all so that the snake head points the right direction 
                             // and is in the right spot
                             // vertically when moving vertically
@@ -210,6 +213,14 @@ pub fn update_moveable(
                             let above_target = Vec3::new(target_position.x, target_position.y + 1.0, target_position.z);
                             
                             if level.is_enterable_with_vec(above_moveable) && level.is_enterable_with_vec(above_target) {
+
+                                for enemy in enemies.iter() {
+                                    if enemy.is_electric && enemy.is_in_vec(target_position) {
+                                        kill_dude_event_writer.send(dude::KillDudeEvent);
+                                        continue;
+                                    }
+                                }
+
                                 let movement_speed = moveable.movement_speed;
                                 let direction = queued_movement.0;
                                 moveable.target_position = 
