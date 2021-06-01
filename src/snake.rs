@@ -1062,7 +1062,7 @@ pub fn detect_dude_on_electric_snake(
         let below_dude = Vec3::new(transform.translation.x, transform.translation.y - 1.0, transform.translation.z);
         for snake in snakes.iter() {
             if snake.is_electric && snake.is_in_vec(below_dude) {
-                kill_dude_event_writer.send(dude::KillDudeEvent);
+                kill_dude_event_writer.send(dude::KillDudeEvent { death_type: dude::DudeDeath::Electric });
                 return;
             }
         }

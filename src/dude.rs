@@ -13,7 +13,15 @@ impl Plugin for DudePlugin {
     }
 }
 
-pub struct KillDudeEvent;
+pub struct KillDudeEvent {
+    pub death_type: DudeDeath 
+}
+
+pub enum DudeDeath {
+    Fall,
+    Eaten,
+    Electric
+}
 #[derive(Default)]
 pub struct DudeMeshes {
     pub step1: Handle<Mesh>,
@@ -81,7 +89,7 @@ fn player_input(
 ) {
     let time_buffer = 100;
     if keyboard_input.just_pressed(KeyCode::R) {
-        kill_dude_event_writer.send(KillDudeEvent);
+        kill_dude_event_writer.send(KillDudeEvent { death_type: DudeDeath::Fall });
     }
 
     // this is for debugging. If we're flying, don't move the player
@@ -172,7 +180,7 @@ fn push_block(
             // dude has fallen. TODO This should be refactored when I move
             // the dude-relevant Moveable code into here. This is just 
             // here for now since it's convenient
-            kill_dude_event_writer.send(KillDudeEvent);
+            kill_dude_event_writer.send(KillDudeEvent { death_type: DudeDeath::Fall });
         }
 
         if keyboard_input.just_pressed(KeyCode::K) {

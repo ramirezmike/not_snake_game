@@ -21,33 +21,24 @@ pub enum CameraBehavior {
     FollowZ(f32),
 }
 
+#[derive(Default)]
+pub struct CameraMeshes {
+    pub bolt: Handle<Mesh>,
+    pub spikes: Handle<Mesh>,
+}
+
 use fly_camera::*;
 
 pub struct CameraPlugin;
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app//.add_plugin(PickingPlugin)
-
-           .add_system_set(
-               SystemSet::on_exit(crate::AppState::Loading)
-                         .with_system(create_camera.system())
-           )
-           .add_system_set(
-               SystemSet::on_enter(crate::AppState::ChangingLevel)
-                         .with_system(destroy_camera.system())
-           )
-           .add_system_set(
-               SystemSet::on_exit(crate::AppState::ChangingLevel)
-                         .with_system(create_camera.system())
-           )
            .add_system_set(
                SystemSet::on_update(crate::AppState::InGame)
                          .with_system(toggle_fly.system())
            )
            .add_plugin(FlyCameraPlugin)
-           .add_system(update_camera.system())
-           //.add_system(update_camera_collisions.system());
-           ;
+           .add_system(update_camera.system());
     }
 }
 
@@ -141,15 +132,6 @@ fn update_camera(
     }
 }
 
-fn destroy_camera(
-    mut commands: Commands,
-    cameras: Query<Entity, With<MainCamera>>
-) {
-    for camera in cameras.iter() {
-        commands.entity(camera).despawn_recursive();
-    }
-}
-
 #[derive(Debug, PartialEq)]
 pub enum MovementStep { Start, Middle, Loading, End }
 impl Default for MovementStep {
@@ -169,94 +151,186 @@ pub struct CameraMouth {
     end: Vec3,
 }
 
-fn create_camera(
+#[derive(Default)]
+pub struct CameraBoltMovement {
+    moving: bool,
+    current_movement_time: f32,
+    current_movement_step: MovementStep,  
+}
+
+pub struct CameraBolt {
+    start: Vec3,
+    middle: Vec3,
+    end: Vec3,
+}
+
+#[derive(Default)]
+pub struct CameraSpikeMovement {
+    moving: bool,
+    current_movement_time: f32,
+    current_movement_step: MovementStep,  
+}
+
+pub struct CameraSpike {
+    start: Vec3,
+    middle: Vec3,
+    end: Vec3,
+}
+
+pub fn create_camera(
     mut commands: Commands,
-    mut windows: ResMut<Windows>,
     mut meshes: ResMut<Assets<Mesh>>,
+    camera_meshes: ResMut<CameraMeshes>,
     mut materials: ResMut<Assets<StandardMaterial>>,
+    mut cameras: Query<&mut Transform, With<MainCamera>>,
     level: Res<Level>,
 ) {
-    println!("Creating camera!");
-    let transform = Transform::default();
-    let plane = meshes.add(Mesh::from(shape::Cube { size: 1.0 }));
-    let mut material:StandardMaterial = Color::hex(level.get_palette().enemy.clone()).unwrap().into();
-    material.unlit = true;
-    let block_material = materials.add(material);
-    commands
-        .spawn_bundle(PerspectiveCameraBundle {
-            transform, 
-            ..Default::default()
-        })
-        .with_children(|parent| {
-            let distance_from_camera = -1.7;
-            let distance_from_each_other = 1.0;
-            let start_buffer = 5.00;
-            let end_buffer = 0.45;
-            let upper_left = CameraMouth {
-                start: Vec3::new(-distance_from_each_other * start_buffer, distance_from_each_other * start_buffer, distance_from_camera),
-                middle: Vec3::new(-distance_from_each_other, distance_from_each_other, distance_from_camera),
-                end: Vec3::new(-distance_from_each_other * end_buffer, distance_from_each_other * end_buffer, distance_from_camera),
-            };
-            let upper_right = CameraMouth {
-                start: Vec3::new(distance_from_each_other * start_buffer, distance_from_each_other * start_buffer, distance_from_camera),
-                middle: Vec3::new(distance_from_each_other, distance_from_each_other, distance_from_camera),
-                end: Vec3::new(distance_from_each_other * end_buffer, distance_from_each_other * end_buffer, distance_from_camera),
-            };
-            let lower_left = CameraMouth {
-                start: Vec3::new(-distance_from_each_other * start_buffer, -distance_from_each_other * start_buffer, distance_from_camera),
-                middle: Vec3::new(-distance_from_each_other, -distance_from_each_other, distance_from_camera),
-                end: Vec3::new(-distance_from_each_other * end_buffer, -distance_from_each_other * end_buffer, distance_from_camera),
-            };
-            let lower_right = CameraMouth {
-                start: Vec3::new(distance_from_each_other * start_buffer, -distance_from_each_other * start_buffer, distance_from_camera),
-                middle: Vec3::new(distance_from_each_other, -distance_from_each_other, distance_from_camera),
-                end: Vec3::new(distance_from_each_other * end_buffer, -distance_from_each_other * end_buffer, distance_from_camera),
-            };
-            parent.spawn_bundle(PbrBundle {
-                mesh: plane.clone(),
-                material: block_material.clone(),
-                transform: Transform::from_translation(upper_left.start),
-                ..Default::default()
-            }).insert(upper_left);
-            parent.spawn_bundle(PbrBundle {
-                mesh: plane.clone(),
-                material: block_material.clone(),
-                transform: Transform::from_translation(upper_right.start),
-                ..Default::default()
-            }).insert(upper_right);
-            parent.spawn_bundle(PbrBundle {
-                mesh: plane.clone(),
-                material: block_material.clone(),
-                transform: Transform::from_translation(lower_left.start),
-                ..Default::default()
-            }).insert(lower_left);
-            parent.spawn_bundle(PbrBundle {
-                mesh: plane.clone(),
-                material: block_material.clone(),
-                transform: Transform::from_translation(lower_right.start),
-                ..Default::default()
-            }).insert(lower_right);
+    let mut transform = Transform::default();
+    transform.translation = level.get_camera_position();
+    transform.rotation = level.get_camera_rotation();
 
+    if let Ok(mut camera_transform) = cameras.single_mut() {
+        *camera_transform = transform;
+    } else {
+        println!("Creating camera!");
 
-            parent.spawn_bundle(LightBundle {
-                transform: Transform::from_xyz(0.0, 8.0, 0.0),
-                light: Light {
-                    fov: 180.0,
-                    intensity: 1000.0,
-                    range: 100.0,
+        let plane = meshes.add(Mesh::from(shape::Cube { size: 1.0 }));
+        let mut material: StandardMaterial = Color::hex(level.get_palette().enemy.clone()).unwrap().into();
+        material.unlit = true;
+        let block_material = materials.add(material);
+
+        let mut material: StandardMaterial = Color::hex("C8C96B").unwrap().into();
+        material.unlit = true;
+        let electric_material = materials.add(material);
+
+        let mut material: StandardMaterial = Color::hex("000000").unwrap().into();
+        material.unlit = true;
+        let spike_material = materials.add(material);
+
+        commands
+            .spawn_bundle(PerspectiveCameraBundle {
+                transform, 
+                ..Default::default()
+            })
+            .with_children(|parent| {
+                let distance_from_camera = -1.7;
+                let distance_from_each_other = 1.0;
+                let start_buffer = 5.00;
+                let end_buffer = 0.45;
+
+                let upper_left = CameraMouth {
+                    start: Vec3::new(-distance_from_each_other * start_buffer, distance_from_each_other * start_buffer, distance_from_camera),
+                    middle: Vec3::new(-distance_from_each_other, distance_from_each_other, distance_from_camera),
+                    end: Vec3::new(-distance_from_each_other * end_buffer, distance_from_each_other * end_buffer, distance_from_camera),
+                };
+                let upper_right = CameraMouth {
+                    start: Vec3::new(distance_from_each_other * start_buffer, distance_from_each_other * start_buffer, distance_from_camera),
+                    middle: Vec3::new(distance_from_each_other, distance_from_each_other, distance_from_camera),
+                    end: Vec3::new(distance_from_each_other * end_buffer, distance_from_each_other * end_buffer, distance_from_camera),
+                };
+                let lower_left = CameraMouth {
+                    start: Vec3::new(-distance_from_each_other * start_buffer, -distance_from_each_other * start_buffer, distance_from_camera),
+                    middle: Vec3::new(-distance_from_each_other, -distance_from_each_other, distance_from_camera),
+                    end: Vec3::new(-distance_from_each_other * end_buffer, -distance_from_each_other * end_buffer, distance_from_camera),
+                };
+                let lower_right = CameraMouth {
+                    start: Vec3::new(distance_from_each_other * start_buffer, -distance_from_each_other * start_buffer, distance_from_camera),
+                    middle: Vec3::new(distance_from_each_other, -distance_from_each_other, distance_from_camera),
+                    end: Vec3::new(distance_from_each_other * end_buffer, -distance_from_each_other * end_buffer, distance_from_camera),
+                };
+
+                parent.spawn_bundle(PbrBundle {
+                    mesh: plane.clone(),
+                    material: block_material.clone(),
+                    transform: Transform::from_translation(upper_left.start),
                     ..Default::default()
-                },
-                ..Default::default()
-            });
+                }).insert(upper_left);
+                parent.spawn_bundle(PbrBundle {
+                    mesh: plane.clone(),
+                    material: block_material.clone(),
+                    transform: Transform::from_translation(upper_right.start),
+                    ..Default::default()
+                }).insert(upper_right);
+                parent.spawn_bundle(PbrBundle {
+                    mesh: plane.clone(),
+                    material: block_material.clone(),
+                    transform: Transform::from_translation(lower_left.start),
+                    ..Default::default()
+                }).insert(lower_left);
+                parent.spawn_bundle(PbrBundle {
+                    mesh: plane.clone(),
+                    material: block_material.clone(),
+                    transform: Transform::from_translation(lower_right.start),
+                    ..Default::default()
+                }).insert(lower_right);
 
-        })
-        .insert(MainCamera)
- //       .with(PickSource::default());
-            ;
 
-//   let window = windows.get_primary_mut().unwrap();
-//  window.set_cursor_lock_mode(true);
-//  window.set_cursor_visibility(false);
+                // Bolt 
+                let distance_from_camera = -5.7;
+
+                let camera_bolt = CameraBolt {
+                    start: Vec3::new(0.0, 10.0, distance_from_camera),
+                    middle: Vec3::new(0.0, 2.0, distance_from_camera),
+                    end: Vec3::new(1.0, 10.0, 10.0),
+                };
+                parent.spawn_bundle(PbrBundle {
+                    mesh: camera_meshes.bolt.clone(),
+                    material: electric_material.clone(),
+                    transform: {
+                        let mut t = Transform::from_translation(camera_bolt.start);
+                        t.rotation = Quat::from_axis_angle(Vec3::Y, (3.0 * std::f32::consts::PI) / 2.0);
+                        t
+                    },
+                    ..Default::default()
+                }).insert(camera_bolt);
+
+                // Spike
+                let distance_from_camera = -3.0;
+
+                let camera_spike = CameraSpike {
+                    start: Vec3::new(0.0, 3.0, distance_from_camera),
+                    middle: Vec3::new(0.0, 2.0, distance_from_camera),
+                    end: Vec3::new(0.0, -1.0, distance_from_camera),
+                };
+                parent.spawn_bundle(PbrBundle {
+                    mesh: camera_meshes.spikes.clone(),
+                    material: spike_material.clone(),
+                    transform: {
+                        let mut t = Transform::from_translation(camera_spike.start);
+                        t.rotation = Quat::from_axis_angle(Vec3::Y, (3.0 * std::f32::consts::PI) / 2.0);
+                        t
+                    },
+                    ..Default::default()
+                }).insert(camera_spike);
+
+                // Light
+                parent.spawn_bundle(LightBundle {
+                    transform: Transform::from_xyz(0.0, 8.0, 0.0),
+                    light: Light {
+                        fov: 180.0,
+                        intensity: 1000.0,
+                        range: 100.0,
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                });
+
+            })
+            .insert(MainCamera)
+     //       .with(PickSource::default());
+                ;
+
+    //   let window = windows.get_primary_mut().unwrap();
+    //  window.set_cursor_lock_mode(true);
+    //  window.set_cursor_visibility(false);
+
+    }
+//  // destroy any existing main cameras
+//  for camera in cameras.iter() {
+//      println!("destroying camera");
+//      commands.entity(camera).despawn_recursive();
+//  }
+
 }
 
 #[derive(Bundle)]
@@ -267,18 +341,28 @@ pub struct MainCamera;
 pub fn handle_player_death(
     mut state: ResMut<State<crate::AppState>>,
     time: Res<Time>,
-    mut mouth_pieces: Query<(&CameraMouth, &mut Transform)>,
+    mut mouth_pieces: Query<(&CameraMouth, &mut Transform), (Without<CameraBolt>, Without<CameraSpike>)>,
+    mut bolt_pieces: Query<(&CameraBolt, &mut Transform), (Without<CameraMouth>, Without<CameraSpike>)>,
+    mut spike_pieces: Query<(&CameraSpike, &mut Transform), (Without<CameraMouth>, Without<CameraBolt>)>,
     mut kill_dude_event_reader: EventReader<dude::KillDudeEvent>,
     mut mouth_movement: ResMut<CameraMouthMovement>, 
+    mut bolt_movement: ResMut<CameraBoltMovement>, 
+    mut spike_movement: ResMut<CameraSpikeMovement>, 
 ) {
-    if !mouth_movement.moving {
-        mouth_movement.moving = kill_dude_event_reader.iter().count() > 0;
+    if !mouth_movement.moving && !bolt_movement.moving && !spike_movement.moving {
+        for kill_dude_event in kill_dude_event_reader.iter() {
+            match kill_dude_event.death_type {
+                dude::DudeDeath::Eaten => mouth_movement.moving = true, 
+                dude::DudeDeath::Electric => bolt_movement.moving = true, 
+                dude::DudeDeath::Fall => spike_movement.moving = true, 
+            }
+        }
     }
 
     if mouth_movement.moving {
         mouth_movement.current_movement_time += time.delta_seconds();
         let mut movement_completed = false;
-        for (piece, mut transform) in  mouth_pieces.iter_mut() {
+        for (piece, mut transform) in mouth_pieces.iter_mut() {
             let (target, speed) = match mouth_movement.current_movement_step {
                                       MovementStep::Start => (piece.middle, 0.5),
                                       MovementStep::Middle => (piece.end, 1.5),
@@ -317,6 +401,112 @@ pub fn handle_player_death(
                                                        }
                                                        MovementStep::End => {
                                                            mouth_movement.moving = false;    
+                                                           MovementStep::Start
+                                                       }
+                                                   };
+        }
+    }
+
+    if bolt_movement.moving {
+        bolt_movement.current_movement_time += time.delta_seconds();
+        let mut movement_completed = false;
+        let default_scale = Vec3::new(1.0, 1.0, 1.0);
+        for (piece, mut transform) in bolt_pieces.iter_mut() {
+            let (target, scale, speed) = match bolt_movement.current_movement_step {
+                                      MovementStep::Start => (piece.middle, default_scale, 0.5),
+                                      MovementStep::Middle => (piece.middle, piece.end, 1.5),
+                                      MovementStep::Loading => (piece.middle, piece.end, 0.5),
+                                      MovementStep::End => (piece.start, default_scale, 1.0),
+                                  };
+
+            if bolt_movement.current_movement_step != MovementStep::Loading {
+                let new_translation = transform.translation.lerp(target, 
+                                                                 bolt_movement.current_movement_time / speed);
+                if !new_translation.is_nan() {
+                    if transform.translation.distance(target) < transform.translation.distance(new_translation) {
+                        transform.translation = target;
+                    } else {
+                        transform.translation = new_translation;
+                    }
+                }
+
+                let new_scale = transform.scale.lerp(scale, bolt_movement.current_movement_time / speed);
+                if !new_scale.is_nan() {
+                    if transform.scale.distance(scale) < transform.scale.distance(new_scale) {
+                        transform.scale = scale;
+                    } else {
+                        transform.scale = new_scale;
+                    }
+                }
+            }
+
+            if bolt_movement.current_movement_time >= speed {
+                movement_completed = true;
+            }
+        }
+
+        if movement_completed {
+            bolt_movement.current_movement_time = 0.0; 
+            bolt_movement.current_movement_step = match bolt_movement.current_movement_step  {
+                                                       MovementStep::Start => MovementStep::Middle,
+                                                       MovementStep::Middle => {
+                                                           state.set(crate::AppState::ResetLevel).unwrap();
+                                                           MovementStep::Loading
+                                                       },
+                                                       MovementStep::Loading => {
+                                                           state.set(crate::AppState::InGame).unwrap();
+                                                           MovementStep::End
+                                                       }
+                                                       MovementStep::End => {
+                                                           bolt_movement.moving = false;    
+                                                           MovementStep::Start
+                                                       }
+                                                   };
+        }
+    }
+
+    if spike_movement.moving {
+        spike_movement.current_movement_time += time.delta_seconds();
+        let mut movement_completed = false;
+        for (piece, mut transform) in spike_pieces.iter_mut() {
+            let (target, speed) = match spike_movement.current_movement_step {
+                                      MovementStep::Start => (piece.middle, 0.5),
+                                      MovementStep::Middle => (piece.end, 1.5),
+                                      MovementStep::Loading => (piece.end, 0.5),
+                                      MovementStep::End => (piece.start, 1.0),
+                                  };
+
+            if spike_movement.current_movement_step != MovementStep::Loading {
+                let new_translation = transform.translation.lerp(target, 
+                                                                 spike_movement.current_movement_time / speed);
+                if !new_translation.is_nan() {
+                    if transform.translation.distance(target) < transform.translation.distance(new_translation) {
+                        transform.translation = target;
+                    } else {
+                        transform.translation = new_translation;
+                    }
+                }
+            }
+
+            if spike_movement.current_movement_time >= speed {
+                movement_completed = true;
+            }
+        }
+
+        if movement_completed {
+            spike_movement.current_movement_time = 0.0; 
+            spike_movement.current_movement_step = match spike_movement.current_movement_step  {
+                                                       MovementStep::Start => MovementStep::Middle,
+                                                       MovementStep::Middle => {
+                                                           state.set(crate::AppState::ResetLevel).unwrap();
+                                                           MovementStep::Loading
+                                                       },
+                                                       MovementStep::Loading => {
+                                                           state.set(crate::AppState::InGame).unwrap();
+                                                           MovementStep::End
+                                                       }
+                                                       MovementStep::End => {
+                                                           spike_movement.moving = false;    
                                                            MovementStep::Start
                                                        }
                                                    };

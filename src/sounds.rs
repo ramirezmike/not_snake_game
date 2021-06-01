@@ -118,7 +118,7 @@ impl AudioState {
         channel_audio_state.paused = false;
         channel_audio_state.stopped = false;
 
-        audio.play_looped_in_channel(self.music_1_handle.clone(), &self.music_channel);
+//        audio.play_looped_in_channel(self.music_1_handle.clone(), &self.music_channel);
     }
 }
 

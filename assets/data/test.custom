@@ -9,7 +9,7 @@
 // 8; unmovable block different color
 // 9; electric snake spawn point
 LevelsAsset (
-    start_level: 10,
+    start_level: 0,
     palette: Palette (
     //https://lospec.com/palette-list/funkyfuture-8
     //  base:     "2b0f54",

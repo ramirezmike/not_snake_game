@@ -1,13 +1,12 @@
 TODO
-- make yellow electric snake
 - add pause screen
 - add camera shake
-- make death animation for falling out of bounds
 - fix snake death animation
 - make dude scale up and down
 
 Stretch Goals
 - add lights around food? (maybe make level-configurable size)
+- add shaders on everything?
 
 Sounds to add
 - landing?
@@ -44,3 +43,6 @@ Done
 - setup something to cull out of view blocks
 - change exit flag to a different shape
 - make menu work with controller and keyboard
+- make yellow electric snake
+- make death animation for falling out of bounds
+- make death animation for electric snake

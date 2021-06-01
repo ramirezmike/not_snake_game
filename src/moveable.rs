@@ -216,7 +216,7 @@ pub fn update_moveable(
 
                                 for enemy in enemies.iter() {
                                     if enemy.is_electric && enemy.is_in_vec(target_position) {
-                                        kill_dude_event_writer.send(dude::KillDudeEvent);
+                                        kill_dude_event_writer.send(dude::KillDudeEvent { death_type: dude::DudeDeath::Electric });
                                         continue;
                                     }
                                 }

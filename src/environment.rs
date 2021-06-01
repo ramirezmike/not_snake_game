@@ -32,9 +32,12 @@ impl Plugin for EnvironmentPlugin {
            .insert_resource(score::Score::new())
            .init_resource::<dude::DudeMeshes>()
            .init_resource::<snake::EnemyMeshes>()
+           .init_resource::<camera::CameraMeshes>()
            .init_resource::<win_flag::WinFlagMeshes>()
            .init_resource::<GameShaders>()
            .init_resource::<camera::CameraMouthMovement>()
+           .init_resource::<camera::CameraBoltMovement>()
+           .init_resource::<camera::CameraSpikeMovement>()
            .init_resource::<AssetsLoading>()
            .add_plugin(AudioPlugin)
            .add_plugin(camera::CameraPlugin)
@@ -77,7 +80,8 @@ impl Plugin for EnvironmentPlugin {
            )
            .add_system_set(
                SystemSet::on_enter(crate::AppState::InGame)
-                         .with_system(load_level.system())
+                         .with_system(load_level.system().label("loading_level"))
+                         .with_system(crate::camera::create_camera.system().after("loading_level"))
                          .with_system(reset_score.system())
                          .with_system(level_over::setup_level_over_screen.system())
            )
@@ -181,15 +185,14 @@ pub fn load_assets(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
     mut dude_meshes: ResMut<dude::DudeMeshes>,
     mut enemy_meshes: ResMut<snake::EnemyMeshes>,
+    mut camera_meshes: ResMut<camera::CameraMeshes>,
     mut flag_meshes: ResMut<win_flag::WinFlagMeshes>,
     mut loading: ResMut<AssetsLoading>,
     mut level_asset_state: ResMut<level::LevelAssetState>, 
     mut pipelines: ResMut<Assets<PipelineDescriptor>>,
     mut game_shaders: ResMut<GameShaders>,
-    mut shaders: ResMut<Assets<Shader>>,
     mut render_graph: ResMut<RenderGraph>,
 
 ) {
@@ -200,6 +203,9 @@ pub fn load_assets(
     enemy_meshes.head = asset_server.load("models/snake.glb#Mesh0/Primitive0");
     enemy_meshes.body = asset_server.load("models/snake.glb#Mesh1/Primitive0");
     enemy_meshes.shadow = meshes.add(Mesh::from(shape::Plane { size: 0.75 }));
+
+    camera_meshes.bolt = asset_server.load("models/bolt.glb#Mesh0/Primitive0");
+    camera_meshes.spikes = asset_server.load("models/spikes.glb#Mesh0/Primitive0");
 
     flag_meshes.flag = asset_server.load("models/winflag.glb#Mesh0/Primitive0");
 
@@ -230,6 +236,9 @@ pub fn load_assets(
     loading.0.push(enemy_meshes.head.clone_untyped());
     loading.0.push(enemy_meshes.body.clone_untyped());
     loading.0.push(flag_meshes.flag.clone_untyped());
+    loading.0.push(camera_meshes.bolt.clone_untyped());
+    loading.0.push(camera_meshes.spikes.clone_untyped());
+
 //    loading.0.push(game_shaders.electric.clone_untyped());
     loading.0.append(&mut audio_state.get_sound_handles());
 
@@ -337,7 +346,7 @@ pub fn load_level(
     levels_asset: ResMut<Assets<level::LevelsAsset>>,
     mut dude_meshes: ResMut<dude::DudeMeshes>,
     mut enemy_meshes: ResMut<snake::EnemyMeshes>,
-    mut flag_meshes: ResMut<win_flag::WinFlagMeshes>,
+    flag_meshes: ResMut<win_flag::WinFlagMeshes>,
     game_shaders: Res<GameShaders>,
     entities: Query<Entity>,
     mut camera: Query<&mut Transform, With<MainCamera>>,
@@ -357,12 +366,6 @@ pub fn load_level(
     let enemy_color = Color::hex(palette.enemy.clone()).unwrap();
     enemy_meshes.material = materials.add(enemy_color.into());
     enemy_meshes.shadow_material = materials.add(Color::rgba(enemy_color.r(), enemy_color.g(), enemy_color.b(), 0.4).into());
-
-    for mut transform in camera.iter_mut() {
-        transform.translation = level.get_camera_position();
-        transform.rotation = level.get_camera_rotation();
-        println!("Camera: {:?}", transform.translation);
-    }
 
     let plane = meshes.add(Mesh::from(shape::Plane { size: 1.0 }));
     let cube = meshes.add(Mesh::from(shape::Cube { size: 1.0 }));

@@ -460,7 +460,7 @@ pub fn broadcast_changes(
     }
     if level.player_death_detected {
         level.player_death_detected = false;
-        kill_dude_event_writer.send(dude::KillDudeEvent);
+        kill_dude_event_writer.send(dude::KillDudeEvent { death_type: dude::DudeDeath::Eaten });
         sound_writer.send(sounds::SoundEvent(sounds::Sounds::Bite));
     }
 }
