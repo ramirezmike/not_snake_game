@@ -9,13 +9,15 @@ edition = "2018"
 
 [features]
 default = [
+    "bevy/bevy_gilrs",
     "bevy/bevy_gltf",
     "bevy/bevy_winit",
     "bevy/render",
-    "bevy/bevy_gilrs",
-    "bevy/bevy_winit",
     "bevy/png",
+    "bevy/hdr",
+    "bevy/x11",
     "bevy_kira_audio/ogg"
+
 ]
 
 native = [

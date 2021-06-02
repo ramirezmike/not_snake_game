@@ -27,6 +27,7 @@ web = [
 
 dev = [
     "bevy/dynamic",
+    "bevy/bevy_dynamic_plugin",
     "native",
 ]
 
