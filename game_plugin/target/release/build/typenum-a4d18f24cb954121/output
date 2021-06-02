@@ -1,2 +1,0 @@
-cargo:rustc-env=TYPENUM_BUILD_CONSTS=/home/mramirez/code/projects/games/bug_game/target/release/build/typenum-a4d18f24cb954121/out/consts.rs
-cargo:rustc-env=TYPENUM_BUILD_OP=/home/mramirez/code/projects/games/bug_game/target/release/build/typenum-a4d18f24cb954121/out/op.rs

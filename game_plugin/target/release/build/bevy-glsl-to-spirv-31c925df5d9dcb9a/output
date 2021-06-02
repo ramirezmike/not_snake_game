@@ -1,9 +1,0 @@
-cargo:rustc-link-search=/home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/bevy-glsl-to-spirv-0.2.1/build/linux
-cargo:rustc-link-lib=glslang.glsltospirv
-cargo:rustc-link-lib=HLSL.glsltospirv
-cargo:rustc-link-lib=OGLCompiler.glsltospirv
-cargo:rustc-link-lib=OSDependent.glsltospirv
-cargo:rustc-link-lib=SPIRV.glsltospirv
-cargo:rustc-link-lib=SPVRemapper.glsltospirv
-cargo:rustc-link-lib=SPIRV-Tools-opt.glsltospirv
-cargo:rustc-link-lib=SPIRV-Tools.glsltospirv
