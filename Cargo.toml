@@ -1,21 +1,39 @@
 [package]
-name = "bug_game"
+name = "snake_game" # ToDo
 version = "0.1.0"
+publish = false
 authors = ["mramirez <ramirezmike2@gmail.com>"]
 edition = "2018"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[features]
+default = [
+    "bevy/bevy_gltf",
+    "bevy/bevy_winit",
+    "bevy/render",
+    "bevy/png",
+    "game_plugin/default"
+]
+
+native = [
+    "bevy/bevy_wgpu",
+    "game_plugin/native"
+]
+
+web = [
+    "bevy_webgl2",
+]
+
+dev = [
+    "bevy/dynamic",
+    "native",
+]
 
 [dependencies]
-bevy = "0.5.0"
-bevy_mod_raycast = { git = "https://github.com/aevyrie/bevy_mod_raycast", rev = "68626b7" }
-bevy_mod_picking = { git = "https://github.com/aevyrie/bevy_mod_picking", rev = "30a9124" }
-bevy_rapier3d = { git = "https://github.com/alec-deason/bevy_rapier", rev = "9bbfb4f" }
-petgraph = "0.5.1"
-bevy_prototype_debug_lines = "0.2.2"
-rand = "0.8"
-serde = {version = "1", features = ["derive"]}
-anyhow = "1.0"
-ron = "0.6.2"
-bevy_mod_debugdump = { git = "https://github.com/jakobhellermann/bevy_mod_debugdump" }
-bevy_kira_audio = {version = "0.5.0", features = ["wav"]}
+bevy = { version = "0.5.0", default-features = false }
+game_plugin = {path = "game_plugin"}
+winit = "0.24.0"
+
+bevy_webgl2 = {version = "0.5.0", optional = true}
+
+[build-dependencies]
+embed-resource = "1.4"

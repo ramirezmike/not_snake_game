@@ -1,0 +1,15 @@
+/home/mramirez/code/projects/games/bug_game/target/rls/debug/deps/ron-3752c4287a11f6b1.rmeta: /home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/ron-0.6.4/src/lib.rs /home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/ron-0.6.4/src/de/mod.rs /home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/ron-0.6.4/src/de/id.rs /home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/ron-0.6.4/src/de/tag.rs /home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/ron-0.6.4/src/de/value.rs /home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/ron-0.6.4/src/ser/mod.rs /home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/ron-0.6.4/src/ser/value.rs /home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/ron-0.6.4/src/error.rs /home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/ron-0.6.4/src/value.rs /home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/ron-0.6.4/src/extensions.rs /home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/ron-0.6.4/src/parse.rs
+
+/home/mramirez/code/projects/games/bug_game/target/rls/debug/deps/ron-3752c4287a11f6b1.d: /home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/ron-0.6.4/src/lib.rs /home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/ron-0.6.4/src/de/mod.rs /home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/ron-0.6.4/src/de/id.rs /home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/ron-0.6.4/src/de/tag.rs /home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/ron-0.6.4/src/de/value.rs /home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/ron-0.6.4/src/ser/mod.rs /home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/ron-0.6.4/src/ser/value.rs /home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/ron-0.6.4/src/error.rs /home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/ron-0.6.4/src/value.rs /home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/ron-0.6.4/src/extensions.rs /home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/ron-0.6.4/src/parse.rs
+
+/home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/ron-0.6.4/src/lib.rs:
+/home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/ron-0.6.4/src/de/mod.rs:
+/home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/ron-0.6.4/src/de/id.rs:
+/home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/ron-0.6.4/src/de/tag.rs:
+/home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/ron-0.6.4/src/de/value.rs:
+/home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/ron-0.6.4/src/ser/mod.rs:
+/home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/ron-0.6.4/src/ser/value.rs:
+/home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/ron-0.6.4/src/error.rs:
+/home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/ron-0.6.4/src/value.rs:
+/home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/ron-0.6.4/src/extensions.rs:
+/home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/ron-0.6.4/src/parse.rs:

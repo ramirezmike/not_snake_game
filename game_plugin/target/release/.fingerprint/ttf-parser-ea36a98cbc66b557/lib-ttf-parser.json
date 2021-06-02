@@ -1,0 +1,1 @@
+{"rustc":10642453072621038748,"features":"[\"std\", \"variable-fonts\"]","target":9791109591583795601,"profile":2285152228202085614,"path":5095437936979596385,"deps":[],"local":[{"CheckDepInfo":{"dep_info":"release/.fingerprint/ttf-parser-ea36a98cbc66b557/dep-lib-ttf-parser"}}],"rustflags":[],"metadata":17047479514116110477,"config":0,"compile_kind":0}

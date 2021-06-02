@@ -1,0 +1,54 @@
+# This make file contains tasks for the web build of the game
+#   Serve the web version locally by running `cargo make serve`
+#   Build a web release by running `cargo make release` (release is the `build/web` directory)
+
+[env]
+TARGET_DIR = "target/wasm32-unknown-unknown/release/"
+
+[tasks.release]
+dependencies = ["build-and-bind-wasm", "copy-files-for-release"]
+
+[tasks.serve]
+command = "basic-http-server"
+args = ["-x", "build/web/"]
+dependencies = ["build-and-bind-wasm", "copy-files-for-release", "basic-http-server"]
+
+[tasks.build-and-bind-wasm]
+args = ["--out-dir", "${TARGET_DIR}", "--out-name", "wasm", "--target", "web", "--no-typescript", "${TARGET_DIR}${CARGO_MAKE_CRATE_NAME}.wasm"]
+command = "wasm-bindgen"
+dependencies = ["cargo-build-web", "wasm-bindgen-cli"]
+
+[tasks.cargo-build-web]
+args = ["build", "--target", "wasm32-unknown-unknown", "--features", "web", "--release"]
+command = "cargo"
+
+# Due to https://github.com/mrk-its/bevy_webgl2/issues/35 we need a specific version at the moment
+[tasks.wasm-bindgen-cli]
+#install_crate = {crate_name = "wasm-bindgen-cli", binary = "wasm-bindgen", test_arg="--help"}
+command = "cargo"
+args = ["install", "wasm-bindgen-cli", "--force", "--version", "0.2.69"]
+
+[tasks.basic-http-server]
+install_crate = {crate_name = "basic-http-server", binary = "basic-http-server", test_arg="--help"}
+
+[tasks.copy-files-for-release]
+script_runner = "@duckscript"
+script = [
+'''
+target = set "./build/web/target"
+web = set "./build/web"
+windows = set "./build/windows"
+
+rm -r ${web}
+mkdir ${target}
+
+cp ${windows}/icon.ico ${web}/icon.ico
+mv ${web}/icon.ico ${web}/favicon.ico
+
+cp ${TARGET_DIR}${CARGO_MAKE_CRATE_NAME}.wasm ${target}/${CARGO_MAKE_CRATE_NAME}.wasm
+cp ${TARGET_DIR}wasm.js ${target}/wasm.js
+cp ${TARGET_DIR}wasm_bg.wasm ${target}/wasm_bg.wasm
+cp ./index.html ${web}/index.html
+cp ./assets ${web}
+cp ./credits ${web}
+''']

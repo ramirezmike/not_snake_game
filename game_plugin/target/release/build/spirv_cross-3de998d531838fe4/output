@@ -1,0 +1,60 @@
+OPT_LEVEL = Some("3")
+TARGET = Some("x86_64-unknown-linux-gnu")
+HOST = Some("x86_64-unknown-linux-gnu")
+CXX_x86_64-unknown-linux-gnu = None
+CXX_x86_64_unknown_linux_gnu = None
+HOST_CXX = None
+CXX = None
+CXXFLAGS_x86_64-unknown-linux-gnu = None
+CXXFLAGS_x86_64_unknown_linux_gnu = None
+HOST_CXXFLAGS = None
+CXXFLAGS = None
+CRATE_CC_NO_DEFAULTS = None
+DEBUG = Some("false")
+CARGO_CFG_TARGET_FEATURE = Some("fxsr,sse,sse2")
+CXX_x86_64-unknown-linux-gnu = None
+CXX_x86_64_unknown_linux_gnu = None
+HOST_CXX = None
+CXX = None
+CXXFLAGS_x86_64-unknown-linux-gnu = None
+CXXFLAGS_x86_64_unknown_linux_gnu = None
+HOST_CXXFLAGS = None
+CXXFLAGS = None
+CRATE_CC_NO_DEFAULTS = None
+CARGO_CFG_TARGET_FEATURE = Some("fxsr,sse,sse2")
+running: "c++" "-O3" "-ffunction-sections" "-fdata-sections" "-fPIC" "-m64" "-Wall" "-Wextra" "-DSPIRV_CROSS_EXCEPTIONS_TO_ASSERTIONS" "-DSPIRV_CROSS_WRAPPER_NO_EXCEPTIONS" "-DSPIRV_CROSS_WRAPPER_GLSL" "-DSPIRV_CROSS_WRAPPER_HLSL" "-DSPIRV_CROSS_WRAPPER_MSL" "-std=c++14" "-o" "/home/mramirez/code/projects/games/bug_game/target/release/build/spirv_cross-3de998d531838fe4/out/src/wrapper.o" "-c" "src/wrapper.cpp"
+cargo:warning=src/wrapper.cpp:2: warning: ignoring #pragma warning  [-Wunknown-pragmas]
+cargo:warning=    2 | #pragma warning(disable : 4996 4101)
+cargo:warning=      | 
+running: "c++" "-O3" "-ffunction-sections" "-fdata-sections" "-fPIC" "-m64" "-Wall" "-Wextra" "-DSPIRV_CROSS_EXCEPTIONS_TO_ASSERTIONS" "-DSPIRV_CROSS_WRAPPER_NO_EXCEPTIONS" "-DSPIRV_CROSS_WRAPPER_GLSL" "-DSPIRV_CROSS_WRAPPER_HLSL" "-DSPIRV_CROSS_WRAPPER_MSL" "-std=c++14" "-o" "/home/mramirez/code/projects/games/bug_game/target/release/build/spirv_cross-3de998d531838fe4/out/src/vendor/SPIRV-Cross/spirv_cfg.o" "-c" "src/vendor/SPIRV-Cross/spirv_cfg.cpp"
+exit status: 0
+exit status: 0
+running: "c++" "-O3" "-ffunction-sections" "-fdata-sections" "-fPIC" "-m64" "-Wall" "-Wextra" "-DSPIRV_CROSS_EXCEPTIONS_TO_ASSERTIONS" "-DSPIRV_CROSS_WRAPPER_NO_EXCEPTIONS" "-DSPIRV_CROSS_WRAPPER_GLSL" "-DSPIRV_CROSS_WRAPPER_HLSL" "-DSPIRV_CROSS_WRAPPER_MSL" "-std=c++14" "-o" "/home/mramirez/code/projects/games/bug_game/target/release/build/spirv_cross-3de998d531838fe4/out/src/vendor/SPIRV-Cross/spirv_cross.o" "-c" "src/vendor/SPIRV-Cross/spirv_cross.cpp"
+running: "c++" "-O3" "-ffunction-sections" "-fdata-sections" "-fPIC" "-m64" "-Wall" "-Wextra" "-DSPIRV_CROSS_EXCEPTIONS_TO_ASSERTIONS" "-DSPIRV_CROSS_WRAPPER_NO_EXCEPTIONS" "-DSPIRV_CROSS_WRAPPER_GLSL" "-DSPIRV_CROSS_WRAPPER_HLSL" "-DSPIRV_CROSS_WRAPPER_MSL" "-std=c++14" "-o" "/home/mramirez/code/projects/games/bug_game/target/release/build/spirv_cross-3de998d531838fe4/out/src/vendor/SPIRV-Cross/spirv_cross_parsed_ir.o" "-c" "src/vendor/SPIRV-Cross/spirv_cross_parsed_ir.cpp"
+exit status: 0
+running: "c++" "-O3" "-ffunction-sections" "-fdata-sections" "-fPIC" "-m64" "-Wall" "-Wextra" "-DSPIRV_CROSS_EXCEPTIONS_TO_ASSERTIONS" "-DSPIRV_CROSS_WRAPPER_NO_EXCEPTIONS" "-DSPIRV_CROSS_WRAPPER_GLSL" "-DSPIRV_CROSS_WRAPPER_HLSL" "-DSPIRV_CROSS_WRAPPER_MSL" "-std=c++14" "-o" "/home/mramirez/code/projects/games/bug_game/target/release/build/spirv_cross-3de998d531838fe4/out/src/vendor/SPIRV-Cross/spirv_parser.o" "-c" "src/vendor/SPIRV-Cross/spirv_parser.cpp"
+exit status: 0
+exit status: 0
+running: "c++" "-O3" "-ffunction-sections" "-fdata-sections" "-fPIC" "-m64" "-Wall" "-Wextra" "-DSPIRV_CROSS_EXCEPTIONS_TO_ASSERTIONS" "-DSPIRV_CROSS_WRAPPER_NO_EXCEPTIONS" "-DSPIRV_CROSS_WRAPPER_GLSL" "-DSPIRV_CROSS_WRAPPER_HLSL" "-DSPIRV_CROSS_WRAPPER_MSL" "-std=c++14" "-o" "/home/mramirez/code/projects/games/bug_game/target/release/build/spirv_cross-3de998d531838fe4/out/src/vendor/SPIRV-Cross/spirv_cross_util.o" "-c" "src/vendor/SPIRV-Cross/spirv_cross_util.cpp"
+running: "c++" "-O3" "-ffunction-sections" "-fdata-sections" "-fPIC" "-m64" "-Wall" "-Wextra" "-DSPIRV_CROSS_EXCEPTIONS_TO_ASSERTIONS" "-DSPIRV_CROSS_WRAPPER_NO_EXCEPTIONS" "-DSPIRV_CROSS_WRAPPER_GLSL" "-DSPIRV_CROSS_WRAPPER_HLSL" "-DSPIRV_CROSS_WRAPPER_MSL" "-std=c++14" "-o" "/home/mramirez/code/projects/games/bug_game/target/release/build/spirv_cross-3de998d531838fe4/out/src/vendor/SPIRV-Cross/spirv_glsl.o" "-c" "src/vendor/SPIRV-Cross/spirv_glsl.cpp"
+exit status: 0
+running: "c++" "-O3" "-ffunction-sections" "-fdata-sections" "-fPIC" "-m64" "-Wall" "-Wextra" "-DSPIRV_CROSS_EXCEPTIONS_TO_ASSERTIONS" "-DSPIRV_CROSS_WRAPPER_NO_EXCEPTIONS" "-DSPIRV_CROSS_WRAPPER_GLSL" "-DSPIRV_CROSS_WRAPPER_HLSL" "-DSPIRV_CROSS_WRAPPER_MSL" "-std=c++14" "-o" "/home/mramirez/code/projects/games/bug_game/target/release/build/spirv_cross-3de998d531838fe4/out/src/vendor/SPIRV-Cross/spirv_hlsl.o" "-c" "src/vendor/SPIRV-Cross/spirv_hlsl.cpp"
+exit status: 0
+exit status: 0
+running: "c++" "-O3" "-ffunction-sections" "-fdata-sections" "-fPIC" "-m64" "-Wall" "-Wextra" "-DSPIRV_CROSS_EXCEPTIONS_TO_ASSERTIONS" "-DSPIRV_CROSS_WRAPPER_NO_EXCEPTIONS" "-DSPIRV_CROSS_WRAPPER_GLSL" "-DSPIRV_CROSS_WRAPPER_HLSL" "-DSPIRV_CROSS_WRAPPER_MSL" "-std=c++14" "-o" "/home/mramirez/code/projects/games/bug_game/target/release/build/spirv_cross-3de998d531838fe4/out/src/vendor/SPIRV-Cross/spirv_msl.o" "-c" "src/vendor/SPIRV-Cross/spirv_msl.cpp"
+exit status: 0
+AR_x86_64-unknown-linux-gnu = None
+AR_x86_64_unknown_linux_gnu = None
+HOST_AR = None
+AR = None
+running: "ar" "cq" "/home/mramirez/code/projects/games/bug_game/target/release/build/spirv_cross-3de998d531838fe4/out/libspirv-cross-rust-wrapper.a" "/home/mramirez/code/projects/games/bug_game/target/release/build/spirv_cross-3de998d531838fe4/out/src/wrapper.o" "/home/mramirez/code/projects/games/bug_game/target/release/build/spirv_cross-3de998d531838fe4/out/src/vendor/SPIRV-Cross/spirv_cfg.o" "/home/mramirez/code/projects/games/bug_game/target/release/build/spirv_cross-3de998d531838fe4/out/src/vendor/SPIRV-Cross/spirv_cross.o" "/home/mramirez/code/projects/games/bug_game/target/release/build/spirv_cross-3de998d531838fe4/out/src/vendor/SPIRV-Cross/spirv_cross_parsed_ir.o" "/home/mramirez/code/projects/games/bug_game/target/release/build/spirv_cross-3de998d531838fe4/out/src/vendor/SPIRV-Cross/spirv_parser.o" "/home/mramirez/code/projects/games/bug_game/target/release/build/spirv_cross-3de998d531838fe4/out/src/vendor/SPIRV-Cross/spirv_cross_util.o" "/home/mramirez/code/projects/games/bug_game/target/release/build/spirv_cross-3de998d531838fe4/out/src/vendor/SPIRV-Cross/spirv_glsl.o" "/home/mramirez/code/projects/games/bug_game/target/release/build/spirv_cross-3de998d531838fe4/out/src/vendor/SPIRV-Cross/spirv_hlsl.o" "/home/mramirez/code/projects/games/bug_game/target/release/build/spirv_cross-3de998d531838fe4/out/src/vendor/SPIRV-Cross/spirv_msl.o"
+exit status: 0
+running: "ar" "s" "/home/mramirez/code/projects/games/bug_game/target/release/build/spirv_cross-3de998d531838fe4/out/libspirv-cross-rust-wrapper.a"
+exit status: 0
+cargo:rustc-link-lib=static=spirv-cross-rust-wrapper
+cargo:rustc-link-search=native=/home/mramirez/code/projects/games/bug_game/target/release/build/spirv_cross-3de998d531838fe4/out
+CXXSTDLIB_x86_64-unknown-linux-gnu = None
+CXXSTDLIB_x86_64_unknown_linux_gnu = None
+HOST_CXXSTDLIB = None
+CXXSTDLIB = None
+cargo:rustc-link-lib=stdc++

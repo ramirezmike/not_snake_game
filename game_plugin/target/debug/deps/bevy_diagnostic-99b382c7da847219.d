@@ -1,0 +1,9 @@
+/home/mramirez/code/projects/games/bug_game/target/debug/deps/bevy_diagnostic-99b382c7da847219.rmeta: /home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/bevy_diagnostic-0.5.0/src/lib.rs /home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/bevy_diagnostic-0.5.0/src/diagnostic.rs /home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/bevy_diagnostic-0.5.0/src/entity_count_diagnostics_plugin.rs /home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/bevy_diagnostic-0.5.0/src/frame_time_diagnostics_plugin.rs /home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/bevy_diagnostic-0.5.0/src/log_diagnostics_plugin.rs
+
+/home/mramirez/code/projects/games/bug_game/target/debug/deps/bevy_diagnostic-99b382c7da847219.d: /home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/bevy_diagnostic-0.5.0/src/lib.rs /home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/bevy_diagnostic-0.5.0/src/diagnostic.rs /home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/bevy_diagnostic-0.5.0/src/entity_count_diagnostics_plugin.rs /home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/bevy_diagnostic-0.5.0/src/frame_time_diagnostics_plugin.rs /home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/bevy_diagnostic-0.5.0/src/log_diagnostics_plugin.rs
+
+/home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/bevy_diagnostic-0.5.0/src/lib.rs:
+/home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/bevy_diagnostic-0.5.0/src/diagnostic.rs:
+/home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/bevy_diagnostic-0.5.0/src/entity_count_diagnostics_plugin.rs:
+/home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/bevy_diagnostic-0.5.0/src/frame_time_diagnostics_plugin.rs:
+/home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/bevy_diagnostic-0.5.0/src/log_diagnostics_plugin.rs:

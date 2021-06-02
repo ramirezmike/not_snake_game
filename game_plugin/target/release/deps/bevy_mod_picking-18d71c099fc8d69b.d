@@ -1,0 +1,12 @@
+/home/mramirez/code/projects/games/bug_game/target/release/deps/bevy_mod_picking-18d71c099fc8d69b.rmeta: /home/mramirez/.cargo/git/checkouts/bevy_mod_picking-d5a635da356b077f/30a9124/src/lib.rs /home/mramirez/.cargo/git/checkouts/bevy_mod_picking-d5a635da356b077f/30a9124/src/events.rs /home/mramirez/.cargo/git/checkouts/bevy_mod_picking-d5a635da356b077f/30a9124/src/focus.rs /home/mramirez/.cargo/git/checkouts/bevy_mod_picking-d5a635da356b077f/30a9124/src/highlight.rs /home/mramirez/.cargo/git/checkouts/bevy_mod_picking-d5a635da356b077f/30a9124/src/mouse.rs /home/mramirez/.cargo/git/checkouts/bevy_mod_picking-d5a635da356b077f/30a9124/src/selection.rs
+
+/home/mramirez/code/projects/games/bug_game/target/release/deps/libbevy_mod_picking-18d71c099fc8d69b.rlib: /home/mramirez/.cargo/git/checkouts/bevy_mod_picking-d5a635da356b077f/30a9124/src/lib.rs /home/mramirez/.cargo/git/checkouts/bevy_mod_picking-d5a635da356b077f/30a9124/src/events.rs /home/mramirez/.cargo/git/checkouts/bevy_mod_picking-d5a635da356b077f/30a9124/src/focus.rs /home/mramirez/.cargo/git/checkouts/bevy_mod_picking-d5a635da356b077f/30a9124/src/highlight.rs /home/mramirez/.cargo/git/checkouts/bevy_mod_picking-d5a635da356b077f/30a9124/src/mouse.rs /home/mramirez/.cargo/git/checkouts/bevy_mod_picking-d5a635da356b077f/30a9124/src/selection.rs
+
+/home/mramirez/code/projects/games/bug_game/target/release/deps/bevy_mod_picking-18d71c099fc8d69b.d: /home/mramirez/.cargo/git/checkouts/bevy_mod_picking-d5a635da356b077f/30a9124/src/lib.rs /home/mramirez/.cargo/git/checkouts/bevy_mod_picking-d5a635da356b077f/30a9124/src/events.rs /home/mramirez/.cargo/git/checkouts/bevy_mod_picking-d5a635da356b077f/30a9124/src/focus.rs /home/mramirez/.cargo/git/checkouts/bevy_mod_picking-d5a635da356b077f/30a9124/src/highlight.rs /home/mramirez/.cargo/git/checkouts/bevy_mod_picking-d5a635da356b077f/30a9124/src/mouse.rs /home/mramirez/.cargo/git/checkouts/bevy_mod_picking-d5a635da356b077f/30a9124/src/selection.rs
+
+/home/mramirez/.cargo/git/checkouts/bevy_mod_picking-d5a635da356b077f/30a9124/src/lib.rs:
+/home/mramirez/.cargo/git/checkouts/bevy_mod_picking-d5a635da356b077f/30a9124/src/events.rs:
+/home/mramirez/.cargo/git/checkouts/bevy_mod_picking-d5a635da356b077f/30a9124/src/focus.rs:
+/home/mramirez/.cargo/git/checkouts/bevy_mod_picking-d5a635da356b077f/30a9124/src/highlight.rs:
+/home/mramirez/.cargo/git/checkouts/bevy_mod_picking-d5a635da356b077f/30a9124/src/mouse.rs:
+/home/mramirez/.cargo/git/checkouts/bevy_mod_picking-d5a635da356b077f/30a9124/src/selection.rs:

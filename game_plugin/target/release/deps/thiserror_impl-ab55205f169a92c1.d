@@ -1,0 +1,11 @@
+/home/mramirez/code/projects/games/bug_game/target/release/deps/libthiserror_impl-ab55205f169a92c1.so: /home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/thiserror-impl-1.0.24/src/lib.rs /home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/thiserror-impl-1.0.24/src/ast.rs /home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/thiserror-impl-1.0.24/src/attr.rs /home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/thiserror-impl-1.0.24/src/expand.rs /home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/thiserror-impl-1.0.24/src/fmt.rs /home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/thiserror-impl-1.0.24/src/prop.rs /home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/thiserror-impl-1.0.24/src/valid.rs
+
+/home/mramirez/code/projects/games/bug_game/target/release/deps/thiserror_impl-ab55205f169a92c1.d: /home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/thiserror-impl-1.0.24/src/lib.rs /home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/thiserror-impl-1.0.24/src/ast.rs /home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/thiserror-impl-1.0.24/src/attr.rs /home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/thiserror-impl-1.0.24/src/expand.rs /home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/thiserror-impl-1.0.24/src/fmt.rs /home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/thiserror-impl-1.0.24/src/prop.rs /home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/thiserror-impl-1.0.24/src/valid.rs
+
+/home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/thiserror-impl-1.0.24/src/lib.rs:
+/home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/thiserror-impl-1.0.24/src/ast.rs:
+/home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/thiserror-impl-1.0.24/src/attr.rs:
+/home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/thiserror-impl-1.0.24/src/expand.rs:
+/home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/thiserror-impl-1.0.24/src/fmt.rs:
+/home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/thiserror-impl-1.0.24/src/prop.rs:
+/home/mramirez/.cargo/registry/src/github.com-1ecc6299db9ec823/thiserror-impl-1.0.24/src/valid.rs:

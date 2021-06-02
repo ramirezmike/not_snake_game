@@ -1,0 +1,59 @@
+TARGET = Some("x86_64-unknown-linux-gnu")
+OPT_LEVEL = Some("0")
+HOST = Some("x86_64-unknown-linux-gnu")
+CXX_x86_64-unknown-linux-gnu = None
+CXX_x86_64_unknown_linux_gnu = None
+HOST_CXX = None
+CXX = None
+CXXFLAGS_x86_64-unknown-linux-gnu = None
+CXXFLAGS_x86_64_unknown_linux_gnu = None
+HOST_CXXFLAGS = None
+CXXFLAGS = None
+CRATE_CC_NO_DEFAULTS = None
+DEBUG = Some("true")
+CARGO_CFG_TARGET_FEATURE = Some("fxsr,sse,sse2")
+running: "c++" "-O0" "-ffunction-sections" "-fdata-sections" "-fPIC" "-g" "-fno-omit-frame-pointer" "-m64" "-I" "src" "-Wall" "-Wextra" "-std=c++11" "-o" "/home/mramirez/code/projects/games/bug_game/target/rls/debug/build/spirv-reflect-09e81eab55d99bbf/out/vendor/spirv_reflect.o" "-c" "vendor/spirv_reflect.c"
+cargo:warning=vendor/spirv_reflect.c: In function ‘SpvReflectResult spvReflectCreateShaderModule(size_t, const void*, SpvReflectShaderModule*)’:
+cargo:warning=vendor/spirv_reflect.c:2910:23: warning: missing initializer for member ‘Parser::spirv_code’ [-Wmissing-field-initializers]
+cargo:warning= 2910 |   Parser parser = { 0 };
+cargo:warning=      |                       ^
+cargo:warning=vendor/spirv_reflect.c:2910:23: warning: missing initializer for member ‘Parser::string_count’ [-Wmissing-field-initializers]
+cargo:warning=vendor/spirv_reflect.c:2910:23: warning: missing initializer for member ‘Parser::strings’ [-Wmissing-field-initializers]
+cargo:warning=vendor/spirv_reflect.c:2910:23: warning: missing initializer for member ‘Parser::source_language’ [-Wmissing-field-initializers]
+cargo:warning=vendor/spirv_reflect.c:2910:23: warning: missing initializer for member ‘Parser::source_language_version’ [-Wmissing-field-initializers]
+cargo:warning=vendor/spirv_reflect.c:2910:23: warning: missing initializer for member ‘Parser::source_file_id’ [-Wmissing-field-initializers]
+cargo:warning=vendor/spirv_reflect.c:2910:23: warning: missing initializer for member ‘Parser::source_embedded’ [-Wmissing-field-initializers]
+cargo:warning=vendor/spirv_reflect.c:2910:23: warning: missing initializer for member ‘Parser::node_count’ [-Wmissing-field-initializers]
+cargo:warning=vendor/spirv_reflect.c:2910:23: warning: missing initializer for member ‘Parser::nodes’ [-Wmissing-field-initializers]
+cargo:warning=vendor/spirv_reflect.c:2910:23: warning: missing initializer for member ‘Parser::entry_point_count’ [-Wmissing-field-initializers]
+cargo:warning=vendor/spirv_reflect.c:2910:23: warning: missing initializer for member ‘Parser::function_count’ [-Wmissing-field-initializers]
+cargo:warning=vendor/spirv_reflect.c:2910:23: warning: missing initializer for member ‘Parser::functions’ [-Wmissing-field-initializers]
+cargo:warning=vendor/spirv_reflect.c:2910:23: warning: missing initializer for member ‘Parser::type_count’ [-Wmissing-field-initializers]
+cargo:warning=vendor/spirv_reflect.c:2910:23: warning: missing initializer for member ‘Parser::descriptor_count’ [-Wmissing-field-initializers]
+cargo:warning=vendor/spirv_reflect.c:2910:23: warning: missing initializer for member ‘Parser::push_constant_count’ [-Wmissing-field-initializers]
+cargo:warning=vendor/spirv_reflect.c: In function ‘SpvReflectResult spvReflectChangeDescriptorBindingNumbers(SpvReflectShaderModule*, const SpvReflectDescriptorBinding*, uint32_t, uint32_t)’:
+cargo:warning=vendor/spirv_reflect.c:4012:28: warning: comparison of integer expressions of different signedness: ‘uint32_t’ {aka ‘unsigned int’} and ‘int’ [-Wsign-compare]
+cargo:warning= 4012 |     if (new_binding_number != SPV_REFLECT_BINDING_NUMBER_DONT_CHANGE) {
+cargo:warning=      |         ~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+cargo:warning=vendor/spirv_reflect.c:4018:25: warning: comparison of integer expressions of different signedness: ‘uint32_t’ {aka ‘unsigned int’} and ‘int’ [-Wsign-compare]
+cargo:warning= 4018 |     if (new_set_binding != SPV_REFLECT_SET_NUMBER_DONT_CHANGE) {
+cargo:warning=      |         ~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+cargo:warning=vendor/spirv_reflect.c:4026:23: warning: comparison of integer expressions of different signedness: ‘uint32_t’ {aka ‘unsigned int’} and ‘int’ [-Wsign-compare]
+cargo:warning= 4026 |   if (new_set_binding != SPV_REFLECT_SET_NUMBER_DONT_CHANGE) {
+cargo:warning=      |       ~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+cargo:warning=vendor/spirv_reflect.c: In function ‘SpvReflectResult spvReflectChangeDescriptorSetNumber(SpvReflectShaderModule*, const SpvReflectDescriptorSet*, uint32_t)’:
+cargo:warning=vendor/spirv_reflect.c:4060:49: warning: comparison of integer expressions of different signedness: ‘uint32_t’ {aka ‘unsigned int’} and ‘int’ [-Wsign-compare]
+cargo:warning= 4060 |   if (IsNotNull(p_target_set) && new_set_number != SPV_REFLECT_SET_NUMBER_DONT_CHANGE) {
+cargo:warning=      |                                  ~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+exit status: 0
+AR_x86_64-unknown-linux-gnu = None
+AR_x86_64_unknown_linux_gnu = None
+HOST_AR = None
+AR = None
+running: "ar" "cq" "/home/mramirez/code/projects/games/bug_game/target/rls/debug/build/spirv-reflect-09e81eab55d99bbf/out/libspirv_reflect_cpp.a" "/home/mramirez/code/projects/games/bug_game/target/rls/debug/build/spirv-reflect-09e81eab55d99bbf/out/vendor/spirv_reflect.o"
+exit status: 0
+running: "ar" "s" "/home/mramirez/code/projects/games/bug_game/target/rls/debug/build/spirv-reflect-09e81eab55d99bbf/out/libspirv_reflect_cpp.a"
+exit status: 0
+cargo:rustc-link-lib=static=spirv_reflect_cpp
+cargo:rustc-link-search=native=/home/mramirez/code/projects/games/bug_game/target/rls/debug/build/spirv-reflect-09e81eab55d99bbf/out
+cargo:rustc-link-lib=stdc++

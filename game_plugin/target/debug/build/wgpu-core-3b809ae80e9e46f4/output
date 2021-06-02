@@ -1,0 +1,3 @@
+cargo:rustc-cfg=unix_wo_apple
+cargo:rustc-cfg=vulkan
+cargo:rustc-cfg=gl

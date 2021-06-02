@@ -1,0 +1,11 @@
+/home/mramirez/code/projects/games/bug_game/target/rls/debug/deps/bevy_app-7dcb3ea4fa413bcb.rmeta: /home/mramirez/.cargo/git/checkouts/bevy-f7ffde730c324c74/94c4184/crates/bevy_app/src/lib.rs /home/mramirez/.cargo/git/checkouts/bevy-f7ffde730c324c74/94c4184/crates/bevy_app/src/app.rs /home/mramirez/.cargo/git/checkouts/bevy-f7ffde730c324c74/94c4184/crates/bevy_app/src/app_builder.rs /home/mramirez/.cargo/git/checkouts/bevy-f7ffde730c324c74/94c4184/crates/bevy_app/src/event.rs /home/mramirez/.cargo/git/checkouts/bevy-f7ffde730c324c74/94c4184/crates/bevy_app/src/plugin.rs /home/mramirez/.cargo/git/checkouts/bevy-f7ffde730c324c74/94c4184/crates/bevy_app/src/plugin_group.rs /home/mramirez/.cargo/git/checkouts/bevy-f7ffde730c324c74/94c4184/crates/bevy_app/src/schedule_runner.rs
+
+/home/mramirez/code/projects/games/bug_game/target/rls/debug/deps/bevy_app-7dcb3ea4fa413bcb.d: /home/mramirez/.cargo/git/checkouts/bevy-f7ffde730c324c74/94c4184/crates/bevy_app/src/lib.rs /home/mramirez/.cargo/git/checkouts/bevy-f7ffde730c324c74/94c4184/crates/bevy_app/src/app.rs /home/mramirez/.cargo/git/checkouts/bevy-f7ffde730c324c74/94c4184/crates/bevy_app/src/app_builder.rs /home/mramirez/.cargo/git/checkouts/bevy-f7ffde730c324c74/94c4184/crates/bevy_app/src/event.rs /home/mramirez/.cargo/git/checkouts/bevy-f7ffde730c324c74/94c4184/crates/bevy_app/src/plugin.rs /home/mramirez/.cargo/git/checkouts/bevy-f7ffde730c324c74/94c4184/crates/bevy_app/src/plugin_group.rs /home/mramirez/.cargo/git/checkouts/bevy-f7ffde730c324c74/94c4184/crates/bevy_app/src/schedule_runner.rs
+
+/home/mramirez/.cargo/git/checkouts/bevy-f7ffde730c324c74/94c4184/crates/bevy_app/src/lib.rs:
+/home/mramirez/.cargo/git/checkouts/bevy-f7ffde730c324c74/94c4184/crates/bevy_app/src/app.rs:
+/home/mramirez/.cargo/git/checkouts/bevy-f7ffde730c324c74/94c4184/crates/bevy_app/src/app_builder.rs:
+/home/mramirez/.cargo/git/checkouts/bevy-f7ffde730c324c74/94c4184/crates/bevy_app/src/event.rs:
+/home/mramirez/.cargo/git/checkouts/bevy-f7ffde730c324c74/94c4184/crates/bevy_app/src/plugin.rs:
+/home/mramirez/.cargo/git/checkouts/bevy-f7ffde730c324c74/94c4184/crates/bevy_app/src/plugin_group.rs:
+/home/mramirez/.cargo/git/checkouts/bevy-f7ffde730c324c74/94c4184/crates/bevy_app/src/schedule_runner.rs:

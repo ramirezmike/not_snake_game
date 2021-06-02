@@ -1,0 +1,1 @@
+{"rustc":10642453072621038748,"features":"[\"default\", \"std\"]","target":14366446078388928085,"profile":2285152228202085614,"path":17647985440159955812,"deps":[],"local":[{"CheckDepInfo":{"dep_info":"release/.fingerprint/downcast-rs-8efa550dcd1d42eb/dep-lib-downcast-rs"}}],"rustflags":[],"metadata":14063588153147126258,"config":0,"compile_kind":0}
