@@ -1,5 +1,5 @@
 [package]
-name = "snake_game" # ToDo
+name = "snake_game"
 version = "0.1.0"
 publish = false
 authors = ["mramirez <ramirezmike2@gmail.com>"]
