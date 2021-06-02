@@ -10,8 +10,10 @@ default = [
     "bevy/bevy_gltf",
     "bevy/bevy_winit",
     "bevy/render",
+    "bevy/bevy_gilrs",
+    "bevy/bevy_winit",
     "bevy/png",
-    "game_plugin/default"
+    "game_plugin/default",
 ]
 
 native = [

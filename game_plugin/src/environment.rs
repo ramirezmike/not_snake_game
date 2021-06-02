@@ -96,7 +96,7 @@ impl Plugin for EnvironmentPlugin {
                .with_system(collectable::check_collected.system())
                .with_system(update_hud_text_position.system())
                .with_system(level_over::level_over_check.system())
-               .with_system(path_find::show_path.system())
+//             .with_system(path_find::show_path.system())
                .with_system(snake::update_enemy.system())
                .with_system(snake::handle_food_eaten.system())
                .with_system(score::handle_food_eaten.system())
@@ -112,7 +112,7 @@ impl Plugin for EnvironmentPlugin {
                .with_system(dude::handle_kill_dude.system())
                .with_system(path_find::update_graph.system().label("graph_update"))
                .with_system(path_find::update_path.system().after("graph_update"))
-               .with_system(path_find::draw_edges.system())
+//             .with_system(path_find::draw_edges.system())
 //               .with_system(material_test.system())
 //               .with_system(level::print_level.system())
 //               .with_system(update_text_position.system())
@@ -210,10 +210,12 @@ pub fn load_assets(
     flag_meshes.flag = asset_server.load("models/winflag.glb#Mesh0/Primitive0");
 
     // Create a new shader pipeline.
+    let shader_paths = get_shader_paths();
     game_shaders.electric = pipelines.add(PipelineDescriptor::default_config(ShaderStages {
-        vertex: asset_server.load::<Shader, _>("shaders/hot.vert"),
-        fragment: Some(asset_server.load::<Shader, _>("shaders/hot.frag")),
+        vertex: asset_server.load::<Shader, _>(shader_paths.0),
+        fragment: Some(asset_server.load::<Shader, _>(shader_paths.1)),
     }));
+
 
     // Add a `RenderResourcesNode` to our `RenderGraph`. This will bind `TimeComponent` to our
     // shader.
@@ -245,6 +247,16 @@ pub fn load_assets(
     level_asset_state.handle = asset_server.load("data/test.custom");
     asset_server.watch_for_changes().unwrap();
     commands.insert_resource(audio_state);
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn get_shader_paths() -> (&'static str, &'static str) {
+    ("shaders/hot.vert", "shaders/hot.frag")
+}
+
+#[cfg(target_arch = "wasm32")]
+fn get_shader_paths() -> (&'static str, &'static str) {
+    ("shaders/hot_wasm.vert", "shaders/hot_wasm.frag")
 }
 
 

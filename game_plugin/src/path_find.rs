@@ -3,7 +3,7 @@ use crate::{level::Level, level::PositionChangeEvent, EntityType, dude::Dude, ca
             environment::LevelReady, Position, snake, food::Food,};
 use petgraph::{Graph, graph::NodeIndex, graph::EdgeIndex};
 use petgraph::algo::astar;
-use bevy_prototype_debug_lines::*; 
+//use bevy_prototype_debug_lines::*; 
 
 /*
     everything should start with edges pointing down
@@ -304,6 +304,7 @@ impl PathFinder {
     }
 }
 
+/*
 pub fn show_path(
     keyboard_input: Res<Input<KeyCode>>,
     path_find: Res<PathFinder>,
@@ -342,6 +343,7 @@ pub fn show_path(
         }
     }
 }
+*/
 
 pub fn update_graph(
     mut changes: EventReader<PositionChangeEvent>,
@@ -364,6 +366,7 @@ pub fn update_graph(
 */
 }
 
+/*
 pub fn draw_edges(
     mut time: Local<f32>,
     keyboard_input: Res<Input<KeyCode>>,
@@ -400,6 +403,7 @@ pub fn draw_edges(
         }
     }
 }
+*/
 
 pub fn update_path(
     mut time: Local<f32>,

@@ -1,7 +1,7 @@
 use bevy::{prelude::*,};
 use bevy::app::AppExit;
 use bevy::app::Events;
-use bevy_prototype_debug_lines::*;
+//use bevy_prototype_debug_lines::*;
 use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 
 mod camera;
@@ -47,13 +47,13 @@ pub struct GamePlugin;
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_plugins(DefaultPlugins)
-           .add_plugin(DebugLinesPlugin)
+//         .add_plugin(DebugLinesPlugin)
            .init_resource::<menu::ButtonMaterials>()
            .add_event::<credits::CreditsEvent>()
 
-    //       .add_state(AppState::MainMenu)
+           .add_state(AppState::MainMenu)
     //       .add_state(AppState::InGame)
-            .add_state(AppState::Loading)
+//          .add_state(AppState::Loading)
 
            .add_system_set(SystemSet::on_enter(AppState::MainMenu).with_system(menu::setup_menu.system()))
            .add_system_set(
