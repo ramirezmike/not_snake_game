@@ -30,5 +30,4 @@ rand = "0.8"
 serde = {version = "1", features = ["derive"]}
 anyhow = "1.0"
 ron = "0.6.2"
-bevy_mod_debugdump = { git = "https://github.com/jakobhellermann/bevy_mod_debugdump" }
 bevy_kira_audio = {version = "0.5.0", features = ["wav"]}
