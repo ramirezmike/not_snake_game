@@ -1,10 +1,11 @@
 #version 300 es
+precision highp float;
 
-layout(location = 0) in vec2 v_Uv;
-layout(location = 1) in vec3 v_WorldNormal;
-layout(location = 0) out vec4 o_Target;
+in vec2 v_Uv;
+in vec3 v_WorldNormal;
+out vec4 o_Target;
 
-layout(set = 2, binding = 0) uniform TimeUniform_value {
+uniform TimeUniform_value {
     float time;
 };
 
@@ -52,7 +53,6 @@ void main() {
     o_Target = mix(o_Target, vec4(beam_2, 1.0), 0.5);
 
     if (o_Target.x < 0.2) {
-        discard;
+        o_Target = vec4(1.0, 0.05, 0.1, 1.0);
     }
-
 }

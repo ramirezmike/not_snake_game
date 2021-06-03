@@ -53,7 +53,5 @@ void main() {
 
     if (o_Target.x < 0.2) {
         o_Target = vec4(1.0,0.05,0.1, 1.0);
-        
     }
-
 }

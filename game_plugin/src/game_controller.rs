@@ -109,19 +109,19 @@ pub fn get_pressed_buttons(
     let dpad_left = GamepadButton(gamepad, GamepadButtonType::DPadLeft);
     let dpad_right = GamepadButton(gamepad, GamepadButtonType::DPadRight);
 
-    if buttons.just_pressed(dpad_up) {
+    if buttons.pressed(dpad_up) {
         pressed_buttons.push(GameButton::Up);
     }
 
-    if buttons.just_pressed(dpad_down) {
+    if buttons.pressed(dpad_down) {
         pressed_buttons.push(GameButton::Down);
     }
 
-    if buttons.just_pressed(dpad_left) {
+    if buttons.pressed(dpad_left) {
         pressed_buttons.push(GameButton::Left);
     }
 
-    if buttons.just_pressed(dpad_right) {
+    if buttons.pressed(dpad_right) {
         pressed_buttons.push(GameButton::Right);
     }
 
