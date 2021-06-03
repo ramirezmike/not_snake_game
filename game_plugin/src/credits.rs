@@ -74,14 +74,14 @@ pub struct EndCredits(f32);
 pub fn update_credits(
     mut end_credits: Query<(&mut EndCredits, &mut Style)>,
     time: Res<Time>,
-    mut exit: ResMut<Events<AppExit>>
+    mut state: ResMut<State<crate::AppState>>,
 ) {
     for (mut end_credit, mut style) in end_credits.iter_mut() {
         end_credit.0 = end_credit.0 - time.delta_seconds() * 200.0;
         style.position.top = Val::Percent(end_credit.0);
 
         if end_credit.0 < -305.0 {
-            exit.send(AppExit);
+            state.set(crate::AppState::MainMenu).unwrap();
         }
     }
 }

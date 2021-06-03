@@ -180,7 +180,7 @@ fn push_block(
             // dude has fallen. TODO This should be refactored when I move
             // the dude-relevant Moveable code into here. This is just 
             // here for now since it's convenient
-            kill_dude_event_writer.send(KillDudeEvent { death_type: DudeDeath::Eaten});
+            kill_dude_event_writer.send(KillDudeEvent { death_type: DudeDeath::Fall });
         }
 
         if keyboard_input.just_pressed(KeyCode::K) {

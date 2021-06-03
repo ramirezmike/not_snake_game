@@ -104,6 +104,27 @@ pub fn get_pressed_buttons(
         }
     }
 
+    let dpad_up = GamepadButton(gamepad, GamepadButtonType::DPadUp);
+    let dpad_down = GamepadButton(gamepad, GamepadButtonType::DPadDown);
+    let dpad_left = GamepadButton(gamepad, GamepadButtonType::DPadLeft);
+    let dpad_right = GamepadButton(gamepad, GamepadButtonType::DPadRight);
+
+    if buttons.just_pressed(dpad_up) {
+        pressed_buttons.push(GameButton::Up);
+    }
+
+    if buttons.just_pressed(dpad_down) {
+        pressed_buttons.push(GameButton::Down);
+    }
+
+    if buttons.just_pressed(dpad_left) {
+        pressed_buttons.push(GameButton::Left);
+    }
+
+    if buttons.just_pressed(dpad_right) {
+        pressed_buttons.push(GameButton::Right);
+    }
+
     let action_1 = GamepadButton(gamepad, GamepadButtonType::South);
     let action_2 = GamepadButton(gamepad, GamepadButtonType::East);
 
