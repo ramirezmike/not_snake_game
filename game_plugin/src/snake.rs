@@ -113,8 +113,10 @@ pub fn generate_snake_body(
                             mesh: meshes.body.clone(),
                             material: meshes.material.clone(),
                             render_pipelines: RenderPipelines::from_pipelines(
-                                vec![RenderPipeline::new(game_shaders.electric.clone(),),
-                                     RenderPipeline::new(bevy::pbr::render_graph::PBR_PIPELINE_HANDLE.typed()) ]),
+                                vec![
+                                    RenderPipeline::new(game_shaders.electric.clone(),),
+//                                    RenderPipeline::new(bevy::pbr::render_graph::PBR_PIPELINE_HANDLE.typed()),
+                                ]),
                             transform: {
                                 let mut t = Transform::from_translation(Vec3::new(0.0, 0.0, 0.0));
                                 t.rotate(Quat::from_axis_angle(Vec3::new(0.0, 1.0, 0.0), std::f32::consts::PI / 2.0));
@@ -149,6 +151,7 @@ pub fn spawn_enemy(
     z: usize,
     is_electric: bool,
 ) {
+    println!("Creating snake!");
     let position = Vec3::new(x as f32, y as f32, z as f32);
     let mut transform = Transform::from_translation(position);
     transform.apply_non_uniform_scale(Vec3::new(0.50, 0.50, 0.50)); 
@@ -188,8 +191,10 @@ pub fn spawn_enemy(
                             mesh: meshes.head.clone(),
                             material: meshes.material.clone(),
                             render_pipelines: RenderPipelines::from_pipelines(
-                                vec![RenderPipeline::new(game_shaders.electric.clone(),),
-                                     RenderPipeline::new(bevy::pbr::render_graph::PBR_PIPELINE_HANDLE.typed()) ]),
+                                vec![
+                                    RenderPipeline::new(game_shaders.electric.clone(),),
+                                    //RenderPipeline::new(bevy::pbr::render_graph::PBR_PIPELINE_HANDLE.typed()),
+                                ]),
                             transform: Transform::from_translation(Vec3::new(0.0, INNER_MESH_VERTICAL_OFFSET, 0.0)),
                             ..Default::default()
                         })
@@ -967,6 +972,7 @@ pub fn handle_food_eaten(
     mut sound_writer: EventWriter<sounds::SoundEvent>,
 ) {
     for eater in food_eaten_event_reader.iter() {
+        println!("Food was eaten according to snake");
         if let Ok(entity) = snakes.get(eater.0) {
             body_part_writer.send(AddBodyPartEvent { snake: entity });
             sound_writer.send(sounds::SoundEvent(sounds::Sounds::Bite));

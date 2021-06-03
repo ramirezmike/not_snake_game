@@ -20,6 +20,7 @@ pub fn spawn_food(
     position: Option::<Position>,
     show_shadow: bool,
 ) {
+    println!("Spawning food..");
     let food_color = Color::hex(level.get_palette().food.clone()).unwrap();
     let food_color = Color::rgba(food_color.r(), food_color.g(), food_color.b(), 1.0);
     let shaded_food_color = Color::rgba(food_color.r(), food_color.g(), food_color.b(), 0.4);
@@ -157,25 +158,33 @@ pub fn animate_food(
     }
 }
 
+pub fn handle_food_eaten(
+    mut commands: Commands,
+    mut food_eaten_event_reader: EventReader<FoodEatenEvent>,
+    mut level: ResMut<Level>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
+    for _ in food_eaten_event_reader.iter() {
+        if level.is_food_random() {
+            let new_position = level.get_random_standable();
+            spawn_food(&mut commands, &mut level, &mut meshes, &mut materials, Some(new_position), true );
+        } 
+    }
+
+}
+
 pub fn update_food(
     mut commands: Commands,
     mut foods: Query<(Entity, &Position), With<Food>>,
     mut position_change_event_reader: EventReader<level::PositionChangeEvent>,
     mut food_eaten_event_writer: EventWriter<FoodEatenEvent>,
-    mut level: ResMut<Level>,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     for position_change in position_change_event_reader.iter() {
         if let Some(game_object) = position_change.1 {
             for (entity, position) in foods.iter_mut() {
                 if position_change.0 == *position && game_object.entity != entity {
                     commands.entity(entity).despawn_recursive();
-                    if level.is_food_random() {
-                        let new_position = level.get_random_standable();
-                        level.set_with_position(new_position, Some(GameObject::new(entity, EntityType::Food)));
-                        spawn_food(&mut commands, &mut level, &mut meshes, &mut materials, Some(new_position), true );
-                    } 
 
                     food_eaten_event_writer.send(FoodEatenEvent(game_object.entity));
                 }

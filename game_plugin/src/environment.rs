@@ -1,7 +1,7 @@
 use bevy::{
     prelude::*,
     render::{
-        pipeline::{PipelineDescriptor, RenderPipeline},
+        pipeline::{PipelineDescriptor},
         render_graph::{base, RenderGraph, RenderResourcesNode},
         renderer::RenderResources,
         shader::{ShaderStage, ShaderStages},
@@ -102,6 +102,7 @@ impl Plugin for EnvironmentPlugin {
                .with_system(score::handle_food_eaten.system())
                .with_system(food::animate_food.system())
                .with_system(food::update_food.system())
+               .with_system(food::handle_food_eaten.system())
                .with_system(hide_blocks.system())
 //               .with_system(light_thing.system())
 //              .with_system(snake::add_body_part.system())
@@ -245,7 +246,7 @@ pub fn load_assets(
     loading.0.append(&mut audio_state.get_sound_handles());
 
     level_asset_state.handle = asset_server.load("data/test.custom");
-//    asset_server.watch_for_changes().unwrap();
+    asset_server.watch_for_changes().unwrap();
     commands.insert_resource(audio_state);
 }
 
