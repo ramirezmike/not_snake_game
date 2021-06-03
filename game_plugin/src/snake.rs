@@ -89,6 +89,7 @@ pub fn generate_snake_body(
     is_electric: bool,
     game_shaders: &Res<environment::GameShaders>,
 ) -> Entity {
+    println!("Generating body {:?}", game_shaders.electric);
     commands.spawn_bundle(PbrBundle {
                 transform: {
                     let mut t = transform.clone();

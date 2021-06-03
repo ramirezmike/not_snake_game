@@ -184,7 +184,12 @@ pub fn create_camera(
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut cameras: Query<&mut Transform, With<MainCamera>>,
     level: Res<Level>,
+    level_ready: Res<environment::LevelReady>,
 ) {
+    if !level_ready.0 {
+        return; // level isn't loaded so we'll try again later
+    }
+
     let mut transform = Transform::default();
     transform.translation = level.get_camera_position();
     transform.rotation = level.get_camera_rotation();

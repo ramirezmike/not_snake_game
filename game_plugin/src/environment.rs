@@ -245,7 +245,7 @@ pub fn load_assets(
     loading.0.append(&mut audio_state.get_sound_handles());
 
     level_asset_state.handle = asset_server.load("data/test.custom");
-    asset_server.watch_for_changes().unwrap();
+//    asset_server.watch_for_changes().unwrap();
     commands.insert_resource(audio_state);
 }
 
@@ -349,6 +349,7 @@ pub fn reset_score(
 
 pub fn load_level(
     mut commands: Commands,
+    mut state: ResMut<State<crate::AppState>>,
     mut level: ResMut<Level>,
     mut path_finder: ResMut<PathFinder>,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -360,14 +361,21 @@ pub fn load_level(
     mut enemy_meshes: ResMut<snake::EnemyMeshes>,
     flag_meshes: ResMut<win_flag::WinFlagMeshes>,
     game_shaders: Res<GameShaders>,
-    entities: Query<Entity>,
-    mut camera: Query<&mut Transform, With<MainCamera>>,
+//  entities: Query<Entity>,
     asset_server: Res<AssetServer>,
     mut clear_color: ResMut<ClearColor>,
 ) {
     println!("Starting to load level...");
     let levels_asset = levels_asset.get(&level_asset_state.handle);
-    level.load_stored_levels((*levels_asset.unwrap()).clone());
+    if let Some(level_asset) = levels_asset  {
+        level.load_stored_levels(level_asset.clone());
+    } else {
+        // try again later?
+        println!("failed to load level");
+        state.set(crate::AppState::Loading).unwrap();
+        return;
+    }
+
     level.reset_level();
     path_finder.load_level(&level);
 
@@ -527,7 +535,7 @@ pub fn load_level(
 
     create_hud(&mut commands, &mut meshes, &mut materials, &asset_server, &level);
 
-    println!("Level is Loaded... Number of items{:?}", entities.iter().len());
+//    println!("Level is Loaded... Number of items{:?}", entities.iter().len());
 
     level_ready.0 = true;
 }

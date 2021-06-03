@@ -46,3 +46,7 @@ Done
 - make yellow electric snake
 - make death animation for falling out of bounds
 - make death animation for electric snake
+
+
+To Run
+cargo run --release --features native
