@@ -89,7 +89,6 @@ pub fn generate_snake_body(
     is_electric: bool,
     game_shaders: &Res<environment::GameShaders>,
 ) -> Entity {
-    println!("Generating body {:?}", game_shaders.electric);
     commands.spawn_bundle(PbrBundle {
                 transform: {
                     let mut t = transform.clone();
@@ -972,7 +971,6 @@ pub fn handle_food_eaten(
     mut sound_writer: EventWriter<sounds::SoundEvent>,
 ) {
     for eater in food_eaten_event_reader.iter() {
-        println!("Food was eaten according to snake");
         if let Ok(entity) = snakes.get(eater.0) {
             body_part_writer.send(AddBodyPartEvent { snake: entity });
             sound_writer.send(sounds::SoundEvent(sounds::Sounds::Bite));

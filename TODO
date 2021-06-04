@@ -3,6 +3,9 @@ TODO
 - add camera shake
 - fix snake death animation
 - make dude scale up and down
+- add Snake (Traditional) mode
+- add Snake (Action) mode
+- add Snake (Strategy) mode
 
 Stretch Goals
 - add lights around food? (maybe make level-configurable size)
@@ -17,8 +20,6 @@ Music to add
 
 Level Ideas
 - make eye shape level
-- make a tunnel level
-- make a layered donut level?
 
 will not fix
 - fix 40/60 fps issue (may be just what it is on this laptop)
@@ -46,7 +47,8 @@ Done
 - make yellow electric snake
 - make death animation for falling out of bounds
 - make death animation for electric snake
-
+- make a layered donut level?
+- make a tunnel level
 
 To Run
 cargo run --release --features native

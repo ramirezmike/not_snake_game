@@ -20,7 +20,6 @@ pub fn spawn_food(
     position: Option::<Position>,
     show_shadow: bool,
 ) {
-    println!("Spawning food..");
     let food_color = Color::hex(level.get_palette().food.clone()).unwrap();
     let food_color = Color::rgba(food_color.r(), food_color.g(), food_color.b(), 1.0);
     let shaded_food_color = Color::rgba(food_color.r(), food_color.g(), food_color.b(), 0.4);
