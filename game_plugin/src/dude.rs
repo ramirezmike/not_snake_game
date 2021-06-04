@@ -126,8 +126,10 @@ fn player_input(
 
     let pressed_buttons = game_controller::get_pressed_buttons(&axes, &buttons, gamepad);
     for (entity, mut moveable, facing) in dudes.iter_mut() {
-        if (keyboard_input.just_pressed(KeyCode::J) || pressed_buttons.contains(&game_controller::GameButton::Action))
-           && !moveable.is_moving() && action_buffer.is_none() {
+        if (keyboard_input.just_pressed(KeyCode::Space) 
+        || keyboard_input.just_pressed(KeyCode::J) 
+        || pressed_buttons.contains(&game_controller::GameButton::Action))
+        && !moveable.is_moving() && action_buffer.is_none() {
             lift_holdable_event_writer.send(holdable::LiftHoldableEvent(entity, facing.direction));
             *action_buffer = Some(time.time_since_startup().as_millis());
             continue;

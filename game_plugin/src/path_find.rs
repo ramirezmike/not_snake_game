@@ -480,7 +480,7 @@ pub fn update_path(
 
                         if (!seek_food && !seek_random)
                         || dude_transform.translation.distance(snake_transform.translation) <= 1.5 {
-                            snake.speed -= 0.1;
+                            // snake.speed -= 0.1; // maybe it's better to leave this commented?
                             snake.current_path = path_find.update_path(&claimed_nodes, entity, &level, snake_position, 
                                                                        dude_position, &mut kill_snake_event_writer);
                         }

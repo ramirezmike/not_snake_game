@@ -72,17 +72,26 @@ pub fn setup_credits(
 pub struct EndCredits(f32);
 
 pub fn update_credits(
-    mut end_credits: Query<(&mut EndCredits, &mut Style)>,
+    mut commands: Commands,
+    mut end_credits: Query<(Entity, &mut EndCredits, &mut Style)>,
     time: Res<Time>,
     mut state: ResMut<State<crate::AppState>>,
 ) {
-    for (mut end_credit, mut style) in end_credits.iter_mut() {
+    let mut end_credits_have_ended = false;
+    for (_, mut end_credit, mut style) in end_credits.iter_mut() {
         end_credit.0 = end_credit.0 - time.delta_seconds() * 200.0;
         style.position.top = Val::Percent(end_credit.0);
 
         if end_credit.0 < -305.0 {
-            state.set(crate::AppState::MainMenu).unwrap();
+            end_credits_have_ended = true; 
         }
+    }
+
+    if end_credits_have_ended {
+        for (entity, _, _) in end_credits.iter_mut() {
+            commands.entity(entity).despawn();
+        }
+        state.set(crate::AppState::MainMenu).unwrap();
     }
 }
 

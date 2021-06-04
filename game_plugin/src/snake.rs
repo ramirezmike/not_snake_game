@@ -347,7 +347,6 @@ pub fn update_enemy(
 //                    println!("AXIS ANGLE: {:?}",start_rotation.to_axis_angle());
 //                    println!("Is Identity: {:?}",start_rotation.is_near_identity()); 
 
-                    // keep building this you can do it! 
                     let target_rotation = 
                         match facing {
                             Direction::Right => {

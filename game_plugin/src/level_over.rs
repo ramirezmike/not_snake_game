@@ -79,5 +79,6 @@ pub fn level_over_check(
 
     if *game_is_over && credits_delay.0.tick(time.delta()).finished() {
         credits_event_writer.send(crate::credits::CreditsEvent {});
+        *game_is_over = false;
     }
 }
