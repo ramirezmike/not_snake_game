@@ -112,30 +112,28 @@ pub fn generate_snake_body(
                             mesh: meshes.body.clone(),
                             material: meshes.material.clone(),
                             render_pipelines: RenderPipelines::from_pipelines(
-                                vec![
-                                    RenderPipeline::new(game_shaders.electric.clone(),),
-//                                    RenderPipeline::new(bevy::pbr::render_graph::PBR_PIPELINE_HANDLE.typed()),
-                                ]),
+                                vec![RenderPipeline::new(game_shaders.electric.clone())]
+                            ),
                             transform: {
                                 let mut t = Transform::from_translation(Vec3::new(0.0, 0.0, 0.0));
                                 t.rotate(Quat::from_axis_angle(Vec3::new(0.0, 1.0, 0.0), std::f32::consts::PI / 2.0));
+                                t.scale = Vec3::new(1.1, 1.1, 1.1);
                                 t
                             },
                             ..Default::default()
                         }).insert(environment::TimeUniform { value: 0.0 });
-                        
-                    } else {
-                        inner_parent.spawn_bundle(PbrBundle {
-                            mesh: meshes.body.clone(),
-                            material: meshes.material.clone(),
-                            transform: {
-                                let mut t = Transform::from_translation(Vec3::new(0.0, 0.0, 0.0));
-                                t.rotate(Quat::from_axis_angle(Vec3::new(0.0, 1.0, 0.0), std::f32::consts::PI / 2.0));
-                                t
-                            },
-                            ..Default::default()
-                        });
                     }
+
+                    inner_parent.spawn_bundle(PbrBundle {
+                        mesh: meshes.body.clone(),
+                        material: meshes.material.clone(),
+                        transform: {
+                            let mut t = Transform::from_translation(Vec3::new(0.0, 0.0, 0.0));
+                            t.rotate(Quat::from_axis_angle(Vec3::new(0.0, 1.0, 0.0), std::f32::consts::PI / 2.0));
+                            t
+                        },
+                        ..Default::default()
+                    });
                 });
             }).id()
 }
@@ -184,30 +182,33 @@ pub fn spawn_enemy(
                 current_path: None,
             })
             .with_children(|parent|  {
-                let mut bundle = 
+                parent.spawn_bundle(PbrBundle {
+                    transform: Transform::from_translation(Vec3::new(0.0, INNER_MESH_VERTICAL_OFFSET, 0.0)),
+                    ..Default::default()
+                }).insert(SnakeInnerMesh)
+                .with_children(|inner_parent| {
                     if is_electric {
-                        parent.spawn_bundle(PbrBundle {
+                        inner_parent.spawn_bundle(PbrBundle {
                             mesh: meshes.head.clone(),
                             material: meshes.material.clone(),
                             render_pipelines: RenderPipelines::from_pipelines(
-                                vec![
-                                    RenderPipeline::new(game_shaders.electric.clone(),),
-                                    //RenderPipeline::new(bevy::pbr::render_graph::PBR_PIPELINE_HANDLE.typed()),
-                                ]),
-                            transform: Transform::from_translation(Vec3::new(0.0, INNER_MESH_VERTICAL_OFFSET, 0.0)),
+                                vec![RenderPipeline::new(game_shaders.electric.clone())]
+                            ),
+                            transform: {
+                                let mut t = Transform::from_translation(Vec3::new(0.0, 0.0, 0.0));
+                                t.scale = Vec3::new(1.1, 1.1, 1.1);
+                                t
+                            },
                             ..Default::default()
-                        })
-                    } else {
-                        parent.spawn_bundle(PbrBundle {
-                            mesh: meshes.head.clone(),
-                            material: meshes.material.clone(),
-                            transform: Transform::from_translation(Vec3::new(0.0, INNER_MESH_VERTICAL_OFFSET, 0.0)),
-                            ..Default::default()
-                        })
-                    };
+                        }).insert(environment::TimeUniform { value: 0.0 });
+                    } 
 
-                bundle.insert(environment::TimeUniform { value: 0.0 });
-                bundle.insert(SnakeInnerMesh);
+                    inner_parent.spawn_bundle(PbrBundle {
+                        mesh: meshes.head.clone(),
+                        material: meshes.material.clone(),
+                        ..Default::default()
+                    });
+                });
             }).id();
     level.set(position.x as i32, position.y as i32, position.z as i32, Some(GameObject::new(enemy_entity, EntityType::EnemyHead)));
     level.set(position.x as i32 + 1, position.y as i32, position.z as i32, Some(GameObject::new(enemy_entity, EntityType::Enemy)));

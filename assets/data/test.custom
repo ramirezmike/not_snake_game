@@ -9,7 +9,7 @@
 // 8; unmovable block different color
 // 9; electric snake spawn point
 LevelsAsset (
-    start_level: 13,
+    start_level: 10,
     palette: Palette (
     //https://lospec.com/palette-list/funkyfuture-8
     //  base:     "2b0f54",
@@ -929,7 +929,7 @@ LevelsAsset (
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     [0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0],
     [0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0],
-    [4, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0],
+    [4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9],
     [0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0],
     [0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -965,9 +965,9 @@ LevelsAsset (
             camera_cull_y: None,
             camera_cull_z: None,
             palette: Some(Palette (
-                base:     "b4be05",
+                base:     "EFD6AC",
                 ground_1: "2D2B31",
-                ground_2: "6f6100",
+                ground_2: "183A37",
                 dude:     "f3a787",
                 enemy:    "ff4f69",
                 block:    "d8e2dc",//"85daeb",
@@ -1311,7 +1311,7 @@ LevelsAsset (
     [0, 0, 0, 0, 0, 0, 0, 0 ],
 ], [
     [0, 0, 8, 8, 8, 0, 0, 0 ],
-    [4, 6, 1, 1, 1, 0, 3, 0 ],
+    [4, 6, 1, 1, 1, 0, 3, 9 ],
     [0, 0, 0, 0, 0, 0, 0, 0 ],
 ], [
     [1, 1, 1, 1, 1, 1, 1, 1 ],
@@ -1321,7 +1321,7 @@ LevelsAsset (
             ],
             is_food_random: false,
             minimum_food: 1,
-            snake_speed: Some(2.0),
+            snake_speed: Some(10.0),
             snake_target: None,
             camera_x: -4.0576925,
             camera_y: 5.8081317,

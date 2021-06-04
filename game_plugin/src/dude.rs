@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use crate::{Direction, EntityType, GameObject, level::Level, game_controller,
+use crate::{Direction, EntityType, GameObject, level::Level, game_controller, sounds,
             environment, Position, holdable, block, moveable, facing::Facing};
 
 pub struct DudePlugin;
@@ -208,12 +208,19 @@ pub fn handle_kill_dude(
     mut commands: Commands,
     mut dudes: Query<Entity, With<Dude>>,
     mut kill_dude_event_reader: EventReader<KillDudeEvent>,
+    mut sound_writer: EventWriter<sounds::SoundEvent>,
 ) {
-    for _event in kill_dude_event_reader.iter() {
+    for event in kill_dude_event_reader.iter() {
         for entity in dudes.iter_mut() {
             commands.entity(entity).remove::<moveable::Moveable>();
+            commands.entity(entity).remove::<Dude>();
             commands.entity(entity).insert(environment::Shrink { });
+            match event.death_type {
+                DudeDeath::Electric => sound_writer.send(sounds::SoundEvent(sounds::Sounds::Shock)),
+                _ => ()
+            }
         }
+
     }
 }
 

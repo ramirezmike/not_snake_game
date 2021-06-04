@@ -10,7 +10,7 @@ use bevy::{
 use bevy::reflect::{TypeUuid};
 use bevy::render::camera::Camera;
 use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, Diagnostics};
-use bevy_kira_audio::AudioPlugin;
+use bevy_kira_audio::{Audio, AudioPlugin};
 
 use crate::{level::Level, Position, collectable, dude, snake, level, hud_pass,
             EntityType, GameObject, holdable, win_flag, moveable, food, score,
@@ -82,8 +82,10 @@ impl Plugin for EnvironmentPlugin {
                SystemSet::on_enter(crate::AppState::InGame)
                          .with_system(load_level.system().label("loading_level"))
                          .with_system(crate::camera::create_camera.system().after("loading_level"))
+                         .with_system(set_clear_color.system().after("loading_level"))
+                         .with_system(load_level_into_path_finder.system().after("loading_level"))
                          .with_system(reset_score.system())
-                         .with_system(level_over::setup_level_over_screen.system())
+                         .with_system(level_over::setup_level_over_screen.system().after("loading_level"))
            )
 
            .insert_resource(credits::CreditsDelay(Timer::from_seconds(1.5, false)))
@@ -348,11 +350,25 @@ pub fn reset_score(
     score.current_level = 0;
 }
 
+pub fn set_clear_color(
+    level: Res<Level>,
+    mut clear_color: ResMut<ClearColor>,
+) {
+    let palette = &level.get_palette();
+    clear_color.0 = Color::hex(palette.base.clone()).unwrap();
+}
+
+pub fn load_level_into_path_finder(
+    level: Res<Level>,
+    mut path_finder: ResMut<PathFinder>,
+) {
+    path_finder.load_level(&level);
+}
+
 pub fn load_level(
     mut commands: Commands,
     mut state: ResMut<State<crate::AppState>>,
     mut level: ResMut<Level>,
-    mut path_finder: ResMut<PathFinder>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut level_ready: ResMut<LevelReady>,
@@ -362,9 +378,10 @@ pub fn load_level(
     mut enemy_meshes: ResMut<snake::EnemyMeshes>,
     flag_meshes: ResMut<win_flag::WinFlagMeshes>,
     game_shaders: Res<GameShaders>,
+    audio: Res<Audio>,
+    mut audio_state: ResMut<sounds::AudioState>,
 //  entities: Query<Entity>,
     asset_server: Res<AssetServer>,
-    mut clear_color: ResMut<ClearColor>,
 ) {
     println!("Starting to load level...");
     let levels_asset = levels_asset.get(&level_asset_state.handle);
@@ -378,11 +395,10 @@ pub fn load_level(
     }
 
     level.reset_level();
-    path_finder.load_level(&level);
+    audio_state.stop_electricity(&audio);
 
     let palette = &level.get_palette();
 
-    clear_color.0 = Color::hex(palette.base.clone()).unwrap();
     dude_meshes.material = materials.add(Color::hex(palette.dude.clone()).unwrap().into());
     let enemy_color = Color::hex(palette.enemy.clone()).unwrap();
     enemy_meshes.material = materials.add(enemy_color.into());
@@ -518,7 +534,11 @@ pub fn load_level(
                     },
                     4 => dude::spawn_player(&mut commands, &dude_meshes, &mut level, x, y, z),
                     item @ 5 | item @ 9 => {
-                        snake::spawn_enemy(&mut commands, &enemy_meshes, &mut level, &game_shaders, x, y, z, item == 9)
+                        snake::spawn_enemy(&mut commands, &enemy_meshes, &mut level, &game_shaders, x, y, z, item == 9);
+
+                        if item == 9 {
+                            audio_state.play_electricity(&audio);
+                        }
                     },
                     item @ 6 | item @ 7 => {
                         food::spawn_food(&mut commands, &mut level, &mut meshes, &mut materials, 

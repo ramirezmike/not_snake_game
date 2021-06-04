@@ -53,6 +53,6 @@ void main() {
     o_Target = mix(o_Target, vec4(beam_2, 1.0), 0.5);
 
     if (o_Target.x < 0.2) {
-        o_Target = vec4(1.0, 0.05, 0.1, 1.0);
+        discard;
     }
 }

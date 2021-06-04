@@ -8,9 +8,12 @@ pub struct AudioState {
     channels: HashMap<AudioChannel, ChannelAudioState>,
     sound_channel: AudioChannel,
     music_channel: AudioChannel,
+    electricity_channel: AudioChannel,
     pickup_handle: Handle<AudioSource>,
     bite_handle: Handle<AudioSource>,
     jump_handle: Handle<AudioSource>,
+    shock_handle: Handle<AudioSource>,
+    electricity_handle: Handle<AudioSource>,
     land_handle: Handle<AudioSource>,
     level_end_handle: Handle<AudioSource>,
     slide_handle: Handle<AudioSource>,
@@ -44,6 +47,7 @@ pub enum Sounds {
     LevelEnd,
     Slide,
     Fall,
+    Shock,
 }
 
 impl AudioState {
@@ -51,6 +55,7 @@ impl AudioState {
         let mut channels = HashMap::new();
         let sound_channel = AudioChannel::new("first".to_owned());
         let music_channel = AudioChannel::new("music".to_owned());
+        let electricity_channel = AudioChannel::new("electricity".to_owned());
         channels.insert(
             sound_channel.clone(),
             ChannelAudioState::default(),
@@ -60,7 +65,7 @@ impl AudioState {
             ChannelAudioState::default(),
         );
         channels.insert(
-            AudioChannel::new("second".to_owned()),
+            electricity_channel.clone(), 
             ChannelAudioState::default(),
         );
         channels.insert(
@@ -71,11 +76,14 @@ impl AudioState {
         AudioState {
             sound_channel,
             music_channel,
+            electricity_channel, 
             channels,
             pickup_handle: asset_server.load("sounds/pickup.wav"),
             bite_handle: asset_server.load("sounds/bite.wav"),
             jump_handle: asset_server.load("sounds/jump.wav"),
             land_handle: asset_server.load("sounds/land.wav"),
+            shock_handle: asset_server.load("sounds/electric.wav"),
+            electricity_handle: asset_server.load("sounds/electricity.wav"),
             level_end_handle: asset_server.load("sounds/levelend.wav"),
             slide_handle: asset_server.load("sounds/slide.wav"),
             fall_handle: asset_server.load("sounds/fall.wav"),
@@ -89,6 +97,8 @@ impl AudioState {
             self.bite_handle.clone_untyped(),
             self.jump_handle.clone_untyped(),
             self.land_handle.clone_untyped(),
+            self.shock_handle.clone_untyped(),
+            self.electricity_handle.clone_untyped(),
             self.level_end_handle.clone_untyped(),
             self.slide_handle.clone_untyped(),
             self.fall_handle.clone_untyped(),
@@ -108,6 +118,7 @@ impl AudioState {
                                 Sounds::Land => self.land_handle.clone(),
                                 Sounds::LevelEnd => self.level_end_handle.clone(),
                                 Sounds::Slide => self.slide_handle.clone(),
+                                Sounds::Shock => self.shock_handle.clone(),
                                 Sounds::Fall => self.fall_handle.clone(),
                             };
         audio.play_in_channel(sound_to_play, &self.sound_channel);
@@ -118,7 +129,19 @@ impl AudioState {
         channel_audio_state.paused = false;
         channel_audio_state.stopped = false;
 
-        audio.play_looped_in_channel(self.music_1_handle.clone(), &self.music_channel);
+//        audio.play_looped_in_channel(self.music_1_handle.clone(), &self.music_channel);
+    }
+
+    pub fn play_electricity(&mut self, audio: &Res<Audio>) {
+        let mut channel_audio_state = self.channels.get_mut(&self.electricity_channel).unwrap();
+        channel_audio_state.paused = false;
+        channel_audio_state.stopped = false;
+
+        audio.play_looped_in_channel(self.electricity_handle.clone(), &self.electricity_channel);
+    }
+
+    pub fn stop_electricity(&mut self, audio: &Res<Audio>) {
+        audio.stop_channel(&self.electricity_channel);
     }
 }
 
