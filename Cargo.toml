@@ -1,5 +1,5 @@
 [package]
-name = "snake_game"
+name = "not_snake"
 version = "0.1.0"
 publish = false
 authors = ["mramirez <ramirezmike2@gmail.com>"]

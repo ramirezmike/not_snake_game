@@ -24,6 +24,7 @@ pub mod path_find;
 pub mod hud_pass;
 pub mod sounds;
 pub mod game_controller;
+pub mod pause;
 mod menu;
 
 use camera::*;
@@ -36,6 +37,7 @@ pub static COLOR_BLACK: &str = "000000";
 pub enum AppState {
     MainMenu,
     Loading,
+    Pause,
     InGame,
     ChangingLevel,
     ResetLevel,
@@ -51,9 +53,8 @@ impl Plugin for GamePlugin {
            .init_resource::<menu::ButtonMaterials>()
            .add_event::<credits::CreditsEvent>()
 
-           .add_state(AppState::MainMenu)
-    //       .add_state(AppState::InGame)
-//            .add_state(AppState::Loading)
+//           .add_state(AppState::MainMenu)
+            .add_state(AppState::Loading)
 
            .add_system_set(SystemSet::on_enter(AppState::MainMenu).with_system(menu::setup_menu.system()))
            .add_system_set(

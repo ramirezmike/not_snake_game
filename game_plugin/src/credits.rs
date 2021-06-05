@@ -31,7 +31,8 @@ pub fn setup_credits(
             // Use the `Text::with_section` constructor
             text: Text::with_section(
                 // Accepts a `String` or any type that converts into a `String`, such as `&str`
-                "Blocks and Stuff by Michael Ramirez \n
+                "No Snake by Michael Ramirez \n
+                 TODO: Actual Credits \n
                  Game design                Michael Ramirez\n
                  Lead Programmer            Michael Ramirez\n
                  Music Composition          Michael Ramirez\n
@@ -74,6 +75,7 @@ pub struct EndCredits(f32);
 pub fn update_credits(
     mut commands: Commands,
     mut end_credits: Query<(Entity, &mut EndCredits, &mut Style)>,
+    mut level: ResMut<crate::level::Level>,
     time: Res<Time>,
     mut state: ResMut<State<crate::AppState>>,
 ) {
@@ -91,6 +93,7 @@ pub fn update_credits(
         for (entity, _, _) in end_credits.iter_mut() {
             commands.entity(entity).despawn();
         }
+        level.current_level = 0;
         state.set(crate::AppState::MainMenu).unwrap();
     }
 }

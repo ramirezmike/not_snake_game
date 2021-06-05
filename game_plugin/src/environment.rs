@@ -30,6 +30,7 @@ impl Plugin for EnvironmentPlugin {
            .insert_resource(PathFinder::new())
            .insert_resource(LevelReady(false))
            .insert_resource(score::Score::new())
+           .init_resource::<crate::pause::PauseButtonMaterials>()
            .init_resource::<dude::DudeMeshes>()
            .init_resource::<snake::EnemyMeshes>()
            .init_resource::<camera::CameraMeshes>()
@@ -75,6 +76,18 @@ impl Plugin for EnvironmentPlugin {
                    .with_system(cleanup_change_level_screen.system())
            )
            .add_system_set(
+               SystemSet::on_enter(crate::AppState::Pause)
+                   .with_system(crate::pause::setup_menu.system())
+           )
+           .add_system_set(
+               SystemSet::on_update(crate::AppState::Pause)
+                   .with_system(crate::pause::pause_menu.system())
+           )
+           .add_system_set(
+               SystemSet::on_exit(crate::AppState::Pause)
+                   .with_system(crate::pause::cleanup_pause_menu.system())
+           )
+           .add_system_set(
                SystemSet::on_update(crate::AppState::ResetLevel)
                    .with_system(camera::handle_player_death.system())
            )
@@ -94,6 +107,7 @@ impl Plugin for EnvironmentPlugin {
                .with_system(holdable::lift_holdable.system().label("handle_lift_events"))
                .with_system(holdable::update_held.system().before("handle_lift_events"))
                .with_system(moveable::update_moveable.system().label("handle_moveables"))
+               .with_system(pause_game.system())
                .with_system(win_flag::update_flag.system())
                .with_system(collectable::check_collected.system())
                .with_system(update_hud_text_position.system())
@@ -105,7 +119,7 @@ impl Plugin for EnvironmentPlugin {
                .with_system(food::animate_food.system())
                .with_system(food::update_food.system())
                .with_system(food::handle_food_eaten.system())
-               .with_system(hide_blocks.system())
+//               .with_system(hide_blocks.system())
 //               .with_system(light_thing.system())
 //              .with_system(snake::add_body_part.system())
                .with_system(snake::add_body_parts.system())
@@ -695,6 +709,15 @@ fn update_hud_text_position(
                 }
             }
         }
+    }
+}
+
+pub fn pause_game(
+    mut state: ResMut<State<crate::AppState>>,
+    keyboard_input: Res<Input<KeyCode>>,
+) {
+    if keyboard_input.just_pressed(KeyCode::Escape) {
+        state.push(crate::AppState::Pause).unwrap();
     }
 }
 

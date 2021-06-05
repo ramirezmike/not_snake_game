@@ -7,8 +7,8 @@ on:
 
 # ToDo: adapt names
 env:
-  GAME_EXECUTABLE_NAME: snake_game
-  GAME_OSX_APP_NAME: SnakeGame
+  GAME_EXECUTABLE_NAME: not_snake_game
+  GAME_OSX_APP_NAME: NotSnake
 
 jobs:
   build-macOS:
