@@ -715,8 +715,12 @@ fn update_hud_text_position(
 pub fn pause_game(
     mut state: ResMut<State<crate::AppState>>,
     keyboard_input: Res<Input<KeyCode>>,
+    axes: Res<Axis<GamepadAxis>>,
+    buttons: Res<Input<GamepadButton>>,
+    gamepad: Option<Res<game_controller::GameController>>,
 ) {
-    if keyboard_input.just_pressed(KeyCode::Escape) {
+    let pressed_buttons = game_controller::get_pressed_buttons(&axes, &buttons, gamepad);
+    if keyboard_input.just_pressed(KeyCode::Escape) || pressed_buttons.contains(&game_controller::GameButton::Start) {
         state.push(crate::AppState::Pause).unwrap();
     }
 }
