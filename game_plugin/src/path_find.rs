@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use crate::{level::Level, level::PositionChangeEvent, EntityType, dude::Dude, camera::MainCamera,
-            environment::LevelReady, Position, snake, food::Food,};
+            teleporter, environment::LevelReady, Position, snake, food::Food,};
 use petgraph::{Graph, graph::NodeIndex, graph::EdgeIndex};
 use petgraph::algo::astar;
 //use bevy_prototype_debug_lines::*; 
@@ -429,6 +429,12 @@ pub fn update_path(
                     path_find.update_position_in_graph(&p, &level);
                 }
             }
+        }
+
+        for teleporter in level.get_teleporters() {
+            let position = path_find.indices[teleporter.position.x as usize][teleporter.position.y as usize][teleporter.position.z as usize]; 
+            let target = path_find.indices[teleporter.target.x as usize][teleporter.target.y as usize][teleporter.target.z as usize]; 
+            path_find.graph.update_edge(position, target, 1);
         }
 
         let snake_speed = level.snake_speed();

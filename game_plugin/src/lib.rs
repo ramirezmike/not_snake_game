@@ -3,6 +3,8 @@ use bevy::app::AppExit;
 use bevy::app::Events;
 //use bevy_prototype_debug_lines::*;
 use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
+use bevy::reflect::{TypeUuid};
+use serde::Deserialize;
 
 mod camera;
 pub mod environment;
@@ -25,6 +27,7 @@ pub mod hud_pass;
 pub mod sounds;
 pub mod game_controller;
 pub mod pause;
+pub mod teleporter;
 mod menu;
 
 use camera::*;
@@ -53,8 +56,8 @@ impl Plugin for GamePlugin {
            .init_resource::<menu::ButtonMaterials>()
            .add_event::<credits::CreditsEvent>()
 
-           .add_state(AppState::MainMenu)
-//            .add_state(AppState::Loading)
+//           .add_state(AppState::MainMenu)
+            .add_state(AppState::Loading)
 
            .add_system_set(SystemSet::on_enter(AppState::MainMenu).with_system(menu::setup_menu.system()))
            .add_system_set(
@@ -116,12 +119,14 @@ pub enum EntityType {
     Food,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Deserialize, TypeUuid)]
+#[uuid = "939adc56-aa9c-4543-8640-a018b74b5052"] // this needs to be actually generated
 pub enum Direction {
     Up, Down, Left, Right, Beneath, Above
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Deserialize, TypeUuid)]
+#[uuid = "93cadc56-aa9c-4543-8640-a018b74b5052"] // this needs to be actually generated
 pub struct Position { pub x: i32, pub y: i32, pub z: i32 }
 impl Position {
     pub fn from_vec(v: Vec3) -> Position {

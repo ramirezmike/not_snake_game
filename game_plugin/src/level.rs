@@ -1,5 +1,5 @@
 use bevy::{prelude::*,};
-use crate::{GameObject, EntityType, Position, dude, camera::CameraBehavior, snake, sounds };
+use crate::{GameObject, EntityType, Position, dude, camera::CameraBehavior, snake, sounds, teleporter};
 use rand::seq::SliceRandom;
 
 use bevy::asset::{AssetLoader, LoadContext, LoadedAsset};
@@ -64,6 +64,7 @@ pub struct LevelInfo {
     camera_cull_x: Option<(f32, f32)>,
     camera_cull_y: Option<(f32, f32)>,
     camera_cull_z: Option<(f32, f32)>,
+    teleporter_links: Vec::<teleporter::Teleporter>,
 }
 
 #[derive(Default)]
@@ -122,6 +123,14 @@ impl Level {
         } 
 
         self.palette.clone()
+    }
+
+    pub fn get_teleporters(&self) -> Vec::<teleporter::Teleporter> {
+        if let Some(info) = self.level_info.get(self.current_level) {
+            info.teleporter_links.clone()
+        } else {
+            vec!()
+        }
     }
 
     pub fn width(&self) -> usize {

@@ -1,5 +1,6 @@
 use bevy::prelude::*;
-use crate::{Direction, level::Level, Position, EntityType, GameObject, facing::Facing, sounds, snake, dude};
+use crate::{Direction, level::Level, Position, EntityType, GameObject, facing::Facing, sounds, snake, dude, teleporter};
+use rand::seq::SliceRandom;
 
 #[derive(Debug)]
 pub struct Moveable {
@@ -66,13 +67,14 @@ pub fn update_moveable(
     mut level: ResMut<Level>,
     mut sound_writer: EventWriter<sounds::SoundEvent>,
     mut kill_dude_event_writer: EventWriter<dude::KillDudeEvent>,
+    teleporters: Query<&teleporter::Teleporter>,
     enemies: Query<&snake::Enemy>,
     time: Res<Time>,
 ) {
     for (entity, mut moveable, mut transform, mut position, entity_type, maybe_facing, children) in moveables.iter_mut() {
         if let Some(target_position) = &mut moveable.target_position {
-//            println!("{:?} {:?} {:?}",transform.translation, target_position.1, target_position.2);
-
+            println!("{:?} {:?} {:?}",transform.translation, target_position.1, target_position.2);
+            
             // if the spot this object moved from is the same object then clear it
             if let Some(game_object) = level.get_with_vec(transform.translation) {
                 if game_object.entity == entity {
@@ -85,6 +87,60 @@ pub fn update_moveable(
                 if level.is_enterable_with_vec(target_position.0) {
                     transform.translation = target_position.0;
                 } 
+                if !teleporters.iter().len() > 0 {
+                    for teleporter in teleporters.iter() {
+                        if teleporter.position == Position::from_vec(target_position.0) {
+                            println!("Should teleport!");
+                            // teleport
+                            let new_target = teleporter.target;
+                            transform.translation = Vec3::new(new_target.x as f32, 
+                                                              new_target.y as f32, 
+                                                              new_target.z as f32);
+
+                            for child in children.iter() {
+                                // set the body part visible now that it's facing the right way
+                                if let Ok(mut inner_meshes_visibility) = inner_meshes_visibility.get_mut(*child) {
+                                    inner_meshes_visibility.is_visible = true;
+                                }
+                            }
+
+                            level.set_with_vec(transform.translation, Some(GameObject::new(entity, *entity_type)));
+                            position.update_from_vec(transform.translation);
+
+                            // set new target after teleportation 
+                            target_position.0 = Vec3::new(teleporter.move_to.x as f32, 
+                                                          teleporter.move_to.y as f32, 
+                                                          teleporter.move_to.z as f32); 
+
+                            // change current facing direction to target facing
+                            if let Some(mut facing) = maybe_facing {
+                                facing.direction = teleporter.facing;
+                            }
+
+                            target_position.3 = teleporter.facing;
+
+                            // reset movement start time
+                            target_position.1 = 0.0;
+
+                            // change current rotation to match target
+                            transform.rotation = 
+                                match teleporter.facing {
+                                    Direction::Up => Quat::from_axis_angle(Vec3::Y, -std::f32::consts::FRAC_PI_2),
+                                    Direction::Down => Quat::from_axis_angle(Vec3::Y, std::f32::consts::FRAC_PI_2),
+                                    Direction::Right => Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI),
+                                    Direction::Left => Quat::from_axis_angle(Vec3::Y, 0.0),
+                                    _ => transform.rotation
+                                };
+
+                            // set the "start position" after teleportation
+                            target_position.4 = Vec3::new(teleporter.target.x as f32,
+                                                          teleporter.target.y as f32,
+                                                          teleporter.target.z as f32);
+                            return;
+                        }
+                    }
+                }
+
                 moveable.target_position = None;
 
                 for child in children.iter() {

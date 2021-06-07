@@ -8,7 +8,7 @@ use bevy::{
     },
 };
 use crate::{Direction, EntityType, GameObject, level::Level, path_find::PathFinder, dude,
-            environment, sounds, Position, food::FoodEatenEvent};
+            teleporter, environment, sounds, Position, food::FoodEatenEvent};
 use petgraph::{graph::NodeIndex};
 use bevy::reflect::{TypeUuid};
 use serde::Deserialize;
@@ -31,11 +31,13 @@ pub enum SnakeTarget {
     OnlyRandom,
 }
 
+#[derive(Debug, Clone)]
 pub struct BodyPosition {
     translation: Vec3,
     rotation: Quat,
 }
 
+#[derive(Clone)]
 pub struct Enemy {
     body_parts: Vec::<Entity>,
     body_positions: Vec::<BodyPosition>,
@@ -68,6 +70,7 @@ pub struct Snake;
 pub struct SnakeBody;
 pub struct SnakeInnerMesh;
 pub struct KillSnakeEvent(pub Entity);
+#[derive(Clone)]
 struct SnakeMovement {
     target: Vec3,
     starting_from: Vec3,
@@ -262,8 +265,9 @@ pub fn update_enemy(
     mut inner_meshes: Query<&mut Transform, With<SnakeInnerMesh>>,
     path_find: Res<PathFinder>,
     mut level: ResMut<Level>,
-    dude: Query<&Transform, (With<dude::Dude>, Without<SnakeInnerMesh>, Without<Enemy>)>,
+    teleporters: Query<&teleporter::Teleporter>,
 
+    dude: Query<&Transform, (With<dude::Dude>, Without<SnakeInnerMesh>, Without<Enemy>)>,
     keyboard_input: Res<Input<KeyCode>>,
     mut is_active: Local<bool>,
     mut timer: Local<f32>,
@@ -344,502 +348,7 @@ pub fn update_enemy(
                     let target = Vec3::new(target.x as f32, target.y as f32, target.z as f32);
 
                     let start_rotation = inner_meshes.get_mut(*children.iter().last().unwrap()).unwrap().rotation;
-//                    println!("AXIS ANGLE: {:?}",start_rotation.to_axis_angle());
-//                    println!("Is Identity: {:?}",start_rotation.is_near_identity()); 
-
-                    let target_rotation = 
-                        match facing {
-                            Direction::Right => {
-                                let mut result = start_rotation;
-                                if enemy.up == Vec3::Y { // top of head is facing above
-                                    if enemy.forward == -Vec3::X { // forward is down
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI / 2.0));
-                                    }
-                                    if enemy.forward == Vec3::X { // foward is up
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, -std::f32::consts::PI / 2.0));
-                                    }
-                                }
-
-                                if enemy.up == -Vec3::Y { // top of head is facing beneath
-                                    if enemy.forward == -Vec3::X { // forward is down
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, -std::f32::consts::PI / 2.0));
-                                    }
-                                    if enemy.forward == Vec3::X { // foward is up
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI / 2.0));
-                                    }
-                                }
-
-                                if enemy.up == -Vec3::Z { // top of head is facing left
-                                    if enemy.forward == Vec3::Y { // forward is facing above
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::X, -std::f32::consts::PI / 2.0));
-                                        enemy.up = Vec3::Y;
-                                    } 
-                                    if enemy.forward == -Vec3::Y { // forward is facing beneath
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::X, -std::f32::consts::PI / 2.0));
-                                        enemy.up = -Vec3::Y;
-                                    } 
-                                    if enemy.forward == Vec3::X { // forward is facing up
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::X, -std::f32::consts::PI / 2.0));
-                                        enemy.up = Vec3::X;
-                                    } 
-                                    if enemy.forward == -Vec3::X { // forward is facing down
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::X, -std::f32::consts::PI / 2.0));
-                                        enemy.up = -Vec3::X;
-                                    } 
-                                }
-
-                                if enemy.up == Vec3::Z { // top of head is facing right
-                                    if enemy.forward == Vec3::Y { // forward is facing above
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::X, std::f32::consts::PI / 2.0));
-                                        enemy.up = -Vec3::Y;
-                                    } 
-                                    if enemy.forward == -Vec3::Y { // forward is facing beneath
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::X, std::f32::consts::PI / 2.0));
-                                        enemy.up = Vec3::Y;
-                                    } 
-                                    if enemy.forward == Vec3::X { // forward is facing up
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::X, std::f32::consts::PI / 2.0));
-                                        enemy.up = -Vec3::X;
-                                    } 
-                                    if enemy.forward == -Vec3::X { // forward is facing down
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::X, std::f32::consts::PI / 2.0));
-                                        enemy.up = Vec3::X;
-                                    } 
-                                }
-
-                                if enemy.up == -Vec3::X { // top of head is facing down
-                                    if enemy.forward == Vec3::Y { // forward is facing above
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, -std::f32::consts::PI / 2.0));
-                                    } 
-                                    if enemy.forward == -Vec3::Y { // forward is facing beneath
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI / 2.0));
-                                    } 
-                                }
-
-                                if enemy.up == Vec3::X { // top of head is facing up
-                                    if enemy.forward == Vec3::Y { // forward is facing above
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI / 2.0));
-                                    } 
-                                    if enemy.forward == -Vec3::Y { // forward is facing beneath
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, -std::f32::consts::PI / 2.0));
-                                    } 
-                                }
-
-                                enemy.forward = Vec3::Z;
-
-                                result 
-                            },
-                            Direction::Left => {
-                                let mut result = start_rotation;
-                                if enemy.up == Vec3::Y { // top of head is facing above
-                                    if enemy.forward == -Vec3::X { // forward is down
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, -std::f32::consts::PI / 2.0));
-                                    }
-                                    if enemy.forward == Vec3::X { // forward is up
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI / 2.0));
-                                    }
-                                }
-
-                                if enemy.up == -Vec3::Y { // top of head is facing beneath
-                                    if enemy.forward == -Vec3::X { // forward is down
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI / 2.0));
-                                    }
-                                    if enemy.forward == Vec3::X { // forward is up
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, -std::f32::consts::PI / 2.0));
-                                    }
-                                }
-
-                                if enemy.up == Vec3::Z { // top of head is facing right
-                                    if enemy.forward == Vec3::Y { // forward is facing above
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::X, -std::f32::consts::PI / 2.0));
-                                        enemy.up = Vec3::Y;
-                                    } 
-                                    if enemy.forward == -Vec3::Y { // forward is facing beneath
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::X, -std::f32::consts::PI / 2.0));
-                                        enemy.up = -Vec3::Y;
-                                    } 
-                                    if enemy.forward == Vec3::X { // forward is facing up
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::X, -std::f32::consts::PI / 2.0));
-                                        enemy.up = Vec3::X;
-                                    } 
-                                    if enemy.forward == -Vec3::X { // forward is facing down
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::X, -std::f32::consts::PI / 2.0));
-                                        enemy.up = -Vec3::X;
-                                    } 
-                                }
-
-                                if enemy.up == -Vec3::Z { // top of head is facing left
-                                    if enemy.forward == Vec3::Y { // forward is facing above
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::X, std::f32::consts::PI / 2.0));
-                                        enemy.up = -Vec3::Y;
-                                    } 
-                                    if enemy.forward == -Vec3::Y { // forward is facing beneath
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::X, std::f32::consts::PI / 2.0));
-                                        enemy.up = Vec3::Y;
-                                    } 
-                                    if enemy.forward == Vec3::X { // forward is facing up
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::X, std::f32::consts::PI / 2.0));
-                                        enemy.up = -Vec3::X;
-                                    } 
-                                    if enemy.forward == -Vec3::X { // forward is facing down
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::X, std::f32::consts::PI / 2.0));
-                                        enemy.up = Vec3::X;
-                                    } 
-                                }
-
-                                if enemy.up == -Vec3::X { // top of head is facing down
-                                    if enemy.forward == Vec3::Y { // forward is facing above
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI / 2.0));
-                                    } 
-                                    if enemy.forward == -Vec3::Y { // forward is facing beneath
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, -std::f32::consts::PI / 2.0));
-                                    } 
-                                }
-
-                                if enemy.up == Vec3::X { // top of head is facing up
-                                    if enemy.forward == Vec3::Y { // forward is facing above
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, -std::f32::consts::PI / 2.0));
-                                    } 
-                                    if enemy.forward == -Vec3::Y { // forward is facing beneath
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI / 2.0));
-                                    } 
-                                }
-
-                                enemy.forward = -Vec3::Z;
-
-                                result 
-                            }
-                            Direction::Down => {
-                                let mut result = start_rotation;
-                                if enemy.up == Vec3::Y { // top of head is facing above
-                                    if enemy.forward == -Vec3::Z { // forward is left
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI / 2.0));
-                                    }
-                                    if enemy.forward == Vec3::Z { // forward is right
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, -std::f32::consts::PI / 2.0));
-                                    }
-                                }
-
-                                if enemy.up == -Vec3::Y { // top of head is facing beneath
-                                    if enemy.forward == -Vec3::Z { // forward is left
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, -std::f32::consts::PI / 2.0));
-                                    }
-                                    if enemy.forward == Vec3::Z { // forward is right
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI / 2.0));
-                                    }
-                                }
-
-                                if enemy.up == Vec3::X { // top of head is facing up
-                                    if enemy.forward == Vec3::Y { // forward is facing above
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::X, -std::f32::consts::PI / 2.0));
-                                        enemy.up = Vec3::Y;
-                                    } 
-                                    if enemy.forward == -Vec3::Y { // forward is facing beneath
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::X, -std::f32::consts::PI / 2.0));
-                                        enemy.up = -Vec3::Y;
-                                    } 
-                                    if enemy.forward == -Vec3::Z { // forward is facing left
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::X, -std::f32::consts::PI / 2.0));
-                                        enemy.up = -Vec3::Z;
-                                    } 
-                                    if enemy.forward == Vec3::Z { // forward is facing right
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::X, -std::f32::consts::PI / 2.0));
-                                        enemy.up = Vec3::Z;
-                                    } 
-                                }
-
-                                if enemy.up == -Vec3::X { // top of head is facing down
-                                    if enemy.forward == Vec3::Y { // forward is facing above
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::X, std::f32::consts::PI / 2.0));
-                                        enemy.up = -Vec3::Y;
-                                    } 
-                                    if enemy.forward == -Vec3::Y { // forward is facing beneath
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::X, std::f32::consts::PI / 2.0));
-                                        enemy.up = Vec3::Y;
-                                    } 
-                                    if enemy.forward == -Vec3::Z { // forward is facing left
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::X, std::f32::consts::PI / 2.0));
-                                        enemy.up = Vec3::Z;
-                                    } 
-                                    if enemy.forward == Vec3::Z { // forward is facing right
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::X, std::f32::consts::PI / 2.0));
-                                        enemy.up = -Vec3::Z;
-                                    } 
-                                }
-
-                                if enemy.up == -Vec3::Z { // top of head is facing left
-                                    if enemy.forward == Vec3::Y { // forward is above
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, -std::f32::consts::PI / 2.0));
-                                    }
-                                    if enemy.forward == -Vec3::Y { // forward is below
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI / 2.0));
-                                    }
-                                }
-
-                                if enemy.up == Vec3::Z { // top of head is facing right
-                                    if enemy.forward == Vec3::Y { // forward is above
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI / 2.0));
-                                    }
-                                    if enemy.forward == -Vec3::Y { // forward is below
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, -std::f32::consts::PI / 2.0));
-                                    }
-                                }
-
-                                enemy.forward = -Vec3::X;
-                                result 
-                            }
-                            Direction::Up => {
-                                let mut result = start_rotation;
-
-                                if enemy.up == Vec3::Y { // top of head is facing above
-                                    if enemy.forward == -Vec3::Z { // forward is left
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, -std::f32::consts::PI / 2.0));
-                                    }
-                                    if enemy.forward == Vec3::Z { // forward is right
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI / 2.0));
-                                    }
-                                }
-
-                                if enemy.up == -Vec3::Y { // top of head is facing beneath
-                                    if enemy.forward == -Vec3::Z { // forward is left
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI / 2.0));
-                                    }
-                                    if enemy.forward == Vec3::Z { // forward is right
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, -std::f32::consts::PI / 2.0));
-                                    }
-                                }
-
-                                if enemy.up == Vec3::X { // top of head is facing up
-                                    if enemy.forward == Vec3::Y { // forward is facing above
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::X, std::f32::consts::PI / 2.0));
-                                        enemy.up = -Vec3::Y;
-                                    } 
-                                    if enemy.forward == -Vec3::Y { // forward is facing beneath
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::X, std::f32::consts::PI / 2.0));
-                                        enemy.up = Vec3::Y;
-                                    } 
-                                    if enemy.forward == -Vec3::Z { // forward is facing left
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::X, std::f32::consts::PI / 2.0));
-                                        enemy.up = Vec3::Z;
-                                    } 
-                                    if enemy.forward == Vec3::Z { // forward is facing right
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::X, std::f32::consts::PI / 2.0));
-                                        enemy.up = -Vec3::Z;
-                                    } 
-                                }
-
-                                if enemy.up == -Vec3::X { // top of head is facing down
-                                    if enemy.forward == Vec3::Y { // forward is facing above
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::X, -std::f32::consts::PI / 2.0));
-                                        enemy.up = Vec3::Y;
-                                    } 
-                                    if enemy.forward == -Vec3::Y { // forward is facing beneath
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::X, -std::f32::consts::PI / 2.0));
-                                        enemy.up = -Vec3::Y;
-                                    } 
-                                    if enemy.forward == -Vec3::Z { // forward is facing left
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::X, -std::f32::consts::PI / 2.0));
-                                        enemy.up = -Vec3::Z;
-                                    } 
-                                    if enemy.forward == Vec3::Z { // forward is facing right
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::X, -std::f32::consts::PI / 2.0));
-                                        enemy.up = Vec3::Z;
-                                    } 
-                                }
-
-                                if enemy.up == -Vec3::Z { // top of head is facing left
-                                    if enemy.forward == Vec3::Y { // forward is above
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI / 2.0));
-                                    }
-                                    if enemy.forward == -Vec3::Y { // forward is below
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, -std::f32::consts::PI / 2.0));
-                                    }
-                                }
-
-                                if enemy.up == Vec3::Z { // top of head is facing right
-                                    if enemy.forward == Vec3::Y { // forward is above
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, -std::f32::consts::PI / 2.0));
-                                    }
-                                    if enemy.forward == -Vec3::Y { // forward is below
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI / 2.0));
-                                    }
-                                }
-
-                                enemy.forward = Vec3::X;
-                                result 
-                            }
-                            Direction::Above => {
-                                let mut result = start_rotation;
-
-                                if enemy.up == Vec3::Y { // top is facing above
-                                    if enemy.forward == Vec3::X    // forward is up
-                                    || enemy.forward == Vec3::Z    // forward is right
-                                    || enemy.forward == -Vec3::X   // forward is down
-                                    || enemy.forward == -Vec3::Z { // forward is left
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::X, std::f32::consts::PI / 2.0));
-
-                                        enemy.up = -enemy.forward;
-                                        enemy.forward = Vec3::Y;
-                                    }
-                                }
-                                if enemy.up == -Vec3::Y { // top is facing beneath
-                                    if enemy.forward == Vec3::X    // forward is up
-                                    || enemy.forward == Vec3::Z    // forward is right
-                                    || enemy.forward == -Vec3::X   // forward is down
-                                    || enemy.forward == -Vec3::Z { // forward is left
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::X, -std::f32::consts::PI / 2.0));
-
-                                        enemy.up = enemy.forward;
-                                        enemy.forward = Vec3::Y;
-                                    }
-                                }
-
-                                if enemy.up == -Vec3::Z { // up is left
-                                    if enemy.forward == Vec3::X {   // forward is up
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, -std::f32::consts::PI / 2.0));
-                                        enemy.forward = Vec3::Y;
-                                    }
-                                    if enemy.forward == -Vec3::X {   // forward is down
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI / 2.0));
-                                        enemy.forward = Vec3::Y;
-                                    }
-                                    if enemy.forward == Vec3::Y {   // forward is above
-                                        // don't do anything ( this would be going forward ) 
-                                    }
-                                    if enemy.forward == -Vec3::Y {   // forward is below
-                                        // don't do anything ( this would be going backward ) 
-                                    }
-                                }
-
-                                if enemy.up == Vec3::Z { // up is right
-                                    if enemy.forward == Vec3::X {   // forward is up
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI / 2.0));
-                                        enemy.forward = Vec3::Y;
-                                    }
-                                    if enemy.forward == -Vec3::X {   // forward is down
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, -std::f32::consts::PI / 2.0));
-                                        enemy.forward = Vec3::Y;
-                                    }
-                                    if enemy.forward == Vec3::Y {   // forward is above
-                                        // don't do anything ( this would be going forward ) 
-                                    }
-                                    if enemy.forward == -Vec3::Y {   // forward is below
-                                        // don't do anything ( this would be going backward ) 
-                                    }
-                                }
-
-                                if enemy.up == -Vec3::X { // top is facing down
-                                    if enemy.forward == Vec3::Z { // forward is right
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI / 2.0));
-                                        enemy.forward = Vec3::Y;
-                                    }
-                                    if enemy.forward == -Vec3::Z { // forward is left
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, -std::f32::consts::PI / 2.0));
-                                        enemy.forward = Vec3::Y;
-                                    }
-                                }
-
-                                if enemy.up == Vec3::X { // top is facing up
-                                    if enemy.forward == Vec3::Z { // forward is right
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, -std::f32::consts::PI / 2.0));
-                                        enemy.forward = Vec3::Y;
-                                    }
-                                    if enemy.forward == -Vec3::Z { // forward is left
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI / 2.0));
-                                        enemy.forward = Vec3::Y;
-                                    }
-                                }
-
-                                result 
-                            }
-                            Direction::Beneath => {
-                                let mut result = start_rotation;
-
-                                if enemy.up == Vec3::Y { // top is facing above
-                                    if enemy.forward == Vec3::X    // forward is up
-                                    || enemy.forward == Vec3::Z    // forward is right
-                                    || enemy.forward == -Vec3::X   // forward is down
-                                    || enemy.forward == -Vec3::Z { // forward is left
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::X, -std::f32::consts::PI / 2.0));
-
-                                        enemy.up = enemy.forward;
-                                        enemy.forward = -Vec3::Y;
-                                    }
-                                }
-                                if enemy.up == -Vec3::Y { // top is facing beneath
-                                    if enemy.forward == Vec3::X    // forward is up
-                                    || enemy.forward == Vec3::Z    // forward is right
-                                    || enemy.forward == -Vec3::X   // forward is down
-                                    || enemy.forward == -Vec3::Z { // forward is left
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::X, std::f32::consts::PI / 2.0));
-
-                                        enemy.up = -enemy.forward;
-                                        enemy.forward = -Vec3::Y;
-                                    }
-                                }
-
-                                if enemy.up == -Vec3::Z { // up is left
-                                    if enemy.forward == Vec3::X {   // forward is up
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI / 2.0));
-                                        enemy.forward = -Vec3::Y;
-                                    }
-                                    if enemy.forward == -Vec3::X {   // forward is down
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, -std::f32::consts::PI / 2.0));
-                                        enemy.forward = -Vec3::Y;
-                                    }
-                                    if enemy.forward == Vec3::Y {   // forward is above
-                                        // don't do anything ( this would be going backward ) 
-                                    }
-                                    if enemy.forward == -Vec3::Y {   // forward is below
-                                        // don't do anything ( this would be going forward ) 
-                                    }
-                                }
-
-                                if enemy.up == Vec3::Z { // up is right
-                                    if enemy.forward == Vec3::X {   // forward is up
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, -std::f32::consts::PI / 2.0));
-                                        enemy.forward = -Vec3::Y;
-                                    }
-                                    if enemy.forward == -Vec3::X {   // forward is down
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI / 2.0));
-                                        enemy.forward = -Vec3::Y;
-                                    }
-                                    if enemy.forward == Vec3::Y {   // forward is above
-                                        // don't do anything ( this would be going forward ) 
-                                    }
-                                    if enemy.forward == -Vec3::Y {   // forward is below
-                                        // don't do anything ( this would be going backward ) 
-                                    }
-                                }
-
-                                if enemy.up == -Vec3::X { // top is facing down
-                                    if enemy.forward == Vec3::Z { // forward is right
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, -std::f32::consts::PI / 2.0));
-                                        enemy.forward = -Vec3::Y;
-                                    }
-                                    if enemy.forward == -Vec3::Z { // forward is left
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI / 2.0));
-                                        enemy.forward = -Vec3::Y;
-                                    }
-                                }
-
-                                if enemy.up == Vec3::X { // top is facing up
-                                    if enemy.forward == Vec3::Z { // forward is right
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI / 2.0));
-                                        enemy.forward = -Vec3::Y;
-                                    }
-                                    if enemy.forward == -Vec3::Z { // forward is left
-                                        result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, -std::f32::consts::PI / 2.0));
-                                        enemy.forward = -Vec3::Y;
-                                    }
-                                }
-
-                                result 
-                            }
-                        };
-
-                    //println!("---------------------------------------------------");
-                    //println!("Up: {:?} Forward: {:?}", enemy.up, enemy.forward);
+                    let target_rotation = calculate_new_rotation(start_rotation, facing, &mut enemy);
 
                     enemy.movement = Some(SnakeMovement { 
                                         target, 
@@ -862,6 +371,7 @@ pub fn update_enemy(
                 }
             }
 
+            let mut clone_enemy = enemy.clone();
             if let Some(movement) = &mut enemy.movement {
                 // if the spot the snake moved from is the same object then clear it
                 if let Some(game_object) = level.get_with_vec(transform.translation) {
@@ -874,6 +384,75 @@ pub fn update_enemy(
                     if level.is_enterable_with_vec(movement.target) {
                         transform.translation = movement.target;
                     }
+
+                    if !teleporters.iter().len() > 0 {
+                        for teleporter in teleporters.iter() {
+                            if teleporter.position == Position::from_vec(movement.target) {
+
+                                println!("Enemy should teleport!");
+                                // teleport
+                                let original_target = movement.target.clone();
+                                let original_rotation = movement.start_rotation.clone();
+                                let new_target = teleporter.target;
+                                transform.translation = Vec3::new(new_target.x as f32, 
+                                                                  new_target.y as f32, 
+                                                                  new_target.z as f32);
+
+                                level.set_with_vec(transform.translation, Some(GameObject::new(entity, EntityType::EnemyHead)));
+                                position.update_from_vec(transform.translation);
+
+                                // set new target after teleportation 
+                                movement.target = Vec3::new(teleporter.move_to.x as f32, 
+                                                            teleporter.move_to.y as f32, 
+                                                            teleporter.move_to.z as f32); 
+
+                           //   // change current facing direction to target facing
+                           //   if let Some(mut facing) = maybe_facing {
+                           //       facing.direction = teleporter.facing;
+                           //   }
+
+                                // reset movement start time
+                                movement.current_movement_time = 0.0;
+
+
+                                // update movement of children
+
+
+                                // set the "start position" after teleportation
+                                movement.starting_from = Vec3::new(teleporter.target.x as f32,
+                                                                   teleporter.target.y as f32,
+                                                                   teleporter.target.z as f32);
+
+
+                                println!("Setting new facing!");
+                                movement.current_rotation_time = movement.finish_rotation_time;
+
+                                let start_rotation = inner_meshes.get_mut(*children.iter().last().unwrap()).unwrap().rotation;
+                                let target_rotation = calculate_new_rotation(start_rotation, teleporter.facing, &mut clone_enemy);
+                                movement.start_rotation = target_rotation;
+                                movement.target_rotation = target_rotation;
+                                calculate_new_rotation(start_rotation, teleporter.facing, &mut enemy);
+                                for child in children.iter() {
+                                    if let Ok(mut inner_mesh) = inner_meshes.get_mut(*child) {
+                                        inner_mesh.rotation = target_rotation;
+                                    }
+                                }
+
+                                // pushes a new history state at the front, and pops one off the end 
+                                // and updates the level by setting that spot to None
+                                enemy.body_positions.insert(0, 
+                                    BodyPosition { translation: original_target, 
+                                                   rotation: original_rotation });
+                                let number_of_body_parts = enemy.body_parts.len();
+                                let last_body_position = enemy.body_positions.last().unwrap();
+                                level.set_with_vec(last_body_position.translation, None);
+                                enemy.body_positions.truncate(number_of_body_parts);
+
+                                return;
+                            }
+                        }
+                    }
+
                     enemy.movement = None;
                 } else {
                     // keep moving toward target
@@ -917,23 +496,49 @@ pub fn update_enemy(
 }
 
 pub fn update_following(
-    snakes: Query<&Enemy>,
+    mut snakes: Query<&mut Enemy>,
     mut body_parts: Query<(Entity, &mut Transform, &Children), (With<SnakeBody>, Without<Enemy>)>,
     mut inner_meshes: Query<&mut Transform, (With<SnakeInnerMesh>, Without<SnakeBody>, Without<Enemy>)>,
     time: Res<Time>,
+    teleporters: Query<&teleporter::Teleporter>,
     mut level: ResMut<Level>,
 ) {
-    for snake in snakes.iter() {
+    for mut snake in snakes.iter_mut() {
         let mut part_index = 0;
-        for body_part in snake.body_parts.iter() {
+        let snake_speed = snake.speed;
+        let body_part_entities = snake.body_parts.clone();
+        for body_part in body_part_entities.iter() {
             if let Ok((entity, mut transform, children)) = body_parts.get_mut(*body_part) {
-                if let Some(target) = &snake.body_positions.get(part_index) {
-                    let rate = snake.speed / 1.0;
+                if let Some(target) = &mut snake.body_positions.get_mut(part_index) {
+
+                    let rate = snake_speed / 1.0;
                     let distance = transform.translation.distance(target.translation);
                     let new_translation = transform.translation.lerp(target.translation, time.delta_seconds() / (distance * rate));
                     if !new_translation.is_nan() {
                         if transform.translation.distance(target.translation) < transform.translation.distance(new_translation) {
                             transform.translation = target.translation;
+
+                            if !teleporters.iter().len() > 0 {
+                                for teleporter in teleporters.iter() {
+                                    if teleporter.position == Position::from_vec(target.translation) {
+                                        println!("Body should teleport to {:?}", teleporter.target);
+
+                                        let new_target = teleporter.target;
+                                        level.set_with_vec(transform.translation, None);
+                                        println!("Body is at {:?}", transform.translation);
+                                        transform.translation = Vec3::new(new_target.x as f32, 
+                                                                          new_target.y as f32, 
+                                                                          new_target.z as f32);
+                                        println!("Body is at {:?}", transform.translation);
+
+                                        // set new target after teleportation 
+                                        target.translation = Vec3::new(teleporter.move_to.x as f32, 
+                                                                       teleporter.move_to.y as f32, 
+                                                                       teleporter.move_to.z as f32); 
+                                    }
+                                }
+                            }
+
                         } else {
                             transform.translation = new_translation;
                         }
@@ -943,7 +548,7 @@ pub fn update_following(
 
                     for child in children.iter() {
                         if let Ok(mut transform) = inner_meshes.get_mut(*child) {
-                            let rotation_rate = (snake.speed * 0.60) / 1.0;
+                            let rotation_rate = (snake_speed * 0.60) / 1.0;
                             let rotation_distance = transform.rotation.angle_between(target.rotation);
                             let new_rotation = transform.rotation.lerp(target.rotation, 
                                                                        time.delta_seconds() / (rotation_distance * rotation_rate));
@@ -1074,3 +679,498 @@ pub fn detect_dude_on_electric_snake(
     }
 }
 
+pub fn calculate_new_rotation(
+    start_rotation: Quat,
+    facing: Direction,
+    enemy: &mut Enemy
+) -> Quat {
+    match facing {
+        Direction::Right => {
+            let mut result = start_rotation;
+            if enemy.up == Vec3::Y { // top of head is facing above
+                if enemy.forward == -Vec3::X { // forward is down
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI / 2.0));
+                }
+                if enemy.forward == Vec3::X { // foward is up
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, -std::f32::consts::PI / 2.0));
+                }
+            }
+
+            if enemy.up == -Vec3::Y { // top of head is facing beneath
+                if enemy.forward == -Vec3::X { // forward is down
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, -std::f32::consts::PI / 2.0));
+                }
+                if enemy.forward == Vec3::X { // foward is up
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI / 2.0));
+                }
+            }
+
+            if enemy.up == -Vec3::Z { // top of head is facing left
+                if enemy.forward == Vec3::Y { // forward is facing above
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::X, -std::f32::consts::PI / 2.0));
+                    enemy.up = Vec3::Y;
+                } 
+                if enemy.forward == -Vec3::Y { // forward is facing beneath
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::X, -std::f32::consts::PI / 2.0));
+                    enemy.up = -Vec3::Y;
+                } 
+                if enemy.forward == Vec3::X { // forward is facing up
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::X, -std::f32::consts::PI / 2.0));
+                    enemy.up = Vec3::X;
+                } 
+                if enemy.forward == -Vec3::X { // forward is facing down
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::X, -std::f32::consts::PI / 2.0));
+                    enemy.up = -Vec3::X;
+                } 
+            }
+
+            if enemy.up == Vec3::Z { // top of head is facing right
+                if enemy.forward == Vec3::Y { // forward is facing above
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::X, std::f32::consts::PI / 2.0));
+                    enemy.up = -Vec3::Y;
+                } 
+                if enemy.forward == -Vec3::Y { // forward is facing beneath
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::X, std::f32::consts::PI / 2.0));
+                    enemy.up = Vec3::Y;
+                } 
+                if enemy.forward == Vec3::X { // forward is facing up
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::X, std::f32::consts::PI / 2.0));
+                    enemy.up = -Vec3::X;
+                } 
+                if enemy.forward == -Vec3::X { // forward is facing down
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::X, std::f32::consts::PI / 2.0));
+                    enemy.up = Vec3::X;
+                } 
+            }
+
+            if enemy.up == -Vec3::X { // top of head is facing down
+                if enemy.forward == Vec3::Y { // forward is facing above
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, -std::f32::consts::PI / 2.0));
+                } 
+                if enemy.forward == -Vec3::Y { // forward is facing beneath
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI / 2.0));
+                } 
+            }
+
+            if enemy.up == Vec3::X { // top of head is facing up
+                if enemy.forward == Vec3::Y { // forward is facing above
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI / 2.0));
+                } 
+                if enemy.forward == -Vec3::Y { // forward is facing beneath
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, -std::f32::consts::PI / 2.0));
+                } 
+            }
+
+            enemy.forward = Vec3::Z;
+
+            result 
+        },
+        Direction::Left => {
+            let mut result = start_rotation;
+            if enemy.up == Vec3::Y { // top of head is facing above
+                if enemy.forward == -Vec3::X { // forward is down
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, -std::f32::consts::PI / 2.0));
+                }
+                if enemy.forward == Vec3::X { // forward is up
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI / 2.0));
+                }
+            }
+
+            if enemy.up == -Vec3::Y { // top of head is facing beneath
+                if enemy.forward == -Vec3::X { // forward is down
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI / 2.0));
+                }
+                if enemy.forward == Vec3::X { // forward is up
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, -std::f32::consts::PI / 2.0));
+                }
+            }
+
+            if enemy.up == Vec3::Z { // top of head is facing right
+                if enemy.forward == Vec3::Y { // forward is facing above
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::X, -std::f32::consts::PI / 2.0));
+                    enemy.up = Vec3::Y;
+                } 
+                if enemy.forward == -Vec3::Y { // forward is facing beneath
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::X, -std::f32::consts::PI / 2.0));
+                    enemy.up = -Vec3::Y;
+                } 
+                if enemy.forward == Vec3::X { // forward is facing up
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::X, -std::f32::consts::PI / 2.0));
+                    enemy.up = Vec3::X;
+                } 
+                if enemy.forward == -Vec3::X { // forward is facing down
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::X, -std::f32::consts::PI / 2.0));
+                    enemy.up = -Vec3::X;
+                } 
+            }
+
+            if enemy.up == -Vec3::Z { // top of head is facing left
+                if enemy.forward == Vec3::Y { // forward is facing above
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::X, std::f32::consts::PI / 2.0));
+                    enemy.up = -Vec3::Y;
+                } 
+                if enemy.forward == -Vec3::Y { // forward is facing beneath
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::X, std::f32::consts::PI / 2.0));
+                    enemy.up = Vec3::Y;
+                } 
+                if enemy.forward == Vec3::X { // forward is facing up
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::X, std::f32::consts::PI / 2.0));
+                    enemy.up = -Vec3::X;
+                } 
+                if enemy.forward == -Vec3::X { // forward is facing down
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::X, std::f32::consts::PI / 2.0));
+                    enemy.up = Vec3::X;
+                } 
+            }
+
+            if enemy.up == -Vec3::X { // top of head is facing down
+                if enemy.forward == Vec3::Y { // forward is facing above
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI / 2.0));
+                } 
+                if enemy.forward == -Vec3::Y { // forward is facing beneath
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, -std::f32::consts::PI / 2.0));
+                } 
+            }
+
+            if enemy.up == Vec3::X { // top of head is facing up
+                if enemy.forward == Vec3::Y { // forward is facing above
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, -std::f32::consts::PI / 2.0));
+                } 
+                if enemy.forward == -Vec3::Y { // forward is facing beneath
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI / 2.0));
+                } 
+            }
+
+            enemy.forward = -Vec3::Z;
+
+            result 
+        }
+        Direction::Down => {
+            let mut result = start_rotation;
+            if enemy.up == Vec3::Y { // top of head is facing above
+                if enemy.forward == -Vec3::Z { // forward is left
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI / 2.0));
+                }
+                if enemy.forward == Vec3::Z { // forward is right
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, -std::f32::consts::PI / 2.0));
+                }
+            }
+
+            if enemy.up == -Vec3::Y { // top of head is facing beneath
+                if enemy.forward == -Vec3::Z { // forward is left
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, -std::f32::consts::PI / 2.0));
+                }
+                if enemy.forward == Vec3::Z { // forward is right
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI / 2.0));
+                }
+            }
+
+            if enemy.up == Vec3::X { // top of head is facing up
+                if enemy.forward == Vec3::Y { // forward is facing above
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::X, -std::f32::consts::PI / 2.0));
+                    enemy.up = Vec3::Y;
+                } 
+                if enemy.forward == -Vec3::Y { // forward is facing beneath
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::X, -std::f32::consts::PI / 2.0));
+                    enemy.up = -Vec3::Y;
+                } 
+                if enemy.forward == -Vec3::Z { // forward is facing left
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::X, -std::f32::consts::PI / 2.0));
+                    enemy.up = -Vec3::Z;
+                } 
+                if enemy.forward == Vec3::Z { // forward is facing right
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::X, -std::f32::consts::PI / 2.0));
+                    enemy.up = Vec3::Z;
+                } 
+            }
+
+            if enemy.up == -Vec3::X { // top of head is facing down
+                if enemy.forward == Vec3::Y { // forward is facing above
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::X, std::f32::consts::PI / 2.0));
+                    enemy.up = -Vec3::Y;
+                } 
+                if enemy.forward == -Vec3::Y { // forward is facing beneath
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::X, std::f32::consts::PI / 2.0));
+                    enemy.up = Vec3::Y;
+                } 
+                if enemy.forward == -Vec3::Z { // forward is facing left
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::X, std::f32::consts::PI / 2.0));
+                    enemy.up = Vec3::Z;
+                } 
+                if enemy.forward == Vec3::Z { // forward is facing right
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::X, std::f32::consts::PI / 2.0));
+                    enemy.up = -Vec3::Z;
+                } 
+            }
+
+            if enemy.up == -Vec3::Z { // top of head is facing left
+                if enemy.forward == Vec3::Y { // forward is above
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, -std::f32::consts::PI / 2.0));
+                }
+                if enemy.forward == -Vec3::Y { // forward is below
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI / 2.0));
+                }
+            }
+
+            if enemy.up == Vec3::Z { // top of head is facing right
+                if enemy.forward == Vec3::Y { // forward is above
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI / 2.0));
+                }
+                if enemy.forward == -Vec3::Y { // forward is below
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, -std::f32::consts::PI / 2.0));
+                }
+            }
+
+            enemy.forward = -Vec3::X;
+            result 
+        }
+        Direction::Up => {
+            let mut result = start_rotation;
+
+            if enemy.up == Vec3::Y { // top of head is facing above
+                if enemy.forward == -Vec3::Z { // forward is left
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, -std::f32::consts::PI / 2.0));
+                }
+                if enemy.forward == Vec3::Z { // forward is right
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI / 2.0));
+                }
+            }
+
+            if enemy.up == -Vec3::Y { // top of head is facing beneath
+                if enemy.forward == -Vec3::Z { // forward is left
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI / 2.0));
+                }
+                if enemy.forward == Vec3::Z { // forward is right
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, -std::f32::consts::PI / 2.0));
+                }
+            }
+
+            if enemy.up == Vec3::X { // top of head is facing up
+                if enemy.forward == Vec3::Y { // forward is facing above
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::X, std::f32::consts::PI / 2.0));
+                    enemy.up = -Vec3::Y;
+                } 
+                if enemy.forward == -Vec3::Y { // forward is facing beneath
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::X, std::f32::consts::PI / 2.0));
+                    enemy.up = Vec3::Y;
+                } 
+                if enemy.forward == -Vec3::Z { // forward is facing left
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::X, std::f32::consts::PI / 2.0));
+                    enemy.up = Vec3::Z;
+                } 
+                if enemy.forward == Vec3::Z { // forward is facing right
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::X, std::f32::consts::PI / 2.0));
+                    enemy.up = -Vec3::Z;
+                } 
+            }
+
+            if enemy.up == -Vec3::X { // top of head is facing down
+                if enemy.forward == Vec3::Y { // forward is facing above
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::X, -std::f32::consts::PI / 2.0));
+                    enemy.up = Vec3::Y;
+                } 
+                if enemy.forward == -Vec3::Y { // forward is facing beneath
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::X, -std::f32::consts::PI / 2.0));
+                    enemy.up = -Vec3::Y;
+                } 
+                if enemy.forward == -Vec3::Z { // forward is facing left
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::X, -std::f32::consts::PI / 2.0));
+                    enemy.up = -Vec3::Z;
+                } 
+                if enemy.forward == Vec3::Z { // forward is facing right
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::X, -std::f32::consts::PI / 2.0));
+                    enemy.up = Vec3::Z;
+                } 
+            }
+
+            if enemy.up == -Vec3::Z { // top of head is facing left
+                if enemy.forward == Vec3::Y { // forward is above
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI / 2.0));
+                }
+                if enemy.forward == -Vec3::Y { // forward is below
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, -std::f32::consts::PI / 2.0));
+                }
+            }
+
+            if enemy.up == Vec3::Z { // top of head is facing right
+                if enemy.forward == Vec3::Y { // forward is above
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, -std::f32::consts::PI / 2.0));
+                }
+                if enemy.forward == -Vec3::Y { // forward is below
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI / 2.0));
+                }
+            }
+
+            enemy.forward = Vec3::X;
+            result 
+        }
+        Direction::Above => {
+            let mut result = start_rotation;
+
+            if enemy.up == Vec3::Y { // top is facing above
+                if enemy.forward == Vec3::X    // forward is up
+                || enemy.forward == Vec3::Z    // forward is right
+                || enemy.forward == -Vec3::X   // forward is down
+                || enemy.forward == -Vec3::Z { // forward is left
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::X, std::f32::consts::PI / 2.0));
+
+                    enemy.up = -enemy.forward;
+                    enemy.forward = Vec3::Y;
+                }
+            }
+            if enemy.up == -Vec3::Y { // top is facing beneath
+                if enemy.forward == Vec3::X    // forward is up
+                || enemy.forward == Vec3::Z    // forward is right
+                || enemy.forward == -Vec3::X   // forward is down
+                || enemy.forward == -Vec3::Z { // forward is left
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::X, -std::f32::consts::PI / 2.0));
+
+                    enemy.up = enemy.forward;
+                    enemy.forward = Vec3::Y;
+                }
+            }
+
+            if enemy.up == -Vec3::Z { // up is left
+                if enemy.forward == Vec3::X {   // forward is up
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, -std::f32::consts::PI / 2.0));
+                    enemy.forward = Vec3::Y;
+                }
+                if enemy.forward == -Vec3::X {   // forward is down
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI / 2.0));
+                    enemy.forward = Vec3::Y;
+                }
+                if enemy.forward == Vec3::Y {   // forward is above
+                    // don't do anything ( this would be going forward ) 
+                }
+                if enemy.forward == -Vec3::Y {   // forward is below
+                    // don't do anything ( this would be going backward ) 
+                }
+            }
+
+            if enemy.up == Vec3::Z { // up is right
+                if enemy.forward == Vec3::X {   // forward is up
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI / 2.0));
+                    enemy.forward = Vec3::Y;
+                }
+                if enemy.forward == -Vec3::X {   // forward is down
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, -std::f32::consts::PI / 2.0));
+                    enemy.forward = Vec3::Y;
+                }
+                if enemy.forward == Vec3::Y {   // forward is above
+                    // don't do anything ( this would be going forward ) 
+                }
+                if enemy.forward == -Vec3::Y {   // forward is below
+                    // don't do anything ( this would be going backward ) 
+                }
+            }
+
+            if enemy.up == -Vec3::X { // top is facing down
+                if enemy.forward == Vec3::Z { // forward is right
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI / 2.0));
+                    enemy.forward = Vec3::Y;
+                }
+                if enemy.forward == -Vec3::Z { // forward is left
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, -std::f32::consts::PI / 2.0));
+                    enemy.forward = Vec3::Y;
+                }
+            }
+
+            if enemy.up == Vec3::X { // top is facing up
+                if enemy.forward == Vec3::Z { // forward is right
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, -std::f32::consts::PI / 2.0));
+                    enemy.forward = Vec3::Y;
+                }
+                if enemy.forward == -Vec3::Z { // forward is left
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI / 2.0));
+                    enemy.forward = Vec3::Y;
+                }
+            }
+
+            result 
+        }
+        Direction::Beneath => {
+            let mut result = start_rotation;
+
+            if enemy.up == Vec3::Y { // top is facing above
+                if enemy.forward == Vec3::X    // forward is up
+                || enemy.forward == Vec3::Z    // forward is right
+                || enemy.forward == -Vec3::X   // forward is down
+                || enemy.forward == -Vec3::Z { // forward is left
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::X, -std::f32::consts::PI / 2.0));
+
+                    enemy.up = enemy.forward;
+                    enemy.forward = -Vec3::Y;
+                }
+            }
+            if enemy.up == -Vec3::Y { // top is facing beneath
+                if enemy.forward == Vec3::X    // forward is up
+                || enemy.forward == Vec3::Z    // forward is right
+                || enemy.forward == -Vec3::X   // forward is down
+                || enemy.forward == -Vec3::Z { // forward is left
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::X, std::f32::consts::PI / 2.0));
+
+                    enemy.up = -enemy.forward;
+                    enemy.forward = -Vec3::Y;
+                }
+            }
+
+            if enemy.up == -Vec3::Z { // up is left
+                if enemy.forward == Vec3::X {   // forward is up
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI / 2.0));
+                    enemy.forward = -Vec3::Y;
+                }
+                if enemy.forward == -Vec3::X {   // forward is down
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, -std::f32::consts::PI / 2.0));
+                    enemy.forward = -Vec3::Y;
+                }
+                if enemy.forward == Vec3::Y {   // forward is above
+                    // don't do anything ( this would be going backward ) 
+                }
+                if enemy.forward == -Vec3::Y {   // forward is below
+                    // don't do anything ( this would be going forward ) 
+                }
+            }
+
+            if enemy.up == Vec3::Z { // up is right
+                if enemy.forward == Vec3::X {   // forward is up
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, -std::f32::consts::PI / 2.0));
+                    enemy.forward = -Vec3::Y;
+                }
+                if enemy.forward == -Vec3::X {   // forward is down
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI / 2.0));
+                    enemy.forward = -Vec3::Y;
+                }
+                if enemy.forward == Vec3::Y {   // forward is above
+                    // don't do anything ( this would be going forward ) 
+                }
+                if enemy.forward == -Vec3::Y {   // forward is below
+                    // don't do anything ( this would be going backward ) 
+                }
+            }
+
+            if enemy.up == -Vec3::X { // top is facing down
+                if enemy.forward == Vec3::Z { // forward is right
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, -std::f32::consts::PI / 2.0));
+                    enemy.forward = -Vec3::Y;
+                }
+                if enemy.forward == -Vec3::Z { // forward is left
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI / 2.0));
+                    enemy.forward = -Vec3::Y;
+                }
+            }
+
+            if enemy.up == Vec3::X { // top is facing up
+                if enemy.forward == Vec3::Z { // forward is right
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI / 2.0));
+                    enemy.forward = -Vec3::Y;
+                }
+                if enemy.forward == -Vec3::Z { // forward is left
+                    result = result.mul_quat(Quat::from_axis_angle(Vec3::Y, -std::f32::consts::PI / 2.0));
+                    enemy.forward = -Vec3::Y;
+                }
+            }
+
+            result 
+        }
+    }
+}

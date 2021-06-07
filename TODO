@@ -1,15 +1,22 @@
 TODO
-- add pause screen
 - add camera shake
 - fix snake death animation
 - make dude scale up and down
-- add Snake (Traditional) mode
-- add Snake (Action) mode
-- add Snake (Strategy) mode
+- add secondary food that is for challenge
+- make level titles
+- change 3 snake level to a 1 snake level called Run and then later the same level again but with 3 called Run Run Run
+- make one big tutorial level with a snake in it too. Snake should really be in every level
+- make food spawns more algorithmic and not random
+- make credits
+- make icon
+- make it clear that you can walk on snake
 
 Stretch Goals
 - add lights around food? (maybe make level-configurable size)
 - add shaders on everything?
+- add Snake (Traditional) mode
+- add Snake (Action) mode
+- add Snake (Strategy) mode
 
 Sounds to add
 - landing?
@@ -17,6 +24,7 @@ Sounds to add
 
 Music to add
 - everything
+- make actual good music
 
 Level Ideas
 - make eye shape level
@@ -49,6 +57,8 @@ Done
 - make death animation for electric snake
 - make a layered donut level?
 - make a tunnel level
+- add pause screen
+- make teleporter nodes
 
 To Run
 cargo run --release --features native

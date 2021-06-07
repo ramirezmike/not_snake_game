@@ -14,7 +14,7 @@ use bevy_kira_audio::{Audio, AudioPlugin};
 
 use crate::{level::Level, Position, collectable, dude, snake, level, hud_pass,
             EntityType, GameObject, holdable, win_flag, moveable, food, score,
-            camera::MainCamera, sounds, game_controller,
+            camera::MainCamera, sounds, game_controller, teleporter,
             level_over, credits, block, camera, path_find, path_find::PathFinder};
 //use bevy_mod_debugdump::print_schedule_runner;
 
@@ -562,6 +562,10 @@ pub fn load_level(
                 }
             }
         }
+    }
+
+    for teleporter in level.get_teleporters() {
+        teleporter::spawn_teleporter(&mut commands, teleporter);
     }
 
     if level.is_food_random() {
