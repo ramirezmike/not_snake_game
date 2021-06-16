@@ -328,10 +328,12 @@ pub fn update_enemy(
                     if keyboard_input.pressed(KeyCode::E) {
                         target = Some(Vec3::new(cur.x, cur.y + 1.0, cur.z));
                     }
-                    if keyboard_input.pressed(KeyCode::R) {
+                    if keyboard_input.pressed(KeyCode::C) {
                         target = Some(Vec3::new(cur.x, cur.y - 1.0, cur.z));
                     }
                     if let Some(target) = target {
+//                        println!("Enemy Up: {:?} Forward: {:?}", enemy.up, enemy.forward);
+//                        println!("Transform: {:?}", transform);
                         new_target = Some(Position::from_vec(target));
                     }
                 }
@@ -371,7 +373,7 @@ pub fn update_enemy(
                 }
             }
 
-            let mut clone_enemy = enemy.clone();
+            let speed = enemy.speed;
             if let Some(movement) = &mut enemy.movement {
                 // if the spot the snake moved from is the same object then clear it
                 if let Some(game_object) = level.get_with_vec(transform.translation) {
@@ -385,75 +387,73 @@ pub fn update_enemy(
                         transform.translation = movement.target;
                     }
 
+                    let mut potential_movement = None;
                     if !teleporters.iter().len() > 0 {
                         for teleporter in teleporters.iter() {
                             if teleporter.position == Position::from_vec(movement.target) {
-
-                                println!("Enemy should teleport!");
-                                // teleport
-                                let original_target = movement.target.clone();
-                                let original_rotation = movement.start_rotation.clone();
-                                let new_target = teleporter.target;
-                                transform.translation = Vec3::new(new_target.x as f32, 
-                                                                  new_target.y as f32, 
-                                                                  new_target.z as f32);
-
-                                level.set_with_vec(transform.translation, Some(GameObject::new(entity, EntityType::EnemyHead)));
-                                position.update_from_vec(transform.translation);
-
-                                // set new target after teleportation 
-                                movement.target = Vec3::new(teleporter.move_to.x as f32, 
-                                                            teleporter.move_to.y as f32, 
-                                                            teleporter.move_to.z as f32); 
-
-                           //   // change current facing direction to target facing
-                           //   if let Some(mut facing) = maybe_facing {
-                           //       facing.direction = teleporter.facing;
-                           //   }
-
-                                // reset movement start time
-                                movement.current_movement_time = 0.0;
-
-
-                                // update movement of children
-
-
-                                // set the "start position" after teleportation
-                                movement.starting_from = Vec3::new(teleporter.target.x as f32,
-                                                                   teleporter.target.y as f32,
-                                                                   teleporter.target.z as f32);
-
-
-                                println!("Setting new facing!");
-                                movement.current_rotation_time = movement.finish_rotation_time;
-
-                                let start_rotation = inner_meshes.get_mut(*children.iter().last().unwrap()).unwrap().rotation;
-                                let target_rotation = calculate_new_rotation(start_rotation, teleporter.facing, &mut clone_enemy);
-                                movement.start_rotation = target_rotation;
-                                movement.target_rotation = target_rotation;
-                                calculate_new_rotation(start_rotation, teleporter.facing, &mut enemy);
-                                for child in children.iter() {
-                                    if let Ok(mut inner_mesh) = inner_meshes.get_mut(*child) {
-                                        inner_mesh.rotation = target_rotation;
-                                    }
-                                }
-
                                 // pushes a new history state at the front, and pops one off the end 
                                 // and updates the level by setting that spot to None
                                 enemy.body_positions.insert(0, 
-                                    BodyPosition { translation: original_target, 
-                                                   rotation: original_rotation });
+                                                            BodyPosition { 
+                                                                translation: transform.translation, 
+                                                                rotation: transform.rotation 
+                                                            });
                                 let number_of_body_parts = enemy.body_parts.len();
                                 let last_body_position = enemy.body_positions.last().unwrap();
                                 level.set_with_vec(last_body_position.translation, None);
                                 enemy.body_positions.truncate(number_of_body_parts);
 
-                                return;
+                                transform.translation = Vec3::new(teleporter.target.x as f32, 
+                                                                  teleporter.target.y as f32,
+                                                                  teleporter.target.z as f32);
+
+                                let rotation = get_exact_rotation(teleporter.facing);
+
+                                match teleporter.facing {
+                                    Direction::Up => {
+                                        enemy.up = Vec3::Y;
+                                        enemy.forward = Vec3::X;
+                                    },
+                                    Direction::Down => {
+                                        enemy.up = Vec3::Y;
+                                        enemy.forward = -Vec3::X;
+                                    },
+                                    Direction::Right => {
+                                        enemy.up = Vec3::Y;
+                                        enemy.forward = Vec3::Z;
+                                    },
+                                    Direction::Left => {
+                                        enemy.up = Vec3::Y;
+                                        enemy.forward = -Vec3::Z;
+                                    },
+                                    Direction::Above => {
+                                        enemy.up = Vec3::X;
+                                        enemy.forward = Vec3::Y;
+                                    },
+                                    Direction::Beneath => {
+                                        enemy.up = -Vec3::X;
+                                        enemy.forward = -Vec3::Y;
+                                    }
+                                }
+
+                                potential_movement = Some(SnakeMovement { 
+                                                      target: Vec3::new(teleporter.move_to.x as f32,
+                                                                        teleporter.move_to.y as f32,
+                                                                        teleporter.move_to.z as f32),
+                                                      starting_from: transform.translation,
+                                                      current_movement_time: 0.0,
+                                                      finish_movement_time: speed,
+                                                      start_rotation: rotation,
+                                                      target_rotation: rotation,
+                                                      current_rotation_time: 0.0,
+                                                      finish_rotation_time: speed,
+                                                 });
+                                break;
                             }
                         }
                     }
 
-                    enemy.movement = None;
+                    enemy.movement = potential_movement;
                 } else {
                     // keep moving toward target
                     movement.current_movement_time += time.delta_seconds();
@@ -514,49 +514,67 @@ pub fn update_following(
                     let rate = snake_speed / 1.0;
                     let distance = transform.translation.distance(target.translation);
                     let new_translation = transform.translation.lerp(target.translation, time.delta_seconds() / (distance * rate));
+                    let mut has_just_teleported = false;
                     if !new_translation.is_nan() {
-                        if transform.translation.distance(target.translation) < transform.translation.distance(new_translation) {
-                            transform.translation = target.translation;
+                        // if the distance is this far, this body part probably just teleported and is trying
+                        // to float back to where it came from. Just don't let it do anything until it gets
+                        // a new, closer target.
+                        has_just_teleported = transform.translation.distance(target.translation) > 3.0;
 
-                            if !teleporters.iter().len() > 0 {
-                                for teleporter in teleporters.iter() {
-                                    if teleporter.position == Position::from_vec(target.translation) {
-                                        println!("Body should teleport to {:?}", teleporter.target);
+                        if !has_just_teleported { 
+                            if transform.translation.distance(target.translation) < transform.translation.distance(new_translation) {
+                                transform.translation = target.translation;
 
-                                        let new_target = teleporter.target;
-                                        level.set_with_vec(transform.translation, None);
-                                        println!("Body is at {:?}", transform.translation);
-                                        transform.translation = Vec3::new(new_target.x as f32, 
-                                                                          new_target.y as f32, 
-                                                                          new_target.z as f32);
-                                        println!("Body is at {:?}", transform.translation);
+                                if !teleporters.iter().len() > 0 {
+                                    for teleporter in teleporters.iter() {
+                                        if teleporter.position == Position::from_vec(transform.translation) {
+                                            transform.translation = Vec3::new(teleporter.target.x as f32, 
+                                                                              teleporter.target.y as f32,
+                                                                              teleporter.target.z as f32);
 
-                                        // set new target after teleportation 
-                                        target.translation = Vec3::new(teleporter.move_to.x as f32, 
-                                                                       teleporter.move_to.y as f32, 
-                                                                       teleporter.move_to.z as f32); 
+                                            let rotation = get_exact_rotation(teleporter.facing);
+                                            for child in children.iter() {
+                                                if let Ok(mut transform) = inner_meshes.get_mut(*child) {
+                                                    transform.rotation = rotation;
+                                                }
+                                            }
+                                            break;
+
+                                    //      let new_target = teleporter.target;
+                                    //      level.set_with_vec(transform.translation, None);
+                                    //      println!("Body is at {:?}", transform.translation);
+                                    //      transform.translation = Vec3::new(new_target.x as f32, 
+                                    //                                        new_target.y as f32, 
+                                    //                                        new_target.z as f32);
+                                    //      println!("Body is at {:?}", transform.translation);
+
+                                    //      // set new target after teleportation 
+                                    //      target.translation = Vec3::new(teleporter.move_to.x as f32, 
+                                    //                                     teleporter.move_to.y as f32, 
+                                    //                                     teleporter.move_to.z as f32); 
+                                        }
                                     }
                                 }
+                            } else {
+                                transform.translation = new_translation;
                             }
-
-                        } else {
-                            transform.translation = new_translation;
                         }
                     } 
-                    level.set_with_vec(target.translation, Some(GameObject::new(entity, EntityType::Enemy)));
+                    if !has_just_teleported  {
+                        level.set_with_vec(target.translation, Some(GameObject::new(entity, EntityType::Enemy)));
 
-
-                    for child in children.iter() {
-                        if let Ok(mut transform) = inner_meshes.get_mut(*child) {
-                            let rotation_rate = (snake_speed * 0.60) / 1.0;
-                            let rotation_distance = transform.rotation.angle_between(target.rotation);
-                            let new_rotation = transform.rotation.lerp(target.rotation, 
-                                                                       time.delta_seconds() / (rotation_distance * rotation_rate));
-                            if !new_rotation.is_nan() {
-                                if transform.rotation.angle_between(target.rotation) < transform.rotation.angle_between(new_rotation) {
-                                    transform.rotation = target.rotation;
-                                } else {
-                                    transform.rotation = new_rotation;
+                        for child in children.iter() {
+                            if let Ok(mut transform) = inner_meshes.get_mut(*child) {
+                                let rotation_rate = (snake_speed * 0.60) / 1.0;
+                                let rotation_distance = transform.rotation.angle_between(target.rotation);
+                                let new_rotation = transform.rotation.lerp(target.rotation, 
+                                                                           time.delta_seconds() / (rotation_distance * rotation_rate));
+                                if !new_rotation.is_nan() {
+                                    if transform.rotation.angle_between(target.rotation) < transform.rotation.angle_between(new_rotation) {
+                                        transform.rotation = target.rotation;
+                                    } else {
+                                        transform.rotation = new_rotation;
+                                    }
                                 }
                             }
                         }
@@ -676,6 +694,19 @@ pub fn detect_dude_on_electric_snake(
                 return;
             }
         }
+    }
+}
+
+pub fn get_exact_rotation(
+    facing: Direction
+) -> Quat {
+    match facing {
+        Direction::Up => Quat::from_axis_angle(Vec3::Y, 0.0),
+        Direction::Down => Quat::from_axis_angle(Vec3::Y, std::f32::consts::PI),
+        Direction::Right => Quat::from_axis_angle(Vec3::Y, std::f32::consts::FRAC_PI_2),
+        Direction::Left => Quat::from_axis_angle(Vec3::Y, (3.0 * std::f32::consts::PI) / 2.0),
+        Direction::Above => Quat::from_axis_angle(Vec3::X, std::f32::consts::FRAC_PI_2),
+        Direction::Beneath => Quat::from_axis_angle(Vec3::X, (3.0 * std::f32::consts::PI) / 2.0),
     }
 }
 

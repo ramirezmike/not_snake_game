@@ -112,12 +112,14 @@ pub fn update_moveable(
                                                           teleporter.move_to.y as f32, 
                                                           teleporter.move_to.z as f32); 
 
-                            // change current facing direction to target facing
-                            if let Some(mut facing) = maybe_facing {
-                                facing.direction = teleporter.facing;
-                            }
+                            if teleporter.facing != Direction::Beneath && teleporter.facing != Direction::Above {
+                                // change current facing direction to target facing
+                                if let Some(mut facing) = maybe_facing {
+                                    facing.direction = teleporter.facing;
+                                }
 
-                            target_position.3 = teleporter.facing;
+                                target_position.3 = teleporter.facing;
+                            }
 
                             // reset movement start time
                             target_position.1 = 0.0;

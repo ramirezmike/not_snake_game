@@ -10,6 +10,10 @@ TODO
 - make credits
 - make icon
 - make it clear that you can walk on snake
+- make it so you can customize a level and make it not have a vertical buffer of empty space
+- make electric snake only audibly buzz when you're near it and have the buzz get louder the nearer you are
+- make it so dude shrinks as he gets eaten but is still able to "escape" and let it be like 50% size or less you get eaten but before that you don't  
+- make snake animate open/close mouth and have it open its mouth when it's near dude and try to close it when eating dude. There's like a weirdness where if the snake misses the dude it should re-open its mouth because it is still near the dude so like.. it has to bite but then quickly reopen all the way so it can bite again quickly
 
 Stretch Goals
 - add lights around food? (maybe make level-configurable size)
