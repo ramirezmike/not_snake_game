@@ -433,7 +433,12 @@ pub fn load_level(
         for y in 0..level.height() {
             for z in 0..level.length() {
                 match level.get_level_info(x, y, z) {
-                    item @ 1 | item @ 8 => { // platform
+                    item @ 1 | item @ 8 | item @ 9 => { // platform
+                        let entity_type = if item == 9 {
+                                              EntityType::UnstandableBlock
+                                          } else {
+                                              EntityType::Block
+                                          };
                         let entity =
                             commands.spawn_bundle(PbrBundle {
                                 mesh: if y == 0 { plane.clone() } else { cube.clone() },
@@ -452,10 +457,10 @@ pub fn load_level(
                                 },
                                 ..Default::default()
                             })
+                            .insert(entity_type)
                             .insert(BlockMesh)
-                            .insert(EntityType::Block)
                             .id();
-                        level.set(x as i32, y as i32, z as i32, Some(GameObject::new(entity, EntityType::Block)));
+                        level.set(x as i32, y as i32, z as i32, Some(GameObject::new(entity, entity_type)));
 
                         if y == 0 {
                             commands.spawn_bundle(PbrBundle {
@@ -547,17 +552,17 @@ pub fn load_level(
                         level.set(x as i32, y as i32, z as i32, Some(GameObject::new(entity, EntityType::WinFlag)));
                     },
                     4 => dude::spawn_player(&mut commands, &dude_meshes, &mut level, x, y, z),
-                    item @ 5 | item @ 9 => {
-                        snake::spawn_enemy(&mut commands, &enemy_meshes, &mut level, &game_shaders, x, y, z, item == 9);
+                    item @ 5 | item @ 10 => {
+                        snake::spawn_enemy(&mut commands, &enemy_meshes, &mut level, &game_shaders, x, y, z, item == 10);
 
-                        if item == 9 {
+                        if item == 10 {
                             audio_state.play_electricity(&audio);
                         }
                     },
                     item @ 6 | item @ 7 => {
                         food::spawn_food(&mut commands, &mut level, &mut meshes, &mut materials, 
                                          Some(Position{ x: x as i32, y: y as i32, z: z as i32 }), item == 6)
-                    }
+                    },
                     _ => ()
                 }
             }

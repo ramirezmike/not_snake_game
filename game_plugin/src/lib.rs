@@ -111,6 +111,7 @@ impl GameObject {
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum EntityType {
     Block,
+    UnstandableBlock,
     Dude,
     Enemy,
     EnemyHead,
