@@ -47,6 +47,7 @@ pub struct Palette {
 #[derive(Debug, Clone, Deserialize, TypeUuid)]
 #[uuid = "49cadc56-aa9c-4543-8640-a018b74b5052"] // this needs to be actually generated
 pub struct LevelInfo {
+    title: String,
     level: Vec::<Vec::<Vec::<usize>>>,
     is_food_random: bool,
     minimum_food: usize,
@@ -334,6 +335,10 @@ impl Level {
 
     pub fn get_current_minimum_food(&self) -> usize {
         self.level_info[self.current_level].minimum_food
+    }
+
+    pub fn get_next_level_title(&self) -> String {
+        self.level_info[self.current_level + 1].title.clone()
     }
 
     pub fn is_enterable_with_vec(&self, position: Vec3) -> bool {

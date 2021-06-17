@@ -2,13 +2,14 @@ use bevy::{prelude::*,};
 use crate::{credits, level, dude, moveable};
 
 pub struct LevelOverEvent {}
-pub struct LevelOverText {}
+pub struct LevelOverText {} // TODO: change this to like "BetweenLevelEntity" or something marker or something
 
 pub fn setup_level_over_screen(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
 ) {
-    commands.spawn_bundle(UiCameraBundle::default());
+    commands.spawn_bundle(UiCameraBundle::default())
+            .insert(LevelOverText {});
     commands
         .spawn_bundle(TextBundle {
             style: Style {
@@ -43,6 +44,33 @@ pub fn setup_level_over_screen(
             ..Default::default()
         })
     .insert(LevelOverText {});
+    println!("Level over text made!");
+}
+
+pub fn displaying_title (
+    mut state: ResMut<State<crate::AppState>>,
+    time: Res<Time>,
+    mut query: Query<&mut Text>,
+    mut level: ResMut<level::Level>,
+    mut timer: Local<f32>,
+    mut text_set: Local<bool>,
+) {
+    if !*text_set {
+        for mut text in query.iter_mut() {
+            println!("showing level text !");
+            text.sections[0].value = level.get_next_level_title();
+        }
+        *text_set = true;
+    }
+
+    *timer += time.delta_seconds();
+
+    println!("displaying title...");
+    if *timer > 1.0 {
+        state.set(crate::AppState::ChangingLevel).unwrap();
+        *text_set = false;
+        *timer = 0.0; 
+    }
 }
 
 pub fn level_over_check(
@@ -69,16 +97,11 @@ pub fn level_over_check(
                 credits_delay.0.reset();
             }
         } else {
-            for mut text in query.iter_mut() {
-                text.sections[0].value = format!("LEVEL {}", level.current_level + 2).to_string();
-            }
-
-            state.set(crate::AppState::ChangingLevel).unwrap();
+            state.set(crate::AppState::ScoreDisplay).unwrap();
         }
     }
 
     if *game_is_over && credits_delay.0.tick(time.delta()).finished() {
         credits_event_writer.send(crate::credits::CreditsEvent {});
-        *game_is_over = false;
     }
 }

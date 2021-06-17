@@ -2,17 +2,16 @@ TODO
 - add camera shake
 - fix snake death animation
 - make dude scale up and down
-- add secondary food that is for challenge
 - change 3 snake level to a 1 snake level called Run and then later the same level again but with 3 called Run Run Run
-- make one big tutorial level with a snake in it too. Snake should really be in every level
-- make it clear that you can walk on snake
+- make one big tutorial level with a snake in it too. Snake should really be in every level and make it clear that you can walk on snake
 - make food spawns more algorithmic and not random
-- make level titles
 - make credits
 - make icon
 - make electric snake only audibly buzz when you're near it and have the buzz get louder the nearer you are
 - make it so dude shrinks as he gets eaten but is still able to "escape" and let it be like 50% size or less you get eaten but before that you don't  
 - make snake animate open/close mouth and have it open its mouth when it's near dude and try to close it when eating dude. There's like a weirdness where if the snake misses the dude it should re-open its mouth because it is still near the dude so like.. it has to bite but then quickly reopen all the way so it can bite again quickly
+- animate score display
+- set level title to show on level 1
 
 Stretch Goals
 - add lights around food? (maybe make level-configurable size)
@@ -63,6 +62,9 @@ Done
 - add pause screen
 - make teleporter nodes
 - make blocks that food can't spawn on
+- make level titles
+- add score display at end of level
+- add secondary food that is for challenge
 
 To Run
 cargo run --release --features native

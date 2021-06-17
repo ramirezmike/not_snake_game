@@ -1,9 +1,11 @@
 use bevy::prelude::*;
 use crate::{level, level::Level, Position, EntityType, GameObject, environment::HudFoodMesh};
 
-pub struct Food { }
+pub struct Food { 
+    pub is_bonus: bool
+}
 pub struct FoodInnerMesh { }
-pub struct FoodEatenEvent(pub Entity);
+pub struct FoodEatenEvent(pub Entity, pub bool);
 pub struct FoodSpawnParticle {
     parent: Entity,
     shadow_id: Option::<Entity>,
@@ -19,10 +21,16 @@ pub fn spawn_food(
     materials: &mut ResMut<Assets<StandardMaterial>>,
     position: Option::<Position>,
     show_shadow: bool,
+    is_bonus: bool,
 ) {
+    let bonus_food_color = Color::hex("97D8B2").unwrap(); 
+    let bonus_food_color = Color::rgba(bonus_food_color.r(), bonus_food_color.g(), bonus_food_color.b(), 1.0); 
+    let shaded_bonus_food_color = Color::rgba(bonus_food_color.r(), bonus_food_color.g(), bonus_food_color.b(), 0.4);
+
     let food_color = Color::hex(level.get_palette().food.clone()).unwrap();
     let food_color = Color::rgba(food_color.r(), food_color.g(), food_color.b(), 1.0);
     let shaded_food_color = Color::rgba(food_color.r(), food_color.g(), food_color.b(), 0.4);
+
     let position = if position.is_some() { position.unwrap() } else { level.get_random_standable() };
     let transform = Transform::from_xyz(position.x as f32, position.y as f32, position.z as f32);
     let cube = meshes.add(Mesh::from(shape::Cube { size: 0.1 }));
@@ -35,7 +43,13 @@ pub fn spawn_food(
             let inner_mesh_id = 
                 parent.spawn_bundle(PbrBundle {
                     mesh: meshes.add(Mesh::from(shape::Icosphere { radius: 0.25, subdivisions: 0 })),
-                    material: materials.add(food_color.into()),
+                    material: {
+                        if is_bonus {
+                            materials.add(bonus_food_color.into())
+                        } else {
+                            materials.add(food_color.into())
+                        }
+                    },
                     transform: Transform::from_xyz(0.0, 0.5, 0.0),
                     visible: Visible {
                         is_visible: false,
@@ -52,7 +66,13 @@ pub fn spawn_food(
                     Some(
                         parent.spawn_bundle(PbrBundle {
                             mesh: meshes.add(Mesh::from(shape::Plane { size: 0.25 })),
-                            material: materials.add(shaded_food_color.into()),
+                            material: {
+                                if is_bonus {
+                                    materials.add(shaded_bonus_food_color.into())
+                                } else {
+                                    materials.add(shaded_food_color.into())
+                                }
+                            },
                             transform: Transform::from_xyz(0.0, 0.05, 0.0),
                             visible: Visible {
                                 is_visible: false,
@@ -88,7 +108,13 @@ pub fn spawn_food(
                 let starting_from = transform.translation.clone();
                 parent.spawn_bundle(PbrBundle {
                     mesh: cube.clone(),
-                    material: materials.add(food_color.into()),
+                    material: {
+                        if is_bonus {
+                            materials.add(bonus_food_color.into())
+                        } else {
+                            materials.add(food_color.into())
+                        }
+                    },
                     transform,
                     ..Default::default()
                 })
@@ -101,7 +127,9 @@ pub fn spawn_food(
                         });
             }
         })
-        .insert(Food {})
+        .insert(Food {
+            is_bonus
+        })
         .insert(EntityType::Food)
         .insert(position)
         .id();
@@ -164,10 +192,10 @@ pub fn handle_food_eaten(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    for _ in food_eaten_event_reader.iter() {
-        if level.is_food_random() {
+    for event in food_eaten_event_reader.iter() {
+        if level.is_food_random() && !event.1 {
             let new_position = level.get_random_standable();
-            spawn_food(&mut commands, &mut level, &mut meshes, &mut materials, Some(new_position), true );
+            spawn_food(&mut commands, &mut level, &mut meshes, &mut materials, Some(new_position), true, false);
         } 
     }
 
@@ -175,17 +203,17 @@ pub fn handle_food_eaten(
 
 pub fn update_food(
     mut commands: Commands,
-    mut foods: Query<(Entity, &Position), With<Food>>,
+    mut foods: Query<(Entity, &Position, &Food)>,
     mut position_change_event_reader: EventReader<level::PositionChangeEvent>,
     mut food_eaten_event_writer: EventWriter<FoodEatenEvent>,
 ) {
     for position_change in position_change_event_reader.iter() {
         if let Some(game_object) = position_change.1 {
-            for (entity, position) in foods.iter_mut() {
+            for (entity, position, food) in foods.iter_mut() {
                 if position_change.0 == *position && game_object.entity != entity {
                     commands.entity(entity).despawn_recursive();
 
-                    food_eaten_event_writer.send(FoodEatenEvent(game_object.entity));
+                    food_eaten_event_writer.send(FoodEatenEvent(game_object.entity, food.is_bonus));
                 }
             }
         }

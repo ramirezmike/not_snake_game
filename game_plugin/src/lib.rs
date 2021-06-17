@@ -42,6 +42,8 @@ pub enum AppState {
     Loading,
     Pause,
     InGame,
+    ScoreDisplay,
+    LevelTitle,
     ChangingLevel,
     ResetLevel,
     Credits,

@@ -64,6 +64,26 @@ impl Plugin for EnvironmentPlugin {
                    .with_system(check_assets_ready.system())
            )
            .add_system_set(
+               SystemSet::on_enter(crate::AppState::ScoreDisplay)
+                   .with_system(score::setup_score_screen.system())
+           )
+           .add_system_set(
+               SystemSet::on_update(crate::AppState::ScoreDisplay)
+                   .with_system(score::displaying_score.system())
+           )
+           .add_system_set(
+               SystemSet::on_exit(crate::AppState::ScoreDisplay)
+                   .with_system(cleanup_change_level_screen.system())
+           )
+           .add_system_set(
+               SystemSet::on_enter(crate::AppState::LevelTitle)
+                   .with_system(level_over::setup_level_over_screen.system())
+           )
+           .add_system_set(
+               SystemSet::on_update(crate::AppState::LevelTitle)
+                   .with_system(level_over::displaying_title.system())
+           )
+           .add_system_set(
                SystemSet::on_update(crate::AppState::ChangingLevel)
                    .with_system(change_level_screen.system())
            )
@@ -360,7 +380,6 @@ pub fn cleanup_environment(
 pub fn reset_score(
     mut score: ResMut<score::Score>,
 ) {
-    score.total = score.current_level;
     score.current_level = 0;
 }
 
@@ -551,7 +570,7 @@ pub fn load_level(
 
                         level.set(x as i32, y as i32, z as i32, Some(GameObject::new(entity, EntityType::WinFlag)));
                     },
-                    4 => dude::spawn_player(&mut commands, &dude_meshes, &mut level, x, y, z),
+                    11 => dude::spawn_player(&mut commands, &dude_meshes, &mut level, x, y, z),
                     item @ 5 | item @ 10 => {
                         snake::spawn_enemy(&mut commands, &enemy_meshes, &mut level, &game_shaders, x, y, z, item == 10);
 
@@ -559,9 +578,9 @@ pub fn load_level(
                             audio_state.play_electricity(&audio);
                         }
                     },
-                    item @ 6 | item @ 7 => {
+                    item @ 4 | item @ 6 | item @ 7 => {
                         food::spawn_food(&mut commands, &mut level, &mut meshes, &mut materials, 
-                                         Some(Position{ x: x as i32, y: y as i32, z: z as i32 }), item == 6)
+                                         Some(Position{ x: x as i32, y: y as i32, z: z as i32 }), item == 6 || item == 4, item == 4)
                     },
                     _ => ()
                 }
@@ -574,7 +593,7 @@ pub fn load_level(
     }
 
     if level.is_food_random() {
-        food::spawn_food(&mut commands, &mut level, &mut meshes, &mut materials, None, true);
+        food::spawn_food(&mut commands, &mut level, &mut meshes, &mut materials, None, true, false);
     }
 
     create_hud(&mut commands, &mut meshes, &mut materials, &asset_server, &level);
