@@ -308,8 +308,6 @@ impl Level {
         }
         let (x, y, z) = standables.choose(&mut rand::thread_rng()).expect("Nothing was standable");
 
-        println!("Got random standable: {:?} {:?} {:?} {:?}", x, y, z, self.get(*x, y - 1, *z));
-
         Position { x: *x, y: *y, z: *z }
     }
 

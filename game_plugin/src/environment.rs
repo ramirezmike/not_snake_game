@@ -323,7 +323,7 @@ fn check_assets_ready(
     }
 
     if ready {
-        state.set(crate::AppState::InGame).unwrap();
+        state.set(crate::AppState::MainMenu).unwrap();
     }
 }
 
@@ -400,13 +400,10 @@ pub fn load_level_into_path_finder(
 
 pub fn load_level(
     mut commands: Commands,
-    mut state: ResMut<State<crate::AppState>>,
     mut level: ResMut<Level>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut level_ready: ResMut<LevelReady>,
-    level_asset_state: Res<level::LevelAssetState>, 
-    levels_asset: ResMut<Assets<level::LevelsAsset>>,
     mut dude_meshes: ResMut<dude::DudeMeshes>,
     mut enemy_meshes: ResMut<snake::EnemyMeshes>,
     flag_meshes: ResMut<win_flag::WinFlagMeshes>,
@@ -414,7 +411,10 @@ pub fn load_level(
     audio: Res<Audio>,
     mut audio_state: ResMut<sounds::AudioState>,
 //  entities: Query<Entity>,
+    level_asset_state: Res<level::LevelAssetState>, 
+    levels_asset: ResMut<Assets<level::LevelsAsset>>,
     asset_server: Res<AssetServer>,
+    mut state: ResMut<State<crate::AppState>>,
 ) {
     println!("Starting to load level...");
     let levels_asset = levels_asset.get(&level_asset_state.handle);
@@ -439,11 +439,30 @@ pub fn load_level(
 
     let plane = meshes.add(Mesh::from(shape::Plane { size: 1.0 }));
     let cube = meshes.add(Mesh::from(shape::Cube { size: 1.0 }));
-    let ground_1_material = materials.add(Color::hex(palette.ground_1.clone()).unwrap().into());
-    let ground_2_material = materials.add(Color::hex(palette.ground_2.clone()).unwrap().into());
+    let mut ground_1_material = materials.add(Color::hex(palette.ground_1.clone()).unwrap().into());
+    let mut ground_2_material = materials.add(Color::hex(palette.ground_2.clone()).unwrap().into());
     let block_material = materials.add(Color::hex(palette.block.clone()).unwrap().into());
     let flag_color = Color::hex(palette.flag.clone()).unwrap();
     let flag_color = Color::rgba(flag_color.r(), flag_color.g(), flag_color.b(), 0.7);
+
+    if *state.current() == crate::AppState::MainMenu {
+        ground_1_material = 
+        materials.add(StandardMaterial {
+                        base_color: Color::BLACK,
+                        unlit: true,
+                        roughness: 1.0,
+                        reflectance: 0.0,
+                        ..Default::default()
+                    });
+        ground_2_material = 
+        materials.add(StandardMaterial {
+                        base_color: Color::BLACK,
+                        unlit: true,
+                        roughness: 1.0,
+                        reflectance: 0.0,
+                        ..Default::default()
+                    });
+    }
                     
     commands.spawn_bundle(UiCameraBundle::default());
     let space_scale = 0.9;
@@ -596,7 +615,10 @@ pub fn load_level(
         food::spawn_food(&mut commands, &mut level, &mut meshes, &mut materials, None, true, false);
     }
 
-    create_hud(&mut commands, &mut meshes, &mut materials, &asset_server, &level);
+
+    if *state.current() != crate::AppState::MainMenu {
+        create_hud(&mut commands, &mut meshes, &mut materials, &asset_server, &level);
+    }
 
 //    println!("Level is Loaded... Number of items{:?}", entities.iter().len());
 
@@ -701,7 +723,7 @@ fn create_hud(
     println!("Added HUD");
 }
 
-fn update_fps(diagnostics: Res<Diagnostics>, mut query: Query<&mut Text, With<FpsText>>) {
+pub fn update_fps(diagnostics: Res<Diagnostics>, mut query: Query<&mut Text, With<FpsText>>) {
     for mut text in query.iter_mut() {
         if let Some(fps) = diagnostics.get(FrameTimeDiagnosticsPlugin::FPS) {
             if let Some(average) = fps.average() {
@@ -711,8 +733,7 @@ fn update_fps(diagnostics: Res<Diagnostics>, mut query: Query<&mut Text, With<Fp
     }
 }
 
-
-fn update_hud_text_position(
+pub fn update_hud_text_position(
     windows: Res<Windows>,
     mut text_query: Query<(&mut Style, &CalculatedSize, &mut Text), With<FollowText>>,
     mesh_query: Query<&Transform, With<HudFoodMesh>>,
@@ -817,7 +838,7 @@ pub struct GameShaders {
     pub electric: Handle<PipelineDescriptor>
 }
 
-fn animate_shader(time: Res<Time>, mut query: Query<&mut TimeUniform>) {
+pub fn animate_shader(time: Res<Time>, mut query: Query<&mut TimeUniform>) {
     for mut time_uniform in query.iter_mut() {
         time_uniform.value = time.seconds_since_startup() as f32;
     }

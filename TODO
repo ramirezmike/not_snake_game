@@ -10,8 +10,9 @@ TODO
 - make electric snake only audibly buzz when you're near it and have the buzz get louder the nearer you are
 - make it so dude shrinks as he gets eaten but is still able to "escape" and let it be like 50% size or less you get eaten but before that you don't  
 - make snake animate open/close mouth and have it open its mouth when it's near dude and try to close it when eating dude. There's like a weirdness where if the snake misses the dude it should re-open its mouth because it is still near the dude so like.. it has to bite but then quickly reopen all the way so it can bite again quickly
-- animate score display
-- set level title to show on level 1
+- animate between level score display screen
+- make level/score screens have a button that is like "OK" or "Continue" to next screen
+- make dude have like... little trailing poofs or something as he moves around 
 
 Stretch Goals
 - add lights around food? (maybe make level-configurable size)
@@ -65,6 +66,7 @@ Done
 - make level titles
 - add score display at end of level
 - add secondary food that is for challenge
+- set level title to show on level 1 (need to make it show during loading screen before the level asset is loaded so have to hardcode it)
 
 To Run
 cargo run --release --features native

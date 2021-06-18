@@ -259,7 +259,6 @@ impl PathFinder {
         let max_attempts = 10;
         // just pick somewhere randomly
         while path.is_none() && attempts < max_attempts {
-            println!("Trying to find new random spot... {}", attempts);
             let random_goal = level.get_random_standable();
             let goal_index = self.indices[random_goal.x as usize][random_goal.y as usize][random_goal.z as usize];
             path = astar(&self.graph, start_index, 
@@ -520,7 +519,6 @@ pub fn update_path(
                 if seek_random && snake.current_path.is_none() {
                     let random_goal = level.get_random_standable();
 
-                    println!("looking for random");
                     snake.current_path = path_find.update_path(&claimed_nodes, entity, &level, 
                                                                snake_position, &random_goal, 
                                                                &mut kill_snake_event_writer);
@@ -533,7 +531,6 @@ pub fn update_path(
                 } else {
                     let current_path = snake.current_path.as_ref().unwrap().1.iter().cloned();
                     if current_path.len() == 3 {
-                        println!("Something got claimed!");
                         claimed_targets.push(current_path.clone().last().unwrap()); 
                     }
                     claimed_nodes.extend(current_path);

@@ -38,6 +38,10 @@ impl Plugin for CameraPlugin {
                SystemSet::on_update(crate::AppState::InGame)
                          .with_system(toggle_fly.system())
            )
+           .add_system_set(
+               SystemSet::on_update(crate::AppState::MainMenu)
+                         .with_system(toggle_fly.system())
+           )
            .add_plugin(FlyCameraPlugin)
            .add_system(update_camera.system());
     }

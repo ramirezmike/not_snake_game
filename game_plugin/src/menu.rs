@@ -2,8 +2,10 @@ use bevy::prelude::*;
 use bevy::app::Events;
 use bevy::app::AppExit;
 use std::collections::HashMap;
-use crate::game_controller;
+use crate::{game_controller, level};
 
+pub struct BylineText;
+pub struct MenuButton;
 pub fn setup_menu(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
@@ -12,39 +14,39 @@ pub fn setup_menu(
     // ui camera
     commands.spawn_bundle(UiCameraBundle::default());
 
-    let title_text_entity = 
+    let byline_text_entity = 
     commands
         .spawn_bundle(TextBundle {
             style: Style {
-                // center button
-                margin: Rect::all(Val::Auto),
-                // horizontally center child text
-                justify_content: JustifyContent::Center,
-                // vertically center child text
-                align_items: AlignItems::Center,
+                align_self: AlignSelf::FlexEnd,
                 position_type: PositionType::Absolute,
                 position: Rect {
-                    top: Val::Percent(0.0),
+                    bottom: Val::Px(5.0),
+                    left: Val::Px(15.0),
+                    ..Default::default()
+                },
+                size: Size {
+                    //width: Val::Px(200.0),
                     ..Default::default()
                 },
                 ..Default::default()
             },
-            // Use the `Text::with_section` constructor
             text: Text::with_section(
-                // Accepts a `String` or any type that converts into a `String`, such as `&str`
-                "Not Snake \nby Michael Ramirez",
+                "by michael ramirez".to_string(),
                 TextStyle {
                     font: asset_server.load("fonts/FiraSans-Bold.ttf"),
-                    font_size: 150.0,
-                    color: Color::WHITE,
+                    font_size: 40.0,
+                    color: Color::rgba(0.8, 0.8, 0.8, -0.4),
                 },
-                // Note: You can use `Default::default()` in place of the `TextAlignment`
                 TextAlignment {
                     ..Default::default()
-                },
+                }
             ),
             ..Default::default()
-        }).id();
+        })
+        .insert(BylineText)
+        .id();
+    
     let start_button_entity = commands
         .spawn_bundle(ButtonBundle {
             style: Style {
@@ -63,6 +65,10 @@ pub fn setup_menu(
                 },
                 ..Default::default()
             },
+            visible: Visible {
+                is_visible: false,
+                is_transparent: false,
+            },
             material: button_materials.normal.clone(),
             ..Default::default()
         })
@@ -77,9 +83,14 @@ pub fn setup_menu(
                     },
                     Default::default(),
                 ),
+                visible: Visible {
+                    is_visible: false,
+                    is_transparent: false,
+                },
                 ..Default::default()
-            });
+            }).insert(MenuButton);
         })
+        .insert(MenuButton)
         .id();
 
     let quit_button_entity = commands
@@ -100,6 +111,10 @@ pub fn setup_menu(
                 },
                 ..Default::default()
             },
+            visible: Visible {
+                is_visible: false,
+                is_transparent: false,
+            },
             material: button_materials.normal.clone(),
             ..Default::default()
         })
@@ -114,25 +129,36 @@ pub fn setup_menu(
                     },
                     Default::default(),
                 ),
+                visible: Visible {
+                    is_visible: false,
+                    is_transparent: false,
+                },
                 ..Default::default()
-            });
+            }).insert(MenuButton);
         })
+        .insert(MenuButton)
         .id();
 
-    commands.insert_resource(MenuData { start_button_entity , title_text_entity, quit_button_entity, selected: start_button_entity });
+    commands.insert_resource(
+        MenuData { 
+            start_button_entity, 
+            quit_button_entity, 
+            byline_text_entity,
+            selected: start_button_entity
+        });
 }
 
 pub struct MenuData {
     start_button_entity: Entity,
-    title_text_entity: Entity,
     quit_button_entity: Entity,
+    byline_text_entity: Entity, 
     selected: Entity,
 }
 
 pub fn cleanup_menu(mut commands: Commands, menu_data: Res<MenuData>) {
     commands.entity(menu_data.start_button_entity).despawn_recursive();
-    commands.entity(menu_data.title_text_entity).despawn_recursive();
     commands.entity(menu_data.quit_button_entity).despawn_recursive();
+    commands.entity(menu_data.byline_text_entity).despawn_recursive();
 }
 
 pub fn menu(
@@ -147,10 +173,26 @@ pub fn menu(
     buttons: Res<Input<GamepadButton>>,
     gamepad: Option<Res<game_controller::GameController>>,
     mut gamepad_buffer: Local<f32>,
+    mut bylines: Query<&mut Text, With<BylineText>>,
+    mut menu_buttons: Query<&mut Visible, With<MenuButton>>,
     time: Res<Time>,
 ) {
     *gamepad_buffer += time.delta_seconds();
     let mut selected_button = None;
+
+    for mut byline in bylines.iter_mut() {
+        let a = byline.sections[0].style.color.a();
+        if a < 1.0 {
+            byline.sections[0].style.color.set_a(a + time.delta_seconds() / 5.0);
+        } 
+
+        if a > 0.8 {
+            // make buttons visible now that byline is visible enough
+            for mut visible in menu_buttons.iter_mut() {
+                visible.is_visible = true; 
+            }
+        }
+    }
 
     let mut next_button = HashMap::new();
     next_button.insert(menu_data.start_button_entity, menu_data.quit_button_entity);
@@ -197,7 +239,7 @@ pub fn menu(
 
     if let Some(selected_button) = selected_button {
         if selected_button == menu_data.start_button_entity {
-            state.set(crate::AppState::Loading).unwrap();
+            state.set(crate::AppState::LevelTitle).unwrap();
         }
         if selected_button == menu_data.quit_button_entity {
             exit.send(AppExit);
