@@ -1,18 +1,39 @@
 TODO
-- add camera shake
-- fix snake death animation
-- make dude scale up and down
+
+(Levels)
 - change 3 snake level to a 1 snake level called Run and then later the same level again but with 3 called Run Run Run
 - make one big tutorial level with a snake in it too. Snake should really be in every level and make it clear that you can walk on snake
+
+(Gameplay)
 - make food spawns more algorithmic and not random
-- make credits
-- make icon
-- make electric snake only audibly buzz when you're near it and have the buzz get louder the nearer you are
 - make it so dude shrinks as he gets eaten but is still able to "escape" and let it be like 50% size or less you get eaten but before that you don't  
-- make snake animate open/close mouth and have it open its mouth when it's near dude and try to close it when eating dude. There's like a weirdness where if the snake misses the dude it should re-open its mouth because it is still near the dude so like.. it has to bite but then quickly reopen all the way so it can bite again quickly
+
+(Audio)
+- make electric snake only audibly buzz when you're near it and have the buzz get louder the nearer you are
+
+(UI)
 - animate between level score display screen
 - make level/score screens have a button that is like "OK" or "Continue" to next screen
+- make credits
+- make icon
+- add restart level in pause screen
+- add quit to menu in pause screen
+- make quit buttons not appear in web mode
+- make level title screen background match the next level
+
+(Animations)
+- add camera shake
+- make dude scale up and down
 - make dude have like... little trailing poofs or something as he moves around 
+- make snake animate open/close mouth and have it open its mouth when it's near dude and try to close it when eating dude. There's like a weirdness where if the snake misses the dude it should re-open its mouth because it is still near the dude so like.. it has to bite but then quickly reopen all the way so it can bite again quickly
+
+(Bugs)
+- fix snake death animation
+- FIX BACKWARD SNAKE OMG
+
+(Models)
+- make food and bonus food models (or maybe just bonus to make it different?)
+
 
 Stretch Goals
 - add lights around food? (maybe make level-configurable size)
