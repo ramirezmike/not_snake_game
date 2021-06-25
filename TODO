@@ -7,32 +7,38 @@ TODO
 (Gameplay)
 - make food spawns more algorithmic and not random
 - make it so dude shrinks as he gets eaten but is still able to "escape" and let it be like 50% size or less you get eaten but before that you don't  
+- add a "snake chases food then chases tail" snake behavior
+- once a level is complete, if the player grabs a food maybe show the words "BONUS MODE" or something?
 
 (Audio)
 - make electric snake only audibly buzz when you're near it and have the buzz get louder the nearer you are
 
 (UI)
 - animate between level score display screen
-- make level/score screens have a button that is like "OK" or "Continue" to next screen
 - make credits
 - make icon
 - add restart level in pause screen
 - add quit to menu in pause screen
 - make quit buttons not appear in web mode
 - make level title screen background match the next level
+- score display should be like a "stats" view that shows what the player did in the past level. Maybe only show stuff that is greater than 0?
+    # of foods
+    # of bonus foods
+    time taken
+    # of deaths
+    # of snake deaths?
+    # of near-misses?
 
 (Animations)
 - add camera shake
-- make dude scale up and down
-- make dude have like... little trailing poofs or something as he moves around 
 - make snake animate open/close mouth and have it open its mouth when it's near dude and try to close it when eating dude. There's like a weirdness where if the snake misses the dude it should re-open its mouth because it is still near the dude so like.. it has to bite but then quickly reopen all the way so it can bite again quickly
 
 (Bugs)
 - fix snake death animation
 - FIX BACKWARD SNAKE OMG
 
-(Models)
-- make food and bonus food models (or maybe just bonus to make it different?)
+(Release)
+- check licenses of everything used
 
 
 Stretch Goals
@@ -88,6 +94,23 @@ Done
 - add score display at end of level
 - add secondary food that is for challenge
 - set level title to show on level 1 (need to make it show during loading screen before the level asset is loaded so have to hardcode it)
+- make level/score screens have a button that is like "OK" or "Continue" to next screen
+- add keyboard direction arrows
+- make it so dude can "cancel" a movement if they move in the opposite direction
+- make dude scale up and down
+- make dude have like... little trailing poofs or something as he moves around 
+
 
 To Run
 cargo run --release --features native
+
+
+
+
+[patch.crates-io]
+bevy = { git = "https://github.com/AUTHOR_OF_PR/bevy", branch = "branch-of-pr" }
+
+[patch.'https://github.com/AUTHOR_OF_CRATE/CRATE']
+bevy = { git = "https://github.com/bevyengine/bevy", branch = "branch-of-pr" }
+
+

@@ -41,6 +41,19 @@ impl Moveable {
         self.target_position.is_some()
     }
 
+    pub fn force_movement_change(&mut self, direction: Direction, movement_type: MovementType) {
+        self.target_position = None;
+        self.set_movement(direction, movement_type);
+    }
+
+    pub fn get_current_moving_direction(&self) -> Option<Direction> {
+        if let Some(target_position) = &self.target_position {
+            Some(target_position.3)
+        } else {
+            None
+        }
+    }
+
     pub fn is_queued(&self) -> bool {
         self.queued_movement.is_some()
     }
@@ -73,8 +86,6 @@ pub fn update_moveable(
 ) {
     for (entity, mut moveable, mut transform, mut position, entity_type, maybe_facing, children) in moveables.iter_mut() {
         if let Some(target_position) = &mut moveable.target_position {
-            println!("{:?} {:?} {:?}",transform.translation, target_position.1, target_position.2);
-            
             // if the spot this object moved from is the same object then clear it
             if let Some(game_object) = level.get_with_vec(transform.translation) {
                 if game_object.entity == entity {

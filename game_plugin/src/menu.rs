@@ -211,7 +211,6 @@ pub fn menu(
         *gamepad_buffer = 0.0;
     }
 
-
     // keyboard and gamepad
     if keyboard_input.just_pressed(KeyCode::Return) || keyboard_input.just_pressed(KeyCode::Space)
     || pressed_buttons.contains(&game_controller::GameButton::Action){

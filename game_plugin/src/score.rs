@@ -1,6 +1,7 @@
 use bevy::prelude::*;
-use crate::{food::FoodEatenEvent, Dude, sounds, level, level_over};
+use crate::{food::FoodEatenEvent, Dude, sounds, level, level_over, game_controller};
 
+pub struct ContinueText;
 pub struct Score {
     pub total: usize,
     pub total_bonus: usize,
@@ -78,17 +79,54 @@ pub fn setup_score_screen(
             ..Default::default()
         })
         .insert(level_over::LevelOverText {});
-    println!("Level over text made!");
+
+        commands
+            .spawn_bundle(TextBundle {
+                style: Style {
+                    align_self: AlignSelf::FlexEnd,
+                    position_type: PositionType::Absolute,
+                    position: Rect {
+                        bottom: Val::Px(5.0),
+                        right: Val::Px(15.0),
+                        ..Default::default()
+                    },
+                    size: Size {
+                        //width: Val::Px(200.0),
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                },
+                text: Text::with_section(
+                    "continue".to_string(),
+                    TextStyle {
+                        font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                        font_size: 200.0,
+                        color: Color::rgba(0.8, 0.8, 0.8, 1.0),
+                    },
+                    TextAlignment {
+                        ..Default::default()
+                    }
+                ),
+                ..Default::default()
+            })
+            .insert(level_over::LevelOverText {})
+            .insert(ContinueText);
+    println!("Score text made!");
 }
 
 pub fn displaying_score(
     mut state: ResMut<State<crate::AppState>>,
-    time: Res<Time>,
-    mut query: Query<&mut Text>,
+    mut query: Query<&mut Text, Without<ContinueText>>,
     mut score: ResMut<Score>,
     mut level: ResMut<level::Level>,
-    mut timer: Local<f32>,
     mut text_set: Local<bool>,
+    mut continue_text: Query<&mut Text, With<ContinueText>>,
+    mut text_blink: Local<bool>,
+
+    keyboard_input: Res<Input<KeyCode>>,
+    axes: Res<Axis<GamepadAxis>>,
+    buttons: Res<Input<GamepadButton>>,
+    gamepad: Option<Res<game_controller::GameController>>,
 ) {
     if !*text_set {
         score.total += score.current_level;
@@ -99,12 +137,26 @@ pub fn displaying_score(
         *text_set = true;
     }
 
-    *timer += time.delta_seconds();
-
-    println!("displaying score...");
-    if *timer > 1.0 {
+    let pressed_buttons = game_controller::get_pressed_buttons(&axes, &buttons, gamepad);
+    if keyboard_input.just_pressed(KeyCode::Return) || keyboard_input.just_pressed(KeyCode::Space)
+    || pressed_buttons.contains(&game_controller::GameButton::Action){
         state.set(crate::AppState::LevelTitle).unwrap();
         *text_set = false;
-        *timer = 0.0; 
+    }
+
+    for mut text in continue_text.iter_mut() {
+        let a = text.sections[0].style.color.a();
+        if a < 0.5 { 
+            *text_blink = false;
+        }
+        if a > 1.0 {
+            *text_blink = true;
+        }
+
+        if *text_blink {
+            text.sections[0].style.color.set_a(a - 0.015);
+        } else {
+            text.sections[0].style.color.set_a(a + 0.015);
+        }
     }
 }

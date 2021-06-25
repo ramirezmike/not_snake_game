@@ -28,6 +28,7 @@ pub mod sounds;
 pub mod game_controller;
 pub mod pause;
 pub mod teleporter;
+pub mod dust;
 mod menu;
 
 use camera::*;

@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use crate::{Direction, EntityType, GameObject, level::Level, game_controller, sounds,
-            environment, Position, holdable, block, moveable, facing::Facing};
+            dust, snake, environment, Position, holdable, block, moveable, facing::Facing};
 
 pub struct DudePlugin;
 impl Plugin for DudePlugin {
@@ -8,9 +8,26 @@ impl Plugin for DudePlugin {
         app.add_system_set(
                SystemSet::on_update(crate::AppState::InGame)
                    .with_system(player_input.system())
+                   .with_system(hop_on_snake.system())
                    .with_system(push_block.system())
            );
     }
+}
+
+static SCALE: f32 = 0.36;
+static SPEED: f32 = 0.1;
+
+pub struct SquashQueue {
+    squashes: Vec::<Squash>,
+}
+
+pub struct Squash {
+    start_scale: Vec3,
+    target_scale: Vec3,
+    start_vertical: f32,
+    target_vertical: f32,
+    current_scale_time: f32,
+    finish_scale_time: f32,
 }
 
 pub struct KillDudeEvent {
@@ -39,7 +56,7 @@ pub fn spawn_player(
     z: usize,
 ) {
     let mut transform = Transform::from_translation(Vec3::new(x as f32, y as f32, z as f32));
-    transform.apply_non_uniform_scale(Vec3::new(0.36, 0.36, 0.36)); 
+    transform.apply_non_uniform_scale(Vec3::new(SCALE, SCALE, SCALE)); 
     transform.rotate(Quat::from_axis_angle(Vec3::new(0.0, 1.0, 0.0), std::f32::consts::PI));
     let inner_mesh_vertical_offset = 1.0;
     let player_entity = 
@@ -52,8 +69,9 @@ pub fn spawn_player(
             .insert(EntityType::Dude)
             .insert(crate::camera::CameraTarget)
             .insert(holdable::Holder { holding: None })
-            .insert(moveable::Moveable::new(0.1, inner_mesh_vertical_offset))
+            .insert(moveable::Moveable::new(SPEED, inner_mesh_vertical_offset))
             .insert(Facing::new(Direction::Right, false))
+            .insert(SquashQueue{ squashes: Vec::new() })
             .with_children(|parent|  {
                 parent.spawn_bundle(PbrBundle {
                     mesh: meshes.body.clone(),
@@ -71,11 +89,88 @@ pub fn spawn_player(
     level.set(x as i32, y as i32, z as i32, Some(GameObject::new(player_entity, EntityType::Dude)));
 }
 
+pub fn handle_squashes( 
+    mut squashes: Query<(&mut SquashQueue, &Children)>,
+    mut transforms: Query<&mut Transform>,
+    time: Res<Time>,
+) {
+    for (mut queue, children) in squashes.iter_mut() {
+        if let Some(mut squash) = queue.squashes.pop() {
+            let child_entity = children.last().expect("dude child mesh missing");
+            let mut transform = transforms.get_mut(*child_entity).expect("dude child transform missing");
+            if squash.current_scale_time >= squash.finish_scale_time {
+                // squash/stretch time is done so make sure we're at target scale 
+                transform.scale = squash.target_scale;
+                transform.translation.y = squash.target_vertical;
+            } else {
+                // continue squashing/stretching
+                squash.current_scale_time += time.delta_seconds();
+
+                let target = squash.target_scale;
+                let new_scale = squash.start_scale.lerp(target,
+                                                        squash.current_scale_time / squash.finish_scale_time);
+                if !new_scale.is_nan() {
+                    transform.scale = new_scale;
+                }
+
+                let mut target = transform.translation.clone();
+                target.y = squash.target_vertical;
+
+                let mut start_vertical = transform.translation.clone();
+                start_vertical.y = squash.start_vertical;
+
+                let new_vertical = start_vertical.lerp(target,
+                                                        squash.current_scale_time / squash.finish_scale_time);
+                if !new_vertical.is_nan() {
+                    transform.translation = new_vertical;
+                }
+
+                queue.squashes.push(squash);
+            }
+        }
+    }
+}
+
+fn hop_on_snake(
+    enemies: Query<&snake::Enemy>,
+    mut dudes: Query<(&Transform, &mut SquashQueue)>,
+) {
+    for (transform, mut squash_queue) in dudes.iter_mut() {
+        let mut below_dude = transform.translation.clone();
+        below_dude.y -= 1.0; 
+
+        for enemy in enemies.iter() {
+            if enemy.is_in_vec(below_dude) {
+                // make dude hop on snake
+                if squash_queue.squashes.is_empty() {
+                    // squashes are done in reverse
+                    squash_queue.squashes.push(Squash {
+                        start_scale: Vec3::new(1.0, 1.0, 1.0),
+                        target_scale: Vec3::new(1.0, 1.0, 1.0),
+                        start_vertical: 1.8,
+                        target_vertical: 1.0,
+                        current_scale_time: 0.0,
+                        finish_scale_time: 0.20,
+                    });
+                    squash_queue.squashes.push(Squash {
+                        start_scale: Vec3::new(1.0, 1.0, 1.0),
+                        target_scale: Vec3::new(1.0, 1.0, 1.0),
+                        start_vertical: 1.0,
+                        target_vertical: 1.8,
+                        current_scale_time: 0.0,
+                        finish_scale_time: 0.05,
+                    });
+                }
+            }
+        }
+    }
+}
+
 fn player_input(
     keyboard_input: Res<Input<KeyCode>>,
     time: Res<Time>, 
     mut lift_holdable_event_writer: EventWriter<holdable::LiftHoldableEvent>,
-    mut dudes: Query<(Entity, &mut moveable::Moveable, &Facing), With<Dude>>, 
+    mut dudes: Query<(Entity, &mut moveable::Moveable, &Transform, &Facing, &mut SquashQueue), With<Dude>>, 
     camera: Query<&crate::camera::fly_camera::FlyCamera>,
     mut kill_dude_event_writer: EventWriter<KillDudeEvent>,
     mut action_buffer: Local<Option::<u128>>,
@@ -86,6 +181,7 @@ fn player_input(
     axes: Res<Axis<GamepadAxis>>,
     buttons: Res<Input<GamepadButton>>,
     gamepad: Option<Res<game_controller::GameController>>,
+    mut create_dust_event_writer: EventWriter<dust::CreateDustEvent>,
 ) {
     let time_buffer = 100;
     if keyboard_input.just_pressed(KeyCode::R) {
@@ -125,7 +221,7 @@ fn player_input(
     }
 
     let pressed_buttons = game_controller::get_pressed_buttons(&axes, &buttons, gamepad);
-    for (entity, mut moveable, facing) in dudes.iter_mut() {
+    for (entity, mut moveable, transform, facing, mut squash_queue) in dudes.iter_mut() {
         if (keyboard_input.just_pressed(KeyCode::Space) 
         || keyboard_input.just_pressed(KeyCode::J) 
         || pressed_buttons.contains(&game_controller::GameButton::Action))
@@ -140,30 +236,76 @@ fn player_input(
         }
 
         let mut move_dir = None;
-        if (keyboard_input.pressed(KeyCode::W) || pressed_buttons.contains(&game_controller::GameButton::Up))
+        if (keyboard_input.pressed(KeyCode::W) 
+         || keyboard_input.pressed(KeyCode::Up) 
+         || pressed_buttons.contains(&game_controller::GameButton::Up))
            && up_buffer.is_none() {
             move_dir = Some(Direction::Up); 
             *up_buffer = Some(time.time_since_startup().as_millis());
         }
-        if (keyboard_input.pressed(KeyCode::S) || pressed_buttons.contains(&game_controller::GameButton::Down))
+        if (keyboard_input.pressed(KeyCode::S) 
+           || keyboard_input.pressed(KeyCode::Down) 
+           || pressed_buttons.contains(&game_controller::GameButton::Down))
            && down_buffer.is_none() {
             move_dir = Some(Direction::Down); 
             *down_buffer = Some(time.time_since_startup().as_millis());
         }
-        if (keyboard_input.pressed(KeyCode::A) || pressed_buttons.contains(&game_controller::GameButton::Left))
+        if (keyboard_input.pressed(KeyCode::A) 
+           || keyboard_input.pressed(KeyCode::Left) 
+           || pressed_buttons.contains(&game_controller::GameButton::Left))
            && left_buffer.is_none() {
             move_dir = Some(Direction::Left); 
             *left_buffer = Some(time.time_since_startup().as_millis());
         }
-        if (keyboard_input.pressed(KeyCode::D) || pressed_buttons.contains(&game_controller::GameButton::Right))
+        if (keyboard_input.pressed(KeyCode::D) 
+           || keyboard_input.pressed(KeyCode::Right) 
+           || pressed_buttons.contains(&game_controller::GameButton::Right))
            && right_buffer.is_none() {
             move_dir = Some(Direction::Right); 
             *right_buffer= Some(time.time_since_startup().as_millis());
         }
 
         if let Some(move_dir) = move_dir {
-            if !moveable.is_moving()   {
+            let mut movement_got_set = false;
+            if !moveable.is_moving() {
                 moveable.set_movement(move_dir, moveable::MovementType::Step);
+                movement_got_set = true; 
+            } else {
+                match (moveable.get_current_moving_direction().unwrap(), move_dir) {
+                    (Direction::Up, Direction::Down)    |
+                    (Direction::Down, Direction::Up)    |
+                    (Direction::Left, Direction::Right) |
+                    (Direction::Right, Direction::Left) =>  {
+                        println!("forcing movement!");
+                        moveable.force_movement_change(move_dir, moveable::MovementType::Step);
+                        movement_got_set = true; 
+                    },
+                    _ => ()
+                }
+            }
+
+            if movement_got_set {
+                squash_queue.squashes = Vec::new();
+
+                // squashes are done in reverse
+                squash_queue.squashes.push(Squash {
+                    start_scale: Vec3::new(0.7, 1.4, 1.0),
+                    target_scale: Vec3::new(1.0, 1.0, 1.0),
+                    start_vertical: 2.5,
+                    target_vertical: 1.0,
+                    current_scale_time: 0.0,
+                    finish_scale_time: 0.20,
+                });
+                squash_queue.squashes.push(Squash {
+                    start_scale: Vec3::new(1.0, 1.0, 1.0),
+                    target_scale: Vec3::new(0.7, 1.4, 1.0),
+                    start_vertical: 1.0,
+                    target_vertical: 2.5,
+                    current_scale_time: 0.0,
+                    finish_scale_time: 0.05,
+                });
+
+                create_dust_event_writer.send(dust::CreateDustEvent { position: Position::from_vec(transform.translation) });
             }
         }
     }

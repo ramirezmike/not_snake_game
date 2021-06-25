@@ -14,7 +14,7 @@ use bevy_kira_audio::{Audio, AudioPlugin};
 
 use crate::{level::Level, Position, collectable, dude, snake, level, hud_pass,
             EntityType, GameObject, holdable, win_flag, moveable, food, score,
-            camera::MainCamera, sounds, game_controller, teleporter,
+            camera::MainCamera, sounds, game_controller, teleporter, dust,
             level_over, credits, block, camera, path_find, path_find::PathFinder};
 //use bevy_mod_debugdump::print_schedule_runner;
 
@@ -53,6 +53,7 @@ impl Plugin for EnvironmentPlugin {
 //           .add_plugin(LogDiagnosticsPlugin::default())
            .add_plugin(FrameTimeDiagnosticsPlugin::default())
            .add_event::<dude::KillDudeEvent>()
+           .add_event::<dust::CreateDustEvent>()
            .add_event::<food::FoodEatenEvent>()
            .add_event::<level::NextLevelEvent>()
            .add_system_set(
@@ -145,6 +146,7 @@ impl Plugin for EnvironmentPlugin {
                .with_system(snake::add_body_parts.system())
                .with_system(snake::update_following.system())
                .with_system(snake::handle_kill_snake.system())
+               .with_system(dude::handle_squashes.system())
                .with_system(camera::handle_player_death.system())
                .with_system(dude::handle_kill_dude.system())
                .with_system(path_find::update_graph.system().label("graph_update"))
@@ -162,6 +164,8 @@ impl Plugin for EnvironmentPlugin {
                .with_system(animate_shader.system())
                .with_system(snake::detect_dude_on_electric_snake.system())
                .with_system(shrink_shrinkables.system())
+               .with_system(dust::handle_create_dust_event.system())
+               .with_system(dust::animate_dust.system())
            );
 //        println!("{}", schedule_graph(&app.app.schedule));
 
