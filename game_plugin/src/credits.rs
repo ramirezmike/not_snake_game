@@ -1,6 +1,6 @@
 use bevy::prelude::*;
-use bevy::app::AppExit;
-use bevy::app::Events;
+
+use crate::environment;
 
 pub struct CreditsEvent {}
 pub struct CreditsDelay(pub Timer);
@@ -78,6 +78,7 @@ pub fn update_credits(
     mut level: ResMut<crate::level::Level>,
     time: Res<Time>,
     mut state: ResMut<State<crate::AppState>>,
+    mut game_is_over: ResMut<environment::GameOver>,
 ) {
     let mut end_credits_have_ended = false;
     for (_, mut end_credit, mut style) in end_credits.iter_mut() {
@@ -94,6 +95,7 @@ pub fn update_credits(
             commands.entity(entity).despawn();
         }
         level.current_level = 0;
+        game_is_over.0 = false;
         state.set(crate::AppState::MainMenu).unwrap();
     }
 }

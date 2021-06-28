@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use crate::{Direction, level::Level, Position, EntityType, GameObject, facing::Facing, sounds, snake, dude, teleporter};
+use crate::{Direction, level::Level, Position, EntityType, GameObject, facing::Facing, sounds, snake, dude, teleporter, dust};
 use rand::seq::SliceRandom;
 
 #[derive(Debug)]
@@ -74,17 +74,20 @@ pub fn update_moveable(
                           &mut Position, 
                           &EntityType, 
                           Option::<&mut Facing>, 
+                          Option::<&mut dude::SquashQueue>,
                           &Children)>,
     mut inner_meshes: Query<&mut Transform, Without<Moveable>>,
     mut inner_meshes_visibility: Query<&mut Visible, Without<Moveable>>,
     mut level: ResMut<Level>,
     mut sound_writer: EventWriter<sounds::SoundEvent>,
     mut kill_dude_event_writer: EventWriter<dude::KillDudeEvent>,
+    mut create_dust_event_writer: EventWriter<dust::CreateDustEvent>,
     teleporters: Query<&teleporter::Teleporter>,
     enemies: Query<&snake::Enemy>,
     time: Res<Time>,
 ) {
-    for (entity, mut moveable, mut transform, mut position, entity_type, maybe_facing, children) in moveables.iter_mut() {
+    for (entity, mut moveable, mut transform, mut position, 
+         entity_type, maybe_facing, mut maybe_squash_queue, children) in moveables.iter_mut() {
         if let Some(target_position) = &mut moveable.target_position {
             // if the spot this object moved from is the same object then clear it
             if let Some(game_object) = level.get_with_vec(transform.translation) {
@@ -97,6 +100,18 @@ pub fn update_moveable(
                 //  check if the target is still valid
                 if level.is_enterable_with_vec(target_position.0) {
                     transform.translation = target_position.0;
+
+                    if target_position.3 == Direction::Beneath 
+                    && level.is_standable(target_position.0.x as i32, target_position.0.y as i32, target_position.0.z as i32) {
+                        create_dust_event_writer.send(dust::CreateDustEvent { 
+                            position: Position::from_vec(transform.translation),
+                            move_away_from: Direction::Above,
+                        });
+                        create_dust_event_writer.send(dust::CreateDustEvent { 
+                            position: Position::from_vec(transform.translation),
+                            move_away_from: Direction::Above,
+                        });
+                    }
                 } 
                 if !teleporters.iter().len() > 0 {
                     for teleporter in teleporters.iter() {
@@ -298,6 +313,33 @@ pub fn update_moveable(
                                           transform.translation, MovementType::Step));
                                 moveable.set_movement(direction, MovementType::Step);
                                 moveable.is_climbing = true;
+
+                                if let Some(mut squash_queue) = maybe_squash_queue {
+                                    squash_queue.squashes.clear();
+
+                                    // squashes are done in reverse
+                                    squash_queue.squashes.push(dude::Squash {
+                                        start_scale: Vec3::new(0.7, 1.4, 1.0),
+                                        target_scale: Vec3::new(1.0, 1.0, 1.0),
+                                        start_vertical: 1.0,
+                                        target_vertical: 1.0,
+                                        start_horizontal: -0.8,
+                                        target_horizontal: 0.0,
+                                        current_scale_time: 0.0,
+                                        finish_scale_time: 0.1, //0.125,
+                                    });
+                                    squash_queue.squashes.push(dude::Squash {
+                                        start_scale: Vec3::new(1.0, 1.0, 1.0),
+                                        target_scale: Vec3::new(0.7, 1.4, 1.0),
+                                        start_vertical: 1.0,
+                                        target_vertical: 1.0,
+                                        start_horizontal: 0.0,
+                                        target_horizontal: -0.8,
+                                        current_scale_time: 0.0,
+                                        finish_scale_time: 0.2, //0.125,
+                                    });
+                                }
+
                                 sound_writer.send(sounds::SoundEvent(sounds::Sounds::Jump));
                                 continue;
                             }

@@ -12,10 +12,11 @@ pub fn setup_menu(
     // ui camera
     commands.spawn_bundle(UiCameraBundle::default());
 
+    let width = 350.0;
     let resume_button_entity = commands
         .spawn_bundle(ButtonBundle {
             style: Style {
-                size: Size::new(Val::Px(150.0), Val::Px(65.0)),
+                size: Size::new(Val::Px(width), Val::Px(65.0)),
                 // center button
                 margin: Rect::all(Val::Auto),
                 // horizontally center child text
@@ -24,7 +25,7 @@ pub fn setup_menu(
                 align_items: AlignItems::Center,
                 position_type: PositionType::Absolute,
                 position: Rect {
-                    bottom: Val::Percent(10.0),
+                    bottom: Val::Percent(20.0),
                     left: Val::Percent(45.0),
                     ..Default::default()
                 },
@@ -49,10 +50,85 @@ pub fn setup_menu(
         })
         .id();
 
+    let restart_button_entity = commands
+        .spawn_bundle(ButtonBundle {
+            style: Style {
+                size: Size::new(Val::Px(width), Val::Px(65.0)),
+                // center button
+                margin: Rect::all(Val::Auto),
+                // horizontally center child text
+                justify_content: JustifyContent::Center,
+                // vertically center child text
+                align_items: AlignItems::Center,
+                position_type: PositionType::Absolute,
+                position: Rect {
+                    bottom: Val::Percent(15.0),
+                    left: Val::Percent(45.0),
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
+            material: button_materials.normal.clone(),
+            ..Default::default()
+        })
+        .with_children(|parent| {
+            parent.spawn_bundle(TextBundle {
+                text: Text::with_section(
+                    "Restart Level",
+                    TextStyle {
+                        font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                        font_size: 40.0,
+                        color: Color::rgb(0.9, 0.9, 0.9),
+                    },
+                    Default::default(),
+                ),
+                ..Default::default()
+            });
+        })
+        .id();
+
+    let main_menu_button_entity = commands
+        .spawn_bundle(ButtonBundle {
+            style: Style {
+                size: Size::new(Val::Px(width), Val::Px(65.0)),
+                // center button
+                margin: Rect::all(Val::Auto),
+                // horizontally center child text
+                justify_content: JustifyContent::Center,
+                // vertically center child text
+                align_items: AlignItems::Center,
+                position_type: PositionType::Absolute,
+                position: Rect {
+                    bottom: Val::Percent(10.0),
+                    left: Val::Percent(45.0),
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
+            material: button_materials.normal.clone(),
+            ..Default::default()
+        })
+        .with_children(|parent| {
+            parent.spawn_bundle(TextBundle {
+                text: Text::with_section(
+                    "Quit to Main Menu",
+                    TextStyle {
+                        font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                        font_size: 40.0,
+                        color: Color::rgb(0.9, 0.9, 0.9),
+                    },
+                    Default::default(),
+                ),
+                ..Default::default()
+            });
+        })
+        .id();
+
+
     let quit_button_entity = commands
         .spawn_bundle(ButtonBundle {
             style: Style {
-                size: Size::new(Val::Px(150.0), Val::Px(65.0)),
+                size: Size::new(Val::Px(width), Val::Px(65.0)),
                 // center button
                 margin: Rect::all(Val::Auto),
                 // horizontally center child text
@@ -86,23 +162,36 @@ pub fn setup_menu(
         })
         .id();
 
-    commands.insert_resource(PauseMenuData { resume_button_entity , quit_button_entity, selected: resume_button_entity });
+    commands.insert_resource(
+        PauseMenuData { 
+            resume_button_entity, 
+            main_menu_button_entity,
+            quit_button_entity, 
+            restart_button_entity,
+            selected: resume_button_entity 
+        }
+    );
 }
 
 pub struct PauseMenuData {
     resume_button_entity: Entity,
+    main_menu_button_entity: Entity,
     quit_button_entity: Entity,
+    restart_button_entity: Entity,
     selected: Entity,
 }
 
 pub fn cleanup_pause_menu(mut commands: Commands, menu_data: Res<PauseMenuData>) {
     commands.entity(menu_data.resume_button_entity).despawn_recursive();
+    commands.entity(menu_data.main_menu_button_entity).despawn_recursive();
+    commands.entity(menu_data.restart_button_entity).despawn_recursive();
     commands.entity(menu_data.quit_button_entity).despawn_recursive();
 }
 
 pub fn pause_menu(
     mut state: ResMut<State<crate::AppState>>,
     mut exit: ResMut<Events<AppExit>>,
+    mut level: ResMut<crate::level::Level>,
     mut menu_data: ResMut<PauseMenuData>,
     keyboard_input: Res<Input<KeyCode>>,
     button_materials: Res<PauseButtonMaterials>,
@@ -118,12 +207,16 @@ pub fn pause_menu(
     let mut selected_button = None;
 
     let mut next_button = HashMap::new();
-    next_button.insert(menu_data.resume_button_entity, menu_data.quit_button_entity);
+    next_button.insert(menu_data.resume_button_entity, menu_data.restart_button_entity);
+    next_button.insert(menu_data.restart_button_entity, menu_data.main_menu_button_entity);
+    next_button.insert(menu_data.main_menu_button_entity, menu_data.quit_button_entity);
     next_button.insert(menu_data.quit_button_entity, menu_data.resume_button_entity);
 
     let mut prev_button = HashMap::new();
     prev_button.insert(menu_data.resume_button_entity, menu_data.quit_button_entity);
-    prev_button.insert(menu_data.quit_button_entity, menu_data.resume_button_entity);
+    prev_button.insert(menu_data.restart_button_entity, menu_data.resume_button_entity);
+    prev_button.insert(menu_data.main_menu_button_entity, menu_data.restart_button_entity);
+    prev_button.insert(menu_data.quit_button_entity, menu_data.main_menu_button_entity);
 
     let mut pressed_buttons = game_controller::get_pressed_buttons(&axes, &buttons, gamepad);
     if *gamepad_buffer < 0.25 {
@@ -133,7 +226,6 @@ pub fn pause_menu(
     if !pressed_buttons.is_empty() {
         *gamepad_buffer = 0.0;
     }
-
 
     // keyboard and gamepad
     if keyboard_input.just_pressed(KeyCode::Return) || keyboard_input.just_pressed(KeyCode::Space)
@@ -163,6 +255,13 @@ pub fn pause_menu(
     if let Some(selected_button) = selected_button {
         if selected_button == menu_data.resume_button_entity {
             state.pop().unwrap();
+        }
+        if selected_button == menu_data.restart_button_entity {
+            state.set(crate::AppState::RestartLevel).unwrap();
+        }
+        if selected_button == menu_data.main_menu_button_entity {
+            level.current_level = 0;
+            state.set(crate::AppState::Loading).unwrap();
         }
         if selected_button == menu_data.quit_button_entity {
             exit.send(AppExit);

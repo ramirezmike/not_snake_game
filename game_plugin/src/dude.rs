@@ -18,16 +18,18 @@ static SCALE: f32 = 0.36;
 static SPEED: f32 = 0.1;
 
 pub struct SquashQueue {
-    squashes: Vec::<Squash>,
+    pub squashes: Vec::<Squash>,
 }
 
 pub struct Squash {
-    start_scale: Vec3,
-    target_scale: Vec3,
-    start_vertical: f32,
-    target_vertical: f32,
-    current_scale_time: f32,
-    finish_scale_time: f32,
+    pub start_scale: Vec3,
+    pub target_scale: Vec3,
+    pub start_vertical: f32,
+    pub target_vertical: f32,
+    pub start_horizontal: f32,
+    pub target_horizontal: f32,
+    pub current_scale_time: f32,
+    pub finish_scale_time: f32,
 }
 
 pub struct KillDudeEvent {
@@ -102,6 +104,7 @@ pub fn handle_squashes(
                 // squash/stretch time is done so make sure we're at target scale 
                 transform.scale = squash.target_scale;
                 transform.translation.y = squash.target_vertical;
+                transform.translation.z = squash.target_horizontal;
             } else {
                 // continue squashing/stretching
                 squash.current_scale_time += time.delta_seconds();
@@ -115,9 +118,11 @@ pub fn handle_squashes(
 
                 let mut target = transform.translation.clone();
                 target.y = squash.target_vertical;
+                target.z = squash.target_horizontal;
 
                 let mut start_vertical = transform.translation.clone();
                 start_vertical.y = squash.start_vertical;
+                start_vertical.z = squash.start_horizontal;
 
                 let new_vertical = start_vertical.lerp(target,
                                                         squash.current_scale_time / squash.finish_scale_time);
@@ -149,6 +154,8 @@ fn hop_on_snake(
                         target_scale: Vec3::new(1.0, 1.0, 1.0),
                         start_vertical: 1.8,
                         target_vertical: 1.0,
+                        start_horizontal: 0.0,
+                        target_horizontal: 0.0,
                         current_scale_time: 0.0,
                         finish_scale_time: 0.20,
                     });
@@ -157,6 +164,8 @@ fn hop_on_snake(
                         target_scale: Vec3::new(1.0, 1.0, 1.0),
                         start_vertical: 1.0,
                         target_vertical: 1.8,
+                        start_horizontal: 0.0,
+                        target_horizontal: 0.0,
                         current_scale_time: 0.0,
                         finish_scale_time: 0.05,
                     });
@@ -285,7 +294,7 @@ fn player_input(
             }
 
             if movement_got_set {
-                squash_queue.squashes = Vec::new();
+                squash_queue.squashes.clear();
 
                 // squashes are done in reverse
                 squash_queue.squashes.push(Squash {
@@ -293,6 +302,8 @@ fn player_input(
                     target_scale: Vec3::new(1.0, 1.0, 1.0),
                     start_vertical: 2.5,
                     target_vertical: 1.0,
+                    start_horizontal: 0.0,
+                    target_horizontal: 0.0,
                     current_scale_time: 0.0,
                     finish_scale_time: 0.20,
                 });
@@ -301,11 +312,16 @@ fn player_input(
                     target_scale: Vec3::new(0.7, 1.4, 1.0),
                     start_vertical: 1.0,
                     target_vertical: 2.5,
+                    start_horizontal: 0.0,
+                    target_horizontal: 0.0,
                     current_scale_time: 0.0,
                     finish_scale_time: 0.05,
                 });
 
-                create_dust_event_writer.send(dust::CreateDustEvent { position: Position::from_vec(transform.translation) });
+                create_dust_event_writer.send(dust::CreateDustEvent { 
+                    position: Position::from_vec(transform.translation),
+                    move_away_from: move_dir,
+                });
             }
         }
     }
@@ -364,7 +380,6 @@ pub fn handle_kill_dude(
                 _ => ()
             }
         }
-
     }
 }
 

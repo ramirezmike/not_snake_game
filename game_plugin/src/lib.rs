@@ -47,6 +47,7 @@ pub enum AppState {
     LevelTitle,
     ChangingLevel,
     ResetLevel,
+    RestartLevel,
     Credits,
 }
 

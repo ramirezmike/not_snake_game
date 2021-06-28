@@ -1,5 +1,5 @@
 use bevy::{prelude::*,};
-use crate::{credits, level, dude, moveable};
+use crate::{credits, level, dude, moveable, environment};
 
 pub struct LevelOverEvent {}
 pub struct LevelOverText {} // TODO: change this to like "BetweenLevelEntity" or something marker or something
@@ -77,7 +77,7 @@ pub fn level_over_check(
     mut state: ResMut<State<crate::AppState>>,
     mut level_over_events: EventReader<LevelOverEvent>,
     mut query: Query<&mut Text>,
-    mut game_is_over: Local<bool>,
+    mut game_is_over: ResMut<environment::GameOver>,
     level: ResMut<level::Level>,
     time: Res<Time>, 
     mut commands: Commands,
@@ -93,7 +93,7 @@ pub fn level_over_check(
                     commands.entity(entity).remove::<moveable::Moveable>();
                 }
                 text.sections[0].value = "YOU WIN!".to_string();
-                *game_is_over = true;
+                game_is_over.0 = true;
                 credits_delay.0.reset();
             }
         } else {
@@ -101,7 +101,7 @@ pub fn level_over_check(
         }
     }
 
-    if *game_is_over && credits_delay.0.tick(time.delta()).finished() {
+    if game_is_over.0 && credits_delay.0.tick(time.delta()).finished() {
         credits_event_writer.send(crate::credits::CreditsEvent {});
     }
 }

@@ -7,8 +7,8 @@ TODO
 (Gameplay)
 - make food spawns more algorithmic and not random
 - make it so dude shrinks as he gets eaten but is still able to "escape" and let it be like 50% size or less you get eaten but before that you don't  
-- add a "snake chases food then chases tail" snake behavior
 - once a level is complete, if the player grabs a food maybe show the words "BONUS MODE" or something?
+    or just make it clear they've reached the target like the letters turn color or something and get big and then small
 
 (Audio)
 - make electric snake only audibly buzz when you're near it and have the buzz get louder the nearer you are
@@ -17,8 +17,6 @@ TODO
 - animate between level score display screen
 - make credits
 - make icon
-- add restart level in pause screen
-- add quit to menu in pause screen
 - make quit buttons not appear in web mode
 - make level title screen background match the next level
 - score display should be like a "stats" view that shows what the player did in the past level. Maybe only show stuff that is greater than 0?
@@ -30,7 +28,6 @@ TODO
     # of near-misses?
 
 (Animations)
-- add camera shake
 - make snake animate open/close mouth and have it open its mouth when it's near dude and try to close it when eating dude. There's like a weirdness where if the snake misses the dude it should re-open its mouth because it is still near the dude so like.. it has to bite but then quickly reopen all the way so it can bite again quickly
 
 (Bugs)
@@ -40,13 +37,14 @@ TODO
 (Release)
 - check licenses of everything used
 
-
 Stretch Goals
 - add lights around food? (maybe make level-configurable size)
+- add a "snake chases food then chases tail" snake behavior
 - add shaders on everything?
 - add Snake (Traditional) mode
 - add Snake (Action) mode
 - add Snake (Strategy) mode
+- add camera shake
 
 Sounds to add
 - landing?
@@ -99,6 +97,8 @@ Done
 - make it so dude can "cancel" a movement if they move in the opposite direction
 - make dude scale up and down
 - make dude have like... little trailing poofs or something as he moves around 
+- add quit to menu in pause screen
+- add restart level in pause screen
 
 
 To Run

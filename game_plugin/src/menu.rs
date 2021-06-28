@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy::app::Events;
 use bevy::app::AppExit;
 use std::collections::HashMap;
-use crate::{game_controller, level};
+use crate::{game_controller, level, score};
 
 pub struct BylineText;
 pub struct MenuButton;
@@ -176,6 +176,7 @@ pub fn menu(
     mut bylines: Query<&mut Text, With<BylineText>>,
     mut menu_buttons: Query<&mut Visible, With<MenuButton>>,
     time: Res<Time>,
+    mut score: ResMut<score::Score>,
 ) {
     *gamepad_buffer += time.delta_seconds();
     let mut selected_button = None;
@@ -238,6 +239,7 @@ pub fn menu(
 
     if let Some(selected_button) = selected_button {
         if selected_button == menu_data.start_button_entity {
+            *score = score::Score::new();
             state.set(crate::AppState::LevelTitle).unwrap();
         }
         if selected_button == menu_data.quit_button_entity {

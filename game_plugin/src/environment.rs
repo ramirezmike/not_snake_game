@@ -23,12 +23,14 @@ pub struct Shadow;
 pub struct PlatformMesh;
 pub struct BlockMesh;
 pub struct LevelReady(pub bool);
+pub struct GameOver(pub bool);
 pub struct EnvironmentPlugin;
 impl Plugin for EnvironmentPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.insert_resource(Level::new())
            .insert_resource(PathFinder::new())
            .insert_resource(LevelReady(false))
+           .insert_resource(GameOver(false))
            .insert_resource(score::Score::new())
            .init_resource::<crate::pause::PauseButtonMaterials>()
            .init_resource::<dude::DudeMeshes>()
@@ -59,6 +61,7 @@ impl Plugin for EnvironmentPlugin {
            .add_system_set(
                SystemSet::on_enter(crate::AppState::Loading)
                          .with_system(load_assets.system())
+                         .with_system(cleanup_environment.system())
            )
            .add_system_set(
                SystemSet::on_update(crate::AppState::Loading)
@@ -95,6 +98,14 @@ impl Plugin for EnvironmentPlugin {
            .add_system_set(
                SystemSet::on_enter(crate::AppState::ResetLevel)
                    .with_system(cleanup_change_level_screen.system())
+           )
+           .add_system_set(
+               SystemSet::on_enter(crate::AppState::RestartLevel)
+                   .with_system(cleanup_environment.system())
+           )
+           .add_system_set(
+               SystemSet::on_update(crate::AppState::RestartLevel)
+                   .with_system(restart_level.system())
            )
            .add_system_set(
                SystemSet::on_enter(crate::AppState::Pause)
@@ -182,6 +193,19 @@ pub fn material_test(
     }
 }
 */
+
+pub fn restart_level(
+    mut state: ResMut<State<crate::AppState>>,
+    mut timer: Local<f32>,
+    time: Res<Time>,
+) {
+    *timer += time.delta_seconds();
+
+    if *timer > 1.0 {
+        state.set(crate::AppState::InGame).unwrap();
+        *timer = 0.0; 
+    }
+}
 
 pub struct Shrink;
 pub fn shrink_shrinkables(
@@ -533,6 +557,7 @@ pub fn load_level(
                         let block_entity =
                             commands.spawn_bundle(PbrBundle {
                               transform: Transform::from_xyz(x as f32, y as f32, z as f32),
+                                material: block_material.clone(),
                               ..Default::default()
                             })
                             .with_children(|parent| {
