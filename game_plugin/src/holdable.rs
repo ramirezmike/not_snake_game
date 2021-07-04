@@ -145,7 +145,7 @@ pub fn update_held(
     for (mut holdable_transform, being_held) in holdables.iter_mut() {
         if let Ok((_entity, transform)) = holders.get(being_held.held_by) {
             holdable_transform.translation.x = transform.translation.x;
-            holdable_transform.translation.y = transform.translation.y + 0.4;
+            holdable_transform.translation.y = transform.translation.y + 0.8;
             holdable_transform.translation.z = transform.translation.z;
         }
     }

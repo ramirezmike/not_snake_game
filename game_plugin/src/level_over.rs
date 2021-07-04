@@ -51,6 +51,7 @@ pub fn displaying_title (
     mut state: ResMut<State<crate::AppState>>,
     time: Res<Time>,
     mut query: Query<&mut Text>,
+    mut clear_color: ResMut<ClearColor>,
     mut level: ResMut<level::Level>,
     mut timer: Local<f32>,
     mut text_set: Local<bool>,
@@ -62,6 +63,17 @@ pub fn displaying_title (
         }
         *text_set = true;
     }
+
+    // change background color gradually to next level's color
+    let current_palette = &level.get_palette();
+    let target_palette = &level.get_next_level_palette();
+    let current_color = Color::hex(current_palette.base.clone()).unwrap();
+    let target_color = Color::hex(target_palette.base.clone()).unwrap();
+    let target = Vec3::new(target_color.r(), target_color.g(), target_color.b());
+    let start = Vec3::new(current_color.r(), current_color.g(), current_color.b());
+    let new_color = start.lerp(target, *timer);
+
+    clear_color.0 = Color::rgb(new_color.x, new_color.y, new_color.z); 
 
     *timer += time.delta_seconds();
 

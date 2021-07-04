@@ -116,6 +116,16 @@ impl Level {
         }
     }
 
+    pub fn get_next_level_palette(&self) -> Palette {
+        if let Some(info) = self.level_info.get(self.current_level + 1) {
+            if let Some(palette) = &info.palette {
+                return palette.clone();
+            }
+        } 
+
+        self.palette.clone()
+    }
+
     pub fn get_palette(&self) -> Palette {
         if let Some(info) = self.level_info.get(self.current_level) {
             if let Some(palette) = &info.palette {
@@ -291,7 +301,10 @@ impl Level {
         }
     }
 
-    pub fn get_random_standable(&self) -> Position {
+    // do something here where we take dude position and snake position
+    // and then sort by distance of both and then split the array in half
+    // and then pick a random spot from the further half
+    pub fn get_random_standable(&self, away_froms: &Option::<Vec::<Position>>) -> Position {
         let mut standables = vec!();
 
         for x in 0..self.width() {
@@ -306,6 +319,23 @@ impl Level {
                 }
             }
         }
+
+        if let Some(away_froms) = away_froms {
+            // return one distances summed up across all the away_froms
+            standables.sort_by_key(|standable| {
+                let mut distance = 0.0;
+                for away_from in away_froms.iter() {
+                    let away_from = Vec3::new(away_from.x as f32, away_from.y as f32, away_from.z as f32);
+                    distance += Vec3::new(standable.0 as f32, standable.1 as f32, standable.2 as f32).distance(away_from);
+                }
+
+                (distance / away_froms.len() as f32) as i32
+            });
+
+            // grab latter half which should be further away from every position in away_froms
+            standables = standables.drain((standables.len() / 2)..).collect();
+        }
+
         let (x, y, z) = standables.choose(&mut rand::thread_rng()).expect("Nothing was standable");
 
         Position { x: *x, y: *y, z: *z }

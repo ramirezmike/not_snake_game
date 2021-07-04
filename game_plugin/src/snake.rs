@@ -69,6 +69,9 @@ impl Enemy {
 pub struct Snake;
 pub struct SnakeBody;
 pub struct SnakeInnerMesh;
+pub struct SnakeVisibleMesh {
+    parent: Entity
+}
 pub struct KillSnakeEvent(pub Entity);
 #[derive(Clone)]
 struct SnakeMovement {
@@ -89,13 +92,17 @@ pub fn generate_snake_body(
     commands: &mut Commands,
     meshes: &ResMut<EnemyMeshes>, 
     transform: Transform,
+    rotation: Option::<Quat>,
     is_electric: bool,
     game_shaders: &Res<environment::GameShaders>,
 ) -> Entity {
     commands.spawn_bundle(PbrBundle {
                 transform: {
                     let mut t = transform.clone();
-                    t.translation.x += 1.0;
+                    if rotation.is_none() {
+                        // is the first body part so just spawn it behind head
+                        t.translation.x += 1.0;
+                    }
                     //t.rotation = Quat::from_axis_angle(Vec3::new(0.0, 1.0, 0.0), std::f32::consts::PI/2.0);
                     t
                 },
@@ -105,8 +112,16 @@ pub fn generate_snake_body(
             .insert(SnakeBody)
             .insert(Snake)
             .with_children(|parent|  {
+                let parent_entity = parent.parent_entity();
                 parent.spawn_bundle(PbrBundle {
-                    transform: Transform::from_translation(Vec3::new(0.0, INNER_MESH_VERTICAL_OFFSET, 0.0)),
+                    transform: {
+                        let mut t = Transform::from_translation(Vec3::new(0.0, INNER_MESH_VERTICAL_OFFSET, 0.0));
+                        if let Some(rotation) = rotation {
+                            t.rotation = rotation;
+                        }
+
+                        t
+                    },
                     ..Default::default()
                 }).insert(SnakeInnerMesh)
                 .with_children(|inner_parent| {
@@ -136,7 +151,7 @@ pub fn generate_snake_body(
                             t
                         },
                         ..Default::default()
-                    });
+                    }).insert(SnakeVisibleMesh { parent: parent_entity });
                 });
             }).id()
 }
@@ -157,7 +172,7 @@ pub fn spawn_enemy(
     transform.apply_non_uniform_scale(Vec3::new(0.50, 0.50, 0.50)); 
     transform.rotate(Quat::from_axis_angle(Vec3::new(0.0, 1.0, 0.0), std::f32::consts::FRAC_PI_2));
 
-    let body_part_entity = generate_snake_body(commands, meshes, transform, is_electric, &game_shaders);
+    let body_part_entity = generate_snake_body(commands, meshes, transform, None, is_electric, &game_shaders);
         
     let snake_speed = level.snake_speed();
     let enemy_entity = 
@@ -185,6 +200,7 @@ pub fn spawn_enemy(
                 current_path: None,
             })
             .with_children(|parent|  {
+                let parent_entity = parent.parent_entity();
                 parent.spawn_bundle(PbrBundle {
                     transform: Transform::from_translation(Vec3::new(0.0, INNER_MESH_VERTICAL_OFFSET, 0.0)),
                     ..Default::default()
@@ -210,7 +226,7 @@ pub fn spawn_enemy(
                         mesh: meshes.head.clone(),
                         material: meshes.material.clone(),
                         ..Default::default()
-                    });
+                    }).insert(SnakeVisibleMesh { parent: parent_entity });
                 });
             }).id();
     level.set(position.x as i32, position.y as i32, position.z as i32, Some(GameObject::new(enemy_entity, EntityType::EnemyHead)));
@@ -252,8 +268,9 @@ pub fn add_body_parts(
             let mut transform = Transform::from_translation(last_position.translation);
             transform.rotate(Quat::from_axis_angle(Vec3::new(0.0, 1.0, 0.0), std::f32::consts::FRAC_PI_2));
             transform.apply_non_uniform_scale(Vec3::new(0.50, 0.50, 0.50)); 
+            let rotation = snake_enemy.body_positions.last().unwrap().rotation;
 
-            let body_part_entity = generate_snake_body(&mut commands, &meshes, transform, snake_enemy.is_electric, &game_shaders);
+            let body_part_entity = generate_snake_body(&mut commands, &meshes, transform, Some(rotation), snake_enemy.is_electric, &game_shaders);
             snake_enemy.body_parts.push(body_part_entity);
         }
     }
@@ -267,7 +284,6 @@ pub fn update_enemy(
     mut level: ResMut<Level>,
     teleporters: Query<&teleporter::Teleporter>,
 
-    dude: Query<&Transform, (With<dude::Dude>, Without<SnakeInnerMesh>, Without<Enemy>)>,
     keyboard_input: Res<Input<KeyCode>>,
     mut is_active: Local<bool>,
     mut timer: Local<f32>,
@@ -282,11 +298,9 @@ pub fn update_enemy(
 
     if !*is_active {
         for (entity, mut enemy, mut transform, mut position, children) in enemies.iter_mut() {
-//          if let Ok(dude_transform) = dude.single() {
-//              if dude_transform.translation.distance(transform.translation) <= 1.5 {
-//                  enemy.movement = None; // set to None so that we detect in the next step to move toward dude
-//              }
-//          }
+            if enemy.is_dead {
+                continue;
+            }
 
             if enemy.movement.is_none() {
                 let is_ai_controlled = true;
@@ -607,8 +621,7 @@ pub fn handle_kill_snake(
     mut kill_snake_event_reader: EventReader<KillSnakeEvent>,
     mut snakes: Query<(&mut Enemy, &mut Transform, &mut Position), (With<Snake>, Without<SnakeBody>)>,
     snake_part_transforms: Query<&Transform, With<SnakeBody>>,
-    snake_part_meshes: Query<&Children, Or<(With<SnakeBody>, With<Snake>)>>,
-    mut visibles: Query<&mut Visible>,
+    mut snake_part_meshes: Query<(&SnakeVisibleMesh, &mut Visible)>, 
     mut dying_snakes: Local<Vec::<(Entity, u32, Timer)>>, // entity, number of flashes, timer
     time: Res<Time>,
     mut level: ResMut<Level>,
@@ -617,7 +630,8 @@ pub fn handle_kill_snake(
     for snake_entity in kill_snake_event_reader.iter() {
         println!("Received kill event");
         dying_snakes.push((snake_entity.0, 0, Timer::from_seconds(0.5, true)));
-        if let Ok((snake, _, position)) = snakes.get_mut(snake_entity.0) {
+        if let Ok((mut snake, _, position)) = snakes.get_mut(snake_entity.0) {
+            snake.is_dead = true;
             for body_part in snake.body_parts.iter() {
                 dying_snakes.push((*body_part, 0, Timer::from_seconds(0.5, true)));
                 if let Ok(transform) = snake_part_transforms.get(*body_part) {
@@ -637,44 +651,24 @@ pub fn handle_kill_snake(
                            .partition(|(_, flash_times, _)| *flash_times > flash_limit);
 
     for dead_snake in dead {
-        if let Ok((mut _snake_head, mut _transform, mut _position)) = snakes.get_mut(dead_snake.0) {
-//TODO: maybe this should be removed? Let the snake stay dead until next level
-//          println!("Finding new spot for head");
-//          // move the head to a new spot
-//          snake_head.body_parts = vec!();
-//          let random_standable = level.get_random_standable();
-//          level.set(position.x, position.y, position.z, None);
-
-//          *position = random_standable;
-//          transform.translation.x = random_standable.x as f32;
-//          transform.translation.y = random_standable.y as f32;
-//          transform.translation.z = random_standable.z as f32;
-//          level.set(random_standable.x as i32, 
-//                    random_standable.y as i32, 
-//                    random_standable.z as i32, 
-//                    Some(GameObject::new(dead_snake.0, EntityType::Enemy)));
-//          snake_head.is_dead = false;
-        } else {
-            println!("despawning tail");
-            commands.entity(dead_snake.0).despawn_recursive();
-        }
+        println!("despawning snake");
+        commands.entity(dead_snake.0).despawn_recursive();
     }
+
+    flashing.sort_by_key(|x| x.0);
+    flashing.dedup_by_key(|x| x.0);
 
     // make dying snakes flash
     for mut dying_snake in flashing.iter_mut() {
-        if let Ok(snake_part) = snake_part_meshes.get(dying_snake.0) {
-            if dying_snake.2.tick(time.delta()).finished() {
-                for child in snake_part.iter() {
-                    if let Ok(mut child_mesh) = visibles.get_mut(*child) {
-                        println!("flashing entity");
-                        child_mesh.is_visible = !child_mesh.is_visible;
-                        dying_snake.1 += 1;
-                        dying_snake.2.reset();
-                    }
+        for (snake_part_mesh, mut visible) in snake_part_meshes.iter_mut() {
+            if snake_part_mesh.parent == dying_snake.0 {
+                if dying_snake.2.tick(time.delta()).finished() {
+                    visible.is_visible = !visible.is_visible;
+                    dying_snake.1 += 1;
+                    dying_snake.2.reset();
                 }
+                continue;
             }
-        } else {
-            dying_snake.1 = flash_limit; // couldn't find the part for some reason so just let it disappear next iteration
         }
     }
 
@@ -1202,6 +1196,18 @@ pub fn calculate_new_rotation(
             }
 
             result 
+        }
+    }
+}
+
+pub fn debug_trigger_snake_death(
+    keyboard_input: Res<Input<KeyCode>>,
+    mut kill_snake_event_writer: EventWriter<KillSnakeEvent>,
+    snakes: Query<Entity, With<Snake>>,
+) {
+    if keyboard_input.just_pressed(KeyCode::X) {
+        for snake_entity in snakes.iter() {
+            kill_snake_event_writer.send(KillSnakeEvent(snake_entity));
         }
     }
 }

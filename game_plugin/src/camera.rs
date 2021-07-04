@@ -360,13 +360,13 @@ pub fn handle_player_death(
     mut mouth_pieces: Query<(&CameraMouth, &mut Transform), (Without<CameraBolt>, Without<CameraSpike>)>,
     mut bolt_pieces: Query<(&CameraBolt, &mut Transform), (Without<CameraMouth>, Without<CameraSpike>)>,
     mut spike_pieces: Query<(&CameraSpike, &mut Transform), (Without<CameraMouth>, Without<CameraBolt>)>,
-    mut kill_dude_event_reader: EventReader<dude::KillDudeEvent>,
+    mut dude_died_event_reader: EventReader<dude::DudeDiedEvent>,
     mut mouth_movement: ResMut<CameraMouthMovement>, 
     mut bolt_movement: ResMut<CameraBoltMovement>, 
     mut spike_movement: ResMut<CameraSpikeMovement>, 
 ) {
     if !mouth_movement.moving && !bolt_movement.moving && !spike_movement.moving {
-        for kill_dude_event in kill_dude_event_reader.iter() {
+        for kill_dude_event in dude_died_event_reader.iter() {
             match kill_dude_event.death_type {
                 dude::DudeDeath::Eaten => mouth_movement.moving = true, 
                 dude::DudeDeath::Electric => bolt_movement.moving = true, 

@@ -259,7 +259,7 @@ impl PathFinder {
         let max_attempts = 10;
         // just pick somewhere randomly
         while path.is_none() && attempts < max_attempts {
-            let random_goal = level.get_random_standable();
+            let random_goal = level.get_random_standable(&None);
             let goal_index = self.indices[random_goal.x as usize][random_goal.y as usize][random_goal.z as usize];
             path = astar(&self.graph, start_index, 
                          |finish| finish == goal_index, 
@@ -270,7 +270,7 @@ impl PathFinder {
             if attempts >= max_attempts {
                 println!("Sending kill event");
                 // killing the snake since it's probably stuck
-                //kill_snake_event_writer.send(snake::KillSnakeEvent(requesting_entity));
+                kill_snake_event_writer.send(snake::KillSnakeEvent(requesting_entity));
             }
         }
 
@@ -517,7 +517,7 @@ pub fn update_path(
                 }
 
                 if seek_random && snake.current_path.is_none() {
-                    let random_goal = level.get_random_standable();
+                    let random_goal = level.get_random_standable(&None);
 
                     snake.current_path = path_find.update_path(&claimed_nodes, entity, &level, 
                                                                snake_position, &random_goal, 
@@ -527,7 +527,7 @@ pub fn update_path(
                 // TODO: might be better to just check if the snake can move in at least
                 //       one unit in a "forward" direction?
                 if snake.current_path.is_none() {
-                    snake.is_dead = true;
+                    kill_snake_event_writer.send(snake::KillSnakeEvent(entity));
                 } else {
                     let current_path = snake.current_path.as_ref().unwrap().1.iter().cloned();
                     if current_path.len() == 3 {

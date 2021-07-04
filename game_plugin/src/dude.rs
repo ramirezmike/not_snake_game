@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use crate::{Direction, EntityType, GameObject, level::Level, game_controller, sounds,
             dust, snake, environment, Position, holdable, block, moveable, facing::Facing};
+use std::collections::HashMap;
 
 pub struct DudePlugin;
 impl Plugin for DudePlugin {
@@ -14,7 +15,7 @@ impl Plugin for DudePlugin {
     }
 }
 
-static SCALE: f32 = 0.36;
+pub static SCALE: f32 = 0.36;
 static SPEED: f32 = 0.1;
 
 pub struct SquashQueue {
@@ -32,15 +33,22 @@ pub struct Squash {
     pub finish_scale_time: f32,
 }
 
+pub struct DudeDiedEvent {
+    pub death_type: DudeDeath 
+}
+
+#[derive(Copy, Clone)]
 pub struct KillDudeEvent {
     pub death_type: DudeDeath 
 }
 
+#[derive(Copy, Clone, PartialEq)]
 pub enum DudeDeath {
     Fall,
     Eaten,
     Electric
 }
+
 #[derive(Default)]
 pub struct DudeMeshes {
     pub step1: Handle<Mesh>,
@@ -339,7 +347,7 @@ fn push_block(
         if position.y == 0 {
             // dude has fallen. TODO This should be refactored when I move
             // the dude-relevant Moveable code into here. This is just 
-            // here for now since it's convenient
+            // here for now since it's convenient?
             kill_dude_event_writer.send(KillDudeEvent { death_type: DudeDeath::Fall });
         }
 
@@ -368,17 +376,57 @@ pub fn handle_kill_dude(
     mut commands: Commands,
     mut dudes: Query<Entity, With<Dude>>,
     mut kill_dude_event_reader: EventReader<KillDudeEvent>,
+    mut dude_died_event_writer: EventWriter<DudeDiedEvent>,
     mut sound_writer: EventWriter<sounds::SoundEvent>,
 ) {
     for event in kill_dude_event_reader.iter() {
         for entity in dudes.iter_mut() {
-            commands.entity(entity).remove::<moveable::Moveable>();
-            commands.entity(entity).remove::<Dude>();
             commands.entity(entity).insert(environment::Shrink { });
-            match event.death_type {
-                DudeDeath::Electric => sound_writer.send(sounds::SoundEvent(sounds::Sounds::Shock)),
-                _ => ()
+            if event.death_type == DudeDeath::Electric {
+                sound_writer.send(sounds::SoundEvent(sounds::Sounds::Shock));
             }
+            if event.death_type != DudeDeath::Eaten {
+                commands.entity(entity).remove::<moveable::Moveable>();
+                commands.entity(entity).remove::<Dude>();
+
+                dude_died_event_writer.send(DudeDiedEvent { death_type: event.death_type });
+            }
+        }
+    }
+}
+
+pub fn handle_snake_escapes(
+    mut commands: Commands,
+    mut dudes: Query<(Entity, &Position), (With<Dude>, With<environment::Shrink>)>,
+    mut timers: Local<HashMap::<Entity, (Position, f32)>>,
+    mut dude_died_event_writer: EventWriter<DudeDiedEvent>,
+    level: Res<Level>,
+    time: Res<Time>,
+) {
+    for (entity, position) in dudes.iter_mut() {
+        if let Some((pos, timer)) = &mut timers.get_mut(&entity) {
+            *timer += time.delta_seconds();
+
+            if position != pos {
+                // dude moved out of the way yay, remove shrink
+                commands.entity(entity).remove::<environment::Shrink>();
+                commands.entity(entity).insert(environment::Grow { });
+                timers.remove(&entity);
+                continue;
+            } 
+
+            println!("Timer: {:?}", *timer);
+            if *timer > 0.15 {
+                println!("KILL DUDE");
+                // actually kill dude
+                timers.remove(&entity);
+                commands.entity(entity).remove::<moveable::Moveable>();
+                commands.entity(entity).remove::<Dude>();
+                dude_died_event_writer.send(DudeDiedEvent { death_type: DudeDeath::Eaten });
+            }
+        } else {
+            // start tracking the shrinkage 
+            timers.insert(entity, (position.clone(), 0.0));
         }
     }
 }

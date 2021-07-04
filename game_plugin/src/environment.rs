@@ -55,6 +55,7 @@ impl Plugin for EnvironmentPlugin {
 //           .add_plugin(LogDiagnosticsPlugin::default())
            .add_plugin(FrameTimeDiagnosticsPlugin::default())
            .add_event::<dude::KillDudeEvent>()
+           .add_event::<dude::DudeDiedEvent>()
            .add_event::<dust::CreateDustEvent>()
            .add_event::<food::FoodEatenEvent>()
            .add_event::<level::NextLevelEvent>()
@@ -160,6 +161,7 @@ impl Plugin for EnvironmentPlugin {
                .with_system(dude::handle_squashes.system())
                .with_system(camera::handle_player_death.system())
                .with_system(dude::handle_kill_dude.system())
+               .with_system(dude::handle_snake_escapes.system())
                .with_system(path_find::update_graph.system().label("graph_update"))
                .with_system(path_find::update_path.system().after("graph_update"))
 //             .with_system(path_find::draw_edges.system())
@@ -175,8 +177,10 @@ impl Plugin for EnvironmentPlugin {
                .with_system(animate_shader.system())
                .with_system(snake::detect_dude_on_electric_snake.system())
                .with_system(shrink_shrinkables.system())
+               .with_system(grow_growables.system())
                .with_system(dust::handle_create_dust_event.system())
                .with_system(dust::animate_dust.system())
+               .with_system(snake::debug_trigger_snake_death.system())
            );
 //        println!("{}", schedule_graph(&app.app.schedule));
 
@@ -204,6 +208,23 @@ pub fn restart_level(
     if *timer > 1.0 {
         state.set(crate::AppState::InGame).unwrap();
         *timer = 0.0; 
+    }
+}
+
+pub struct Grow;
+pub fn grow_growables(
+    mut commands: Commands,
+    mut growables: Query<(Entity, &mut Transform), With<Grow>>,
+    time: Res<Time>,
+) {
+    for (entity, mut transform) in growables.iter_mut() {
+        if transform.scale.x >= dude::SCALE {
+            transform.scale = Vec3::new(dude::SCALE, dude::SCALE, dude::SCALE);
+            commands.entity(entity).remove::<Grow>();
+            continue;
+        }
+
+        transform.scale += Vec3::splat(time.delta_seconds() * 0.3);
     }
 }
 

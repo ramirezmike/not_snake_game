@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use crate::{level, level::Level, Position, EntityType, GameObject, environment::HudFoodMesh};
+use crate::{level, level::Level, Position, EntityType, GameObject, environment::HudFoodMesh, dude, snake};
 
 pub struct Food { 
     pub is_bonus: bool
@@ -31,7 +31,7 @@ pub fn spawn_food(
     let food_color = Color::rgba(food_color.r(), food_color.g(), food_color.b(), 1.0);
     let shaded_food_color = Color::rgba(food_color.r(), food_color.g(), food_color.b(), 0.4);
 
-    let position = if position.is_some() { position.unwrap() } else { level.get_random_standable() };
+    let position = if position.is_some() { position.unwrap() } else { level.get_random_standable(&None) };
     let transform = Transform::from_xyz(position.x as f32, position.y as f32, position.z as f32);
     let cube = meshes.add(Mesh::from(shape::Cube { size: 0.1 }));
     let food_id = 
@@ -191,10 +191,27 @@ pub fn handle_food_eaten(
     mut level: ResMut<Level>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
+    dudes: Query<&Position, With<dude::Dude>>,
+    snakes: Query<&Position, (With<snake::Snake>, Without<snake::SnakeBody>)>,
 ) {
+    let mut away_froms = None;
     for event in food_eaten_event_reader.iter() {
         if level.is_food_random() && !event.1 {
-            let new_position = level.get_random_standable();
+            if away_froms.is_none() {
+                let mut positions = Vec::new();
+                for dude_position in dudes.iter() {
+                    positions.push(dude_position.clone());
+                }
+
+                for snake_position in snakes.iter() {
+                    positions.push(snake_position.clone());
+                }
+
+                println!("Positions: {:?}", positions.len());
+                away_froms = Some(positions);
+            }
+
+            let new_position = level.get_random_standable(&away_froms);
             spawn_food(&mut commands, &mut level, &mut meshes, &mut materials, Some(new_position), true, false);
         } 
     }
