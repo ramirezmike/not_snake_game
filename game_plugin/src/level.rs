@@ -54,6 +54,7 @@ pub struct LevelInfo {
     palette: Option::<Palette>,
     snake_speed: Option::<f32>,
     snake_target: Option::<snake::SnakeTarget>, 
+    snake_min_length: Option::<usize>,
     camera_x: f32,
     camera_y: f32,
     camera_z: f32,
@@ -175,6 +176,10 @@ impl Level {
 
     pub fn snake_speed(&self) -> f32 {
         self.level_info[self.current_level].snake_speed.unwrap_or(0.5)
+    }
+
+    pub fn min_snake_length(&self) -> Option::<usize> {
+        self.level_info[self.current_level].snake_min_length
     }
 
     pub fn snake_target(&self) -> snake::SnakeTarget {

@@ -22,7 +22,7 @@ pub fn animate_dust(
         transform.rotate(Quat::from_rotation_y(time.delta_seconds()));
         transform.scale *= 1.0 - (time.delta_seconds() * 0.9);
 
-        let target = transform.translation.lerp(dust.move_toward, time.delta_seconds() * 0.2);
+        let target = transform.translation.lerp(dust.move_toward, time.delta_seconds() * 0.3);
         if !target.is_nan() {
             transform.translation = target;
         }

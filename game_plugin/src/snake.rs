@@ -255,6 +255,29 @@ pub fn debug_add_body_part(
     *timer += time.delta_seconds();
 }
 
+pub fn add_body_to_reach_level_min(
+    enemies: Query<(Entity, &Enemy)>,
+    mut body_part_writer: EventWriter<AddBodyPartEvent>,
+    level: Res<Level>,
+    time: Res<Time>,
+    mut timer: Local<f32>,
+) {
+    if let Some(min_snake_length) = level.min_snake_length() {
+        let snake_speed = level.snake_speed();
+        if *timer > snake_speed {
+            *timer = 0.0;
+
+            for (entity, enemy) in enemies.iter() {
+                if enemy.body_parts.len() <= min_snake_length {
+                    body_part_writer.send(AddBodyPartEvent { snake: entity });
+                }
+            }
+        }
+
+        *timer += time.delta_seconds();
+    }
+}
+
 pub fn add_body_parts(
     mut body_part_reader: EventReader<AddBodyPartEvent>,
     mut snake_enemies: Query<&mut Enemy>,

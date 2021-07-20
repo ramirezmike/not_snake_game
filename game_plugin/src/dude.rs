@@ -288,17 +288,19 @@ fn player_input(
                 moveable.set_movement(move_dir, moveable::MovementType::Step);
                 movement_got_set = true; 
             } else {
-                match (moveable.get_current_moving_direction().unwrap(), move_dir) {
-                    (Direction::Up, Direction::Down)    |
-                    (Direction::Down, Direction::Up)    |
-                    (Direction::Left, Direction::Right) |
-                    (Direction::Right, Direction::Left) =>  {
-                        println!("forcing movement!");
-                        moveable.force_movement_change(move_dir, moveable::MovementType::Step);
-                        movement_got_set = true; 
-                    },
-                    _ => ()
-                }
+                // Commented this code.. it was to let the player "cancel" their movement by moving backward
+                // but it doesn't really feel right so leaving it out for now
+//              match (moveable.get_current_moving_direction().unwrap(), move_dir) {
+//                  (Direction::Up, Direction::Down)    |
+//                  (Direction::Down, Direction::Up)    |
+//                  (Direction::Left, Direction::Right) |
+//                  (Direction::Right, Direction::Left) =>  {
+//                      println!("forcing movement!");
+//                      moveable.force_movement_change(move_dir, moveable::MovementType::Step);
+//                      movement_got_set = true; 
+//                  },
+//                  _ => ()
+//              }
             }
 
             if movement_got_set {

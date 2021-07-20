@@ -156,6 +156,7 @@ impl Plugin for EnvironmentPlugin {
 //               .with_system(light_thing.system())
 //              .with_system(snake::add_body_part.system())
                .with_system(snake::add_body_parts.system())
+               .with_system(snake::add_body_to_reach_level_min.system())
                .with_system(snake::update_following.system())
                .with_system(snake::handle_kill_snake.system())
                .with_system(dude::handle_squashes.system())
@@ -170,7 +171,7 @@ impl Plugin for EnvironmentPlugin {
 //               .with_system(update_text_position.system())
                .with_system(level::broadcast_changes.system().after("handle_moveables"))
                .with_system(food::animate_spawn_particles.system())
-               .with_system(sounds::play_sounds.system())
+               //.with_system(sounds::play_sounds.system())
                .with_system(game_controller::gamepad_connections.system())
                .with_system(update_fps.system())
                .with_system(camera::cull_blocks.system())
@@ -381,6 +382,7 @@ pub fn cleanup_environment(
     mut commands: Commands, 
     mut level_ready: ResMut<LevelReady>,
     entities: Query<(Entity, &EntityType)>,
+    dust: Query<Entity, With<dust::Dust>>,
     lights: Query<Entity, With<Light>>,
     platforms: Query<Entity, With<PlatformMesh>>,
     hud_entities: Query<Entity, With<hud_pass::HUDPass>>,
@@ -422,6 +424,10 @@ pub fn cleanup_environment(
     }
     
     for entity in texts.iter() {
+        commands.entity(entity).despawn_recursive();
+    }
+
+    for entity in dust.iter() {
         commands.entity(entity).despawn_recursive();
     }
 }
