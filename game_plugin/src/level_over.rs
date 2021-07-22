@@ -33,7 +33,7 @@ pub fn setup_level_over_screen(
                 "",
                 TextStyle {
                     font: asset_server.load("fonts/FiraSans-Bold.ttf"),
-                    font_size: 500.0,
+                    font_size: 300.0,
                     color: Color::WHITE,
                 },
                 // Note: You can use `Default::default()` in place of the `TextAlignment`

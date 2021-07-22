@@ -3,6 +3,7 @@ use crate::{level::Level, level::PositionChangeEvent, EntityType, dude::Dude, ca
             teleporter, environment::LevelReady, Position, snake, food::Food,};
 use petgraph::{Graph, graph::NodeIndex, graph::EdgeIndex};
 use petgraph::algo::astar;
+use petgraph::algo::has_path_connecting;
 //use bevy_prototype_debug_lines::*; 
 
 /*
@@ -66,6 +67,21 @@ impl PathFinder {
         }
     }
 
+    pub fn get_any_connected_position(&self, pos: &Position) -> Option::<Position> {
+        let start_index = self.indices[pos.x as usize][pos.y as usize][pos.z as usize];
+
+        let all_nodes = self.graph.node_indices();
+        for node in all_nodes {
+            if node != start_index {
+                if has_path_connecting(&self.graph, node, start_index, None) {
+                    return Some(self.get_position(node));
+                }
+            }
+        }
+
+        None
+    }
+
     // this should just get called for everything 
     fn update_position_in_graph(&mut self, position: &Position, level: &Res<Level>) {
         if !level.is_inbounds(position.x, position.y, position.z) {
@@ -104,7 +120,7 @@ impl PathFinder {
                         Some(game_object) => {
                             match game_object.entity_type {
                                 EntityType::EnemyHead => 99,
-                                EntityType::Enemy => 3, // try to prevent snakes from climbing on themselves
+                                EntityType::Enemy => 30, // try to prevent snakes from climbing on themselves
                                 _ => 1
                             }
                         },
@@ -119,7 +135,9 @@ impl PathFinder {
 
         let mut handle_general_case = || {
             if level.is_position_enterable(*position) || level.is_position_entity(position) {
-                if level.is_position_standable(*position) {
+                let under_position = Position { x: position.x, y: position.y - 1, z: position.z };
+                let position_is_above_ignore = level.is_position_type(under_position, Some(EntityType::PathfindIgnore));
+                if level.is_position_standable(*position) || position_is_above_ignore {
                     // up
                     if level.is_inbounds(position.x + 1, position.y, position.z)
                     && (level.is_enterable(position.x + 1, position.y, position.z) 
@@ -153,10 +171,14 @@ impl PathFinder {
                         self.graph.update_edge(self.indices[x][y - 1][z], self.indices[x][y][z], weight);
                     }
                 } else {
-                    let up_is_standable = level.is_standable(position.x + 1, position.y, position.z);
-                    let down_is_standable = level.is_standable(position.x - 1, position.y, position.z);
-                    let left_is_standable = level.is_standable(position.x, position.y, position.z - 1);
-                    let right_is_standable = level.is_standable(position.x, position.y, position.z + 1);
+                    let up_is_standable = level.is_standable(position.x + 1, position.y, position.z) 
+                                        || level.is_type(position.x + 1, position.y - 1, position.z, Some(EntityType::PathfindIgnore));
+                    let down_is_standable = level.is_standable(position.x - 1, position.y, position.z)
+                                        || level.is_type(position.x - 1, position.y - 1, position.z, Some(EntityType::PathfindIgnore));
+                    let left_is_standable = level.is_standable(position.x, position.y, position.z - 1)
+                                        || level.is_type(position.x, position.y - 1, position.z - 1, Some(EntityType::PathfindIgnore));
+                    let right_is_standable = level.is_standable(position.x, position.y, position.z + 1)
+                                        || level.is_type(position.x, position.y - 1, position.z + 1, Some(EntityType::PathfindIgnore));
 
                     // Below
                     if level.is_inbounds(position.x, position.y - 1, position.z) 
@@ -232,7 +254,7 @@ impl PathFinder {
                         self.graph.update_edge(self.indices[x][y - 1][z], self.indices[x][y][z], weight);
                     }
                 },
-                EntityType::Block | EntityType::Enemy | EntityType::EnemyHead => (),
+                EntityType::PathfindIgnore | EntityType::Block | EntityType::Enemy | EntityType::EnemyHead => (),
                 _ => handle_general_case()
             }
         } else {
@@ -259,7 +281,7 @@ impl PathFinder {
         let max_attempts = 10;
         // just pick somewhere randomly
         while path.is_none() && attempts < max_attempts {
-            let random_goal = level.get_random_standable(&None);
+            let random_goal = level.get_random_standable(&None, true);
             let goal_index = self.indices[random_goal.x as usize][random_goal.y as usize][random_goal.z as usize];
             path = astar(&self.graph, start_index, 
                          |finish| finish == goal_index, 
@@ -268,9 +290,8 @@ impl PathFinder {
             attempts += 1; 
 
             if attempts >= max_attempts {
-                println!("Sending kill event");
-                // killing the snake since it's probably stuck
-                kill_snake_event_writer.send(snake::KillSnakeEvent(requesting_entity));
+                // give up
+                break;
             }
         }
 
@@ -517,7 +538,7 @@ pub fn update_path(
                 }
 
                 if seek_random && snake.current_path.is_none() {
-                    let random_goal = level.get_random_standable(&None);
+                    let random_goal = level.get_random_standable(&None, true);
 
                     snake.current_path = path_find.update_path(&claimed_nodes, entity, &level, 
                                                                snake_position, &random_goal, 
@@ -527,8 +548,24 @@ pub fn update_path(
                 // TODO: might be better to just check if the snake can move in at least
                 //       one unit in a "forward" direction?
                 if snake.current_path.is_none() {
-                    kill_snake_event_writer.send(snake::KillSnakeEvent(entity));
+                    // just find something!
+                    if let Some(position) = path_find.get_any_connected_position(snake_position) {
+                        snake.current_path = path_find.update_path(&claimed_nodes, entity, &level, 
+                                                                   snake_position, &position, 
+                                                                   &mut kill_snake_event_writer);
+                    }
+
+                    if snake.current_path.is_none() {
+                        snake.death_count += 1;
+
+                        if snake.death_count > 120 {
+                            // rip bruh
+                            println!("Killing snake");
+                            kill_snake_event_writer.send(snake::KillSnakeEvent(entity));
+                        }
+                    }
                 } else {
+                    snake.death_count = 0;
                     let current_path = snake.current_path.as_ref().unwrap().1.iter().cloned();
                     if current_path.len() == 3 {
                         claimed_targets.push(current_path.clone().last().unwrap()); 

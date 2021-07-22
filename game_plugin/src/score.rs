@@ -68,7 +68,7 @@ pub fn setup_score_screen(
                 "",
                 TextStyle {
                     font: asset_server.load("fonts/FiraSans-Bold.ttf"),
-                    font_size: 500.0,
+                    font_size: 300.0,
                     color: Color::WHITE,
                 },
                 // Note: You can use `Default::default()` in place of the `TextAlignment`
@@ -100,7 +100,7 @@ pub fn setup_score_screen(
                     "continue".to_string(),
                     TextStyle {
                         font: asset_server.load("fonts/FiraSans-Bold.ttf"),
-                        font_size: 200.0,
+                        font_size: 100.0,
                         color: Color::rgba(0.8, 0.8, 0.8, 1.0),
                     },
                     TextAlignment {

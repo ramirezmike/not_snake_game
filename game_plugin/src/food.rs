@@ -31,7 +31,7 @@ pub fn spawn_food(
     let food_color = Color::rgba(food_color.r(), food_color.g(), food_color.b(), 1.0);
     let shaded_food_color = Color::rgba(food_color.r(), food_color.g(), food_color.b(), 0.4);
 
-    let position = if position.is_some() { position.unwrap() } else { level.get_random_standable(&None) };
+    let position = if position.is_some() { position.unwrap() } else { level.get_random_standable(&None, false) };
     let transform = Transform::from_xyz(position.x as f32, position.y as f32, position.z as f32);
     let cube = meshes.add(Mesh::from(shape::Cube { size: 0.1 }));
     let food_id = 
@@ -211,7 +211,7 @@ pub fn handle_food_eaten(
                 away_froms = Some(positions);
             }
 
-            let new_position = level.get_random_standable(&away_froms);
+            let new_position = level.get_random_standable(&away_froms, false);
             spawn_food(&mut commands, &mut level, &mut meshes, &mut materials, Some(new_position), true, false);
         } 
     }

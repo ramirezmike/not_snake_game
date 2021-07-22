@@ -645,6 +645,10 @@ pub fn load_level(
 
                         level.set(x as i32, y as i32, z as i32, Some(GameObject::new(entity, EntityType::WinFlag)));
                     },
+                    7 => {
+                        let entity = commands.spawn_bundle(PbrBundle { ..Default::default() }).id();
+                        level.set(x as i32, y as i32, z as i32, Some(GameObject::new(entity, EntityType::PathfindIgnore)));
+                    },
                     11 => dude::spawn_player(&mut commands, &dude_meshes, &mut level, x, y, z),
                     item @ 5 | item @ 10 => {
                         snake::spawn_enemy(&mut commands, &enemy_meshes, &mut level, &game_shaders, x, y, z, item == 10);
@@ -653,7 +657,7 @@ pub fn load_level(
                             audio_state.play_electricity(&audio);
                         }
                     },
-                    item @ 4 | item @ 6 | item @ 7 => {
+                    item @ 4 | item @ 6 | item @ 12 => {
                         food::spawn_food(&mut commands, &mut level, &mut meshes, &mut materials, 
                                          Some(Position{ x: x as i32, y: y as i32, z: z as i32 }), item == 6 || item == 4, item == 4)
                     },

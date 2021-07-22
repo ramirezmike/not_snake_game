@@ -20,6 +20,7 @@ pub enum CameraBehavior {
     FollowY(f32),
     FollowZ(f32),
     LooseFollowX(f32),
+    MoveToX(f32),
 }
 
 #[derive(Default)]
@@ -127,7 +128,13 @@ fn update_camera(
                     CameraBehavior::LooseFollowX(offset) => {
                         camera_transform.translation.x += 
                             (target_transform.translation.x - camera_transform.translation.x + offset) 
-                           * 0.8 
+                           * 1.8 
+                           * time.delta_seconds();
+                    },
+                    CameraBehavior::MoveToX(offset) => {
+                        camera_transform.translation.x += 
+                            (offset - camera_transform.translation.x) 
+                           * 1.8 
                            * time.delta_seconds();
                     },
                     CameraBehavior::FollowZ(offset) => {

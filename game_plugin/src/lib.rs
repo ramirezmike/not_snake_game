@@ -152,6 +152,7 @@ pub enum EntityType {
     Platform,
     WinFlag,
     Food,
+    PathfindIgnore,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Deserialize, TypeUuid)]

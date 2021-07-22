@@ -306,16 +306,15 @@ impl Level {
         }
     }
 
-    // do something here where we take dude position and snake position
-    // and then sort by distance of both and then split the array in half
-    // and then pick a random spot from the further half
-    pub fn get_random_standable(&self, away_froms: &Option::<Vec::<Position>>) -> Position {
+    pub fn get_random_standable(&self, away_froms: &Option::<Vec::<Position>>, allow_path_ignores: bool) -> Position {
         let mut standables = vec!();
 
         for x in 0..self.width() {
             for y in 0..self.height() {
                 for z in 0..self.length() {
-                    if self.is_standable(x as i32, y as i32, z as i32) 
+                    // I'm sorry, I'm sorry, I'm sorry, I'm sorry
+                    if (self.is_standable(x as i32, y as i32, z as i32) || 
+                        (!allow_path_ignores || (y > 0 && self.is_type(x as i32, (y - 1) as i32, z as i32, Some(EntityType::PathfindIgnore)))))
                     && (!self.is_inbounds(x as i32, y as i32 - 1, z as i32)
                         || !self.is_type(x as i32, y as i32 - 1, z as i32, Some(EntityType::Enemy)))
                     && self.is_type(x as i32, y as i32, z as i32, None) {
@@ -375,7 +374,9 @@ impl Level {
     }
 
     pub fn is_enterable_with_vec(&self, position: Vec3) -> bool {
-        self.is_type_with_vec(position, None) || self.is_collectable_with_vec(position)
+        self.is_type_with_vec(position, None) 
+        || self.is_collectable_with_vec(position) 
+        || self.is_type_with_vec(position, Some(EntityType::PathfindIgnore))
     }
 
     pub fn is_position_enterable(&self, position: Position) -> bool {
@@ -383,7 +384,8 @@ impl Level {
     }
 
     pub fn is_enterable(&self, x: i32, y: i32, z: i32) -> bool {
-        y != 0 && (self.is_type(x, y, z, None) || self.is_collectable(x, y, z))
+        y != 0 && (self.is_type(x, y, z, Some(EntityType::PathfindIgnore)) 
+                  || self.is_type(x, y, z, None) || self.is_collectable(x, y, z))
     }
 
     pub fn is_position_entity(&self, position: &Position) -> bool {
