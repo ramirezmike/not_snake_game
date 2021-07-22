@@ -132,6 +132,28 @@ pub fn lift_holdable(
                         }
                     }
                     
+                    // check under holder?
+                    if holder.holding.is_none() {
+                        if let Some(holder_position) = holder_position {
+                            let holdee_position = Position { 
+                                                    x: holder_position.x, 
+                                                    y: holder_position.y - 1, 
+                                                    z: holder_position.z 
+                                              }; 
+                            if level.is_position_type(holdee_position, Some(EntityType::Block)) {
+                                if let Some(holdable) = level.get_with_position(holdee_position) {
+                                    if let Ok(_) = holdables.get(holdable.entity) { // checks if actually is "holdable"
+                                        println!("Picking up item {} {} {}", holder_position.x, holder_position.y, holder_position.z);
+                                        commands.entity(holdable.entity)
+                                                .insert(BeingHeld { held_by: *entity });
+                                        level.set_with_position(holdee_position, None);
+                                        commands.entity(holdable.entity).remove::<Position>();
+                                        holder.holding = Some(holdable.entity);
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
