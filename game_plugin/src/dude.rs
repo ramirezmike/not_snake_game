@@ -202,7 +202,7 @@ fn player_input(
 ) {
     let time_buffer = 100;
     if keyboard_input.just_pressed(KeyCode::R) {
-        kill_dude_event_writer.send(KillDudeEvent { death_type: DudeDeath::Electric });
+        kill_dude_event_writer.send(KillDudeEvent { death_type: DudeDeath::Eaten });
     }
 
     // this is for debugging. If we're flying, don't move the player

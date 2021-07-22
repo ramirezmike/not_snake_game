@@ -7,6 +7,7 @@ use bevy::reflect::{TypeUuid};
 //  use bevy_rapier3d::physics::RigidBodyHandleComponent;
 //  use bevy_rapier3d::rapier::math::Isometry;
 use crate::{level::Level, dude, environment};
+use bevy::render::camera::PerspectiveProjection;
 
 pub mod fly_camera;
 
@@ -217,7 +218,7 @@ pub fn create_camera(
     } else {
         println!("Creating camera!");
 
-        let plane = meshes.add(Mesh::from(shape::Cube { size: 1.0 }));
+        let plane = meshes.add(Mesh::from(shape::Cube { size: 1.35 }));
         let mut material: StandardMaterial = Color::hex(level.get_palette().enemy.clone()).unwrap().into();
         material.unlit = true;
         let block_material = materials.add(material);
@@ -294,7 +295,7 @@ pub fn create_camera(
                 let camera_bolt = CameraBolt {
                     start: Vec3::new(0.0, 10.0, distance_from_camera),
                     middle: Vec3::new(0.0, 2.0, distance_from_camera),
-                    end: Vec3::new(1.0, 10.0, 10.0),
+                    end: Vec3::new(1.0, 10.0, 20.0),
                 };
                 parent.spawn_bundle(PbrBundle {
                     mesh: camera_meshes.bolt.clone(),
@@ -361,6 +362,8 @@ struct Player { }
 
 pub struct MainCamera;
 
+static DEFAULT_FOV: f32 = 0.7853982; 
+
 pub fn handle_player_death(
     mut state: ResMut<State<crate::AppState>>,
     time: Res<Time>,
@@ -371,7 +374,8 @@ pub fn handle_player_death(
     mut mouth_movement: ResMut<CameraMouthMovement>, 
     mut bolt_movement: ResMut<CameraBoltMovement>, 
     mut spike_movement: ResMut<CameraSpikeMovement>, 
-) {
+    mut perspective: Query<&mut PerspectiveProjection>,
+)  {
     if !mouth_movement.moving && !bolt_movement.moving && !spike_movement.moving {
         for kill_dude_event in dude_died_event_reader.iter() {
             match kill_dude_event.death_type {
