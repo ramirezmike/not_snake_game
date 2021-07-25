@@ -49,6 +49,8 @@ pub struct Palette {
 pub struct LevelInfo {
     title: String,
     level: Vec::<Vec::<Vec::<usize>>>,
+    score_text: Vec::<LevelText>,
+    level_text: Vec::<LevelText>,
     is_food_random: bool,
     minimum_food: usize,
     palette: Option::<Palette>,
@@ -67,6 +69,58 @@ pub struct LevelInfo {
     camera_cull_y: Option<(f32, f32)>,
     camera_cull_z: Option<(f32, f32)>,
     teleporter_links: Vec::<teleporter::Teleporter>,
+}
+
+#[derive(Debug, Clone, Deserialize, TypeUuid)]
+#[uuid = "49cadc56-aa9c-4543-8640-a018b74b5032"] // this needs to be actually generated
+pub enum LevelText { 
+    DeathBeforeAfter(String, String),
+    ScoreBeforeAfter(String, String),
+    DeathWithCount(String, String, String, String, String, String), // 0, 1, more than 1
+    ScoreWithCount(String, String, String, String, String, String), // 0, 1, more than 1
+    DeathUseCount(String, String, String),
+    ScoreUseCount(String, String, String),
+    JustText(String),
+}
+
+static EMPTY_LEVEL_TEXT: Vec::<LevelText> = vec!();
+
+impl LevelText {
+    pub fn print(&self, score: usize, death: usize) -> String {
+        match self {
+            LevelText::DeathBeforeAfter(before, after) => format!("{} {} {}", before, death, after),
+            LevelText::DeathWithCount(zero_before, zero_after, one_before, one_after, more_before, more_after) => {
+                match death {
+                    0 => format!("{} {} {}", zero_before, death, zero_after),
+                    1 => format!("{} {} {}", one_before, death, one_after),
+                    _ => format!("{} {} {}", more_before, death, more_after),
+                }
+            },
+            LevelText::DeathUseCount(zero, one, more) => {
+                match death {
+                    0 => zero.to_string(),
+                    1 => one.to_string(),
+                    _ => more.to_string(),
+                }
+            },
+            LevelText::ScoreBeforeAfter(before, after) => format!("{} {} {}", before, score, after),
+            LevelText::ScoreWithCount(zero_before, zero_after, one_before, one_after, more_before, more_after) => {
+                match score {
+                    0 => format!("{} {} {}", zero_before, score, zero_after),
+                    1 => format!("{} {} {}", one_before, score, one_after),
+                    _ => format!("{} {} {}", more_before, score, more_after),
+                }
+            },
+            LevelText::ScoreUseCount(zero, one, more) => {
+                match score {
+                    0 => zero.to_string(),
+                    1 => one.to_string(),
+                    _ => more.to_string(),
+                }
+            },
+            LevelText::JustText(x) => x.to_string()
+        }
+    }
 }
 
 #[derive(Default)]
@@ -95,7 +149,7 @@ impl AssetLoader for LevelsAssetLoader {
 pub struct LevelAssetState {
     pub handle: Handle<LevelsAsset>,
 }
-
+            
 impl Level {
     pub fn new() -> Self {
         Level { 
@@ -135,6 +189,22 @@ impl Level {
         } 
 
         self.palette.clone()
+    }
+
+    pub fn get_score_text(&self) -> &Vec::<LevelText> {
+        if let Some(info) = self.level_info.get(self.current_level) {
+            &info.score_text
+        } else {
+            &EMPTY_LEVEL_TEXT
+        }
+    }
+
+    pub fn get_level_text(&self) -> &Vec::<LevelText> {
+        if let Some(info) = self.level_info.get(self.current_level + 1) {
+            &info.level_text
+        } else {
+            &EMPTY_LEVEL_TEXT
+        }
     }
 
     pub fn get_teleporters(&self) -> Vec::<teleporter::Teleporter> {
@@ -314,7 +384,7 @@ impl Level {
                 for z in 0..self.length() {
                     // I'm sorry, I'm sorry, I'm sorry, I'm sorry
                     if (self.is_standable(x as i32, y as i32, z as i32) || 
-                        (!allow_path_ignores || (y > 0 && self.is_type(x as i32, (y - 1) as i32, z as i32, Some(EntityType::PathfindIgnore)))))
+                        (allow_path_ignores && (y > 0 && self.is_type(x as i32, (y - 1) as i32, z as i32, Some(EntityType::PathfindIgnore)))))
                     && (!self.is_inbounds(x as i32, y as i32 - 1, z as i32)
                         || !self.is_type(x as i32, y as i32 - 1, z as i32, Some(EntityType::Enemy)))
                     && self.is_type(x as i32, y as i32, z as i32, None) {

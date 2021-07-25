@@ -1,50 +1,54 @@
 use bevy::{prelude::*,};
-use crate::{credits, level, dude, moveable, environment};
+use crate::{credits, level, dude, moveable, environment, game_controller};
 
 pub struct LevelOverEvent {}
 pub struct LevelOverText {} // TODO: change this to like "BetweenLevelEntity" or something marker or something
 
 pub fn setup_level_over_screen(
     mut commands: Commands,
+    mut windows: ResMut<Windows>,
     asset_server: Res<AssetServer>,
 ) {
+    let window = windows.get_primary_mut().unwrap();
+    let width = window.width(); 
+    let height = window.height(); 
+
     commands.spawn_bundle(UiCameraBundle::default())
             .insert(LevelOverText {});
+
     commands
         .spawn_bundle(TextBundle {
             style: Style {
-                // center button
-                margin: Rect::all(Val::Auto),
-                // horizontally center child text
-                justify_content: JustifyContent::Center,
-                // vertically center child text
-                align_items: AlignItems::Center,
+                align_self: AlignSelf::FlexEnd,
                 position_type: PositionType::Absolute,
                 position: Rect {
-                    top: Val::Percent(30.0),
-                    left: Val::Percent(10.0),
+                    top: Val::Px(height * 0.35),
+                    left: Val::Px(width * 0.25),
+                    ..Default::default()
+                },
+                max_size: Size {
+                    width: Val::Px(width / 2.0),
+                    height: Val::Undefined,
                     ..Default::default()
                 },
                 ..Default::default()
             },
-            // Use the `Text::with_section` constructor
             text: Text::with_section(
-                // Accepts a `String` or any type that converts into a `String`, such as `&str`
-                "",
+                "".to_string(),
                 TextStyle {
                     font: asset_server.load("fonts/FiraSans-Bold.ttf"),
-                    font_size: 300.0,
+                    font_size: 100.0,
                     color: Color::WHITE,
                 },
-                // Note: You can use `Default::default()` in place of the `TextAlignment`
                 TextAlignment {
-                    ..Default::default()
+                    horizontal: HorizontalAlign::Center,
+                    vertical: VerticalAlign::Center,
                 },
             ),
             ..Default::default()
         })
-    .insert(LevelOverText {});
-    println!("Level over text made!");
+        .insert(LevelOverText {});
+        println!("Level over text made!");
 }
 
 pub fn displaying_title (
@@ -52,14 +56,25 @@ pub fn displaying_title (
     time: Res<Time>,
     mut query: Query<&mut Text>,
     mut clear_color: ResMut<ClearColor>,
-    mut level: ResMut<level::Level>,
+    level: Res<level::Level>,
     mut timer: Local<f32>,
     mut text_set: Local<bool>,
+
+    mut buffer: Local<f32>,
+    mut text_counter: Local<usize>,
+    keyboard_input: Res<Input<KeyCode>>,
+    axes: Res<Axis<GamepadAxis>>,
+    buttons: Res<Input<GamepadButton>>,
+    gamepad: Option<Res<game_controller::GameController>>,
 ) {
+    let level_texts = level.get_level_text();
     if !*text_set {
         for mut text in query.iter_mut() {
-            println!("showing level text !");
-            text.sections[0].value = level.get_next_level_title();
+            if let Some(level_text) = &level_texts.get(*text_counter) {
+                text.sections[0].value = level_text.print(0, 0);
+            } else {
+                text.sections[0].value = "".to_string();
+            }
         }
         *text_set = true;
     }
@@ -72,16 +87,27 @@ pub fn displaying_title (
     let target = Vec3::new(target_color.r(), target_color.g(), target_color.b());
     let start = Vec3::new(current_color.r(), current_color.g(), current_color.b());
     let new_color = start.lerp(target, *timer);
-
-    clear_color.0 = Color::rgb(new_color.x, new_color.y, new_color.z); 
+    if start.distance(target) > start.distance(new_color) {
+        clear_color.0 = Color::rgb(new_color.x, new_color.y, new_color.z); 
+    }
 
     *timer += time.delta_seconds();
 
-    println!("displaying title...");
-    if *timer > 1.0 {
+    *buffer += time.delta_seconds();
+    if *buffer > 0.5 {
+        let pressed_buttons = game_controller::get_pressed_buttons(&axes, &buttons, gamepad);
+        if keyboard_input.just_pressed(KeyCode::Return) || keyboard_input.just_pressed(KeyCode::Space)
+        || pressed_buttons.contains(&game_controller::GameButton::Action){
+            *text_counter += 1;
+            *text_set = false;
+            *buffer = 0.0;
+        }
+    }
+
+    if *text_counter >= level_texts.len() {
         state.set(crate::AppState::ChangingLevel).unwrap();
         *text_set = false;
-        *timer = 0.0; 
+        *text_counter = 0; 
     }
 }
 

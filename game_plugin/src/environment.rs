@@ -149,6 +149,7 @@ impl Plugin for EnvironmentPlugin {
                .with_system(snake::update_enemy.system())
                .with_system(snake::handle_food_eaten.system())
                .with_system(score::handle_food_eaten.system())
+               .with_system(score::handle_kill_dude.system())
                .with_system(food::animate_food.system())
                .with_system(food::update_food.system())
                .with_system(food::handle_food_eaten.system())
@@ -657,9 +658,15 @@ pub fn load_level(
                             audio_state.play_electricity(&audio);
                         }
                     },
+                    13 => {
+                        let id = 
+                            food::spawn_food(&mut commands, &mut level, &mut meshes, &mut materials, 
+                                             Some(Position{ x: x as i32, y: y as i32, z: z as i32 }), false, false);
+                        level.set(x as i32, y as i32, z as i32, Some(GameObject::new(id, EntityType::PathfindIgnore)));
+                    }
                     item @ 4 | item @ 6 | item @ 12 => {
                         food::spawn_food(&mut commands, &mut level, &mut meshes, &mut materials, 
-                                         Some(Position{ x: x as i32, y: y as i32, z: z as i32 }), item == 6 || item == 4, item == 4)
+                                         Some(Position{ x: x as i32, y: y as i32, z: z as i32 }), item == 6 || item == 4, item == 4);
                     },
                     _ => ()
                 }

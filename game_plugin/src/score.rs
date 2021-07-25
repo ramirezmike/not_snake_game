@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use crate::{food::FoodEatenEvent, Dude, sounds, level, level_over, game_controller};
+use crate::{food::FoodEatenEvent, Dude, sounds, level, level_over, game_controller, dude};
 
 pub struct ContinueText;
 pub struct Score {
@@ -7,6 +7,7 @@ pub struct Score {
     pub total_bonus: usize,
     pub current_level: usize,
     pub current_level_bonus: usize,
+    pub current_death_count: usize,
 }
 
 impl Score {
@@ -16,6 +17,7 @@ impl Score {
             total_bonus: 0,
             current_level: 0,
             current_level_bonus: 0,
+            current_death_count: 0,
         }
     }
 }
@@ -41,39 +43,41 @@ pub fn handle_food_eaten(
 
 pub fn setup_score_screen(
     mut commands: Commands,
+    mut windows: ResMut<Windows>,
     asset_server: Res<AssetServer>,
 ) {
     commands.spawn_bundle(UiCameraBundle::default())
             .insert(level_over::LevelOverText {});
+    let window = windows.get_primary_mut().unwrap();
+    let width = window.width(); 
+    let height = window.height(); 
     commands
         .spawn_bundle(TextBundle {
             style: Style {
-                // center button
-                margin: Rect::all(Val::Auto),
-                // horizontally center child text
-                justify_content: JustifyContent::Center,
-                // vertically center child text
-                align_items: AlignItems::Center,
+                align_self: AlignSelf::FlexEnd,
                 position_type: PositionType::Absolute,
                 position: Rect {
-                    top: Val::Percent(30.0),
-                    left: Val::Percent(10.0),
+                    top: Val::Px(height * 0.35),
+                    left: Val::Px(width * 0.25),
+                    ..Default::default()
+                },
+                max_size: Size {
+                    width: Val::Px(width / 2.0),
+                    height: Val::Undefined,
                     ..Default::default()
                 },
                 ..Default::default()
             },
-            // Use the `Text::with_section` constructor
             text: Text::with_section(
-                // Accepts a `String` or any type that converts into a `String`, such as `&str`
-                "",
+                "".to_string(),
                 TextStyle {
                     font: asset_server.load("fonts/FiraSans-Bold.ttf"),
-                    font_size: 300.0,
+                    font_size: 100.0,
                     color: Color::WHITE,
                 },
-                // Note: You can use `Default::default()` in place of the `TextAlignment`
                 TextAlignment {
-                    ..Default::default()
+                    horizontal: HorizontalAlign::Center,
+                    vertical: VerticalAlign::Center,
                 },
             ),
             ..Default::default()
@@ -97,7 +101,7 @@ pub fn setup_score_screen(
                     ..Default::default()
                 },
                 text: Text::with_section(
-                    "continue".to_string(),
+                    "".to_string(),
                     TextStyle {
                         font: asset_server.load("fonts/FiraSans-Bold.ttf"),
                         font_size: 100.0,
@@ -118,30 +122,46 @@ pub fn displaying_score(
     mut state: ResMut<State<crate::AppState>>,
     mut query: Query<&mut Text, Without<ContinueText>>,
     mut score: ResMut<Score>,
-    mut level: ResMut<level::Level>,
+    level: Res<level::Level>,
     mut text_set: Local<bool>,
     mut continue_text: Query<&mut Text, With<ContinueText>>,
     mut text_blink: Local<bool>,
 
+    time: Res<Time>,
+    mut buffer: Local<f32>,
+    mut text_counter: Local<usize>,
+    mut score_added: Local<bool>,
     keyboard_input: Res<Input<KeyCode>>,
     axes: Res<Axis<GamepadAxis>>,
     buttons: Res<Input<GamepadButton>>,
     gamepad: Option<Res<game_controller::GameController>>,
 ) {
-    if !*text_set {
+    if !*score_added {
         score.total += score.current_level;
+        *score_added = true;
+    }
+
+    let score_texts = level.get_score_text();
+    if !*text_set {
         for mut text in query.iter_mut() {
-            println!("showing score text !");
-            text.sections[0].value = format!("Score {}", score.total).to_string();
+            if let Some(score_text) = &score_texts.get(*text_counter) {
+                text.sections[0].value = score_text.print(score.total, score.current_death_count);
+            } else {
+                text.sections[0].value = "".to_string();
+            }
         }
         *text_set = true;
     }
 
-    let pressed_buttons = game_controller::get_pressed_buttons(&axes, &buttons, gamepad);
-    if keyboard_input.just_pressed(KeyCode::Return) || keyboard_input.just_pressed(KeyCode::Space)
-    || pressed_buttons.contains(&game_controller::GameButton::Action){
-        state.set(crate::AppState::LevelTitle).unwrap();
-        *text_set = false;
+    *buffer += time.delta_seconds();
+    if *buffer > 0.5 {
+        let pressed_buttons = game_controller::get_pressed_buttons(&axes, &buttons, gamepad);
+        if keyboard_input.just_pressed(KeyCode::Return) || keyboard_input.just_pressed(KeyCode::Space)
+        || pressed_buttons.contains(&game_controller::GameButton::Action){
+            *text_counter += 1;
+            *text_set = false;
+            *buffer = 0.0;
+        }
     }
 
     for mut text in continue_text.iter_mut() {
@@ -158,5 +178,22 @@ pub fn displaying_score(
         } else {
             text.sections[0].style.color.set_a(a + 0.015);
         }
+    }
+
+    if *text_counter >= score_texts.len() {
+        state.set(crate::AppState::LevelTitle).unwrap();
+        *text_set = false;
+        *text_counter = 0; 
+        *score_added = false;
+        score.current_death_count = 0;
+    }
+}
+
+pub fn handle_kill_dude(
+    mut score: ResMut<Score>,
+    mut kill_dude_event_reader: EventReader<dude::KillDudeEvent>,
+) {
+    for _ in kill_dude_event_reader.iter() {
+        score.current_death_count += 1;
     }
 }

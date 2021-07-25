@@ -22,7 +22,7 @@ pub fn spawn_food(
     position: Option::<Position>,
     show_shadow: bool,
     is_bonus: bool,
-) {
+) -> Entity {
     let bonus_food_color = Color::hex("97D8B2").unwrap(); 
     let bonus_food_color = Color::rgba(bonus_food_color.r(), bonus_food_color.g(), bonus_food_color.b(), 1.0); 
     let shaded_bonus_food_color = Color::rgba(bonus_food_color.r(), bonus_food_color.g(), bonus_food_color.b(), 0.4);
@@ -135,6 +135,8 @@ pub fn spawn_food(
         .id();
 
     level.set_with_position(position, Some(GameObject::new(food_id, EntityType::Food)));
+
+    food_id
 }
 
 pub fn animate_spawn_particles(
