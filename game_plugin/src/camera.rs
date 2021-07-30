@@ -91,6 +91,10 @@ pub fn cull_blocks(
         }
     }
 }
+
+fn lerp(a: f32, b: f32, f: f32) -> f32 {
+    return a + f * (b - a);
+}
     
 fn update_camera(
     mut cameras: Query<(Entity, &mut MainCamera, &mut Transform)>,
@@ -118,26 +122,38 @@ fn update_camera(
             for behavior in level.camera_behaviors() {
                 match behavior {
                     CameraBehavior::FollowX(min, max) => {
-                        match main_camera.current_followx_target {
-                            Some(target_x) => {
-                                let x_distance = (target_x - camera_transform.translation.x).abs();
-                                if x_distance > 0.1 {
-                                    camera_transform.translation.x += 
-                                        (target_x - camera_transform.translation.x) 
-                                       * 1.5 
-                                       * time.delta_seconds();
-                                } else {
-                                    camera_transform.translation.x = target_x; 
-                                    main_camera.current_followx_target = None;
+                        match &mut main_camera.current_followx_target {
+                            Some(movement) => {
+                                movement.current_movement_time += time.delta_seconds();
+
+                                let new_translation = lerp(movement.starting_from, movement.target, 
+                                                           movement.current_movement_time / movement.finish_movement_time);
+                                                     
+                                if !new_translation.is_nan() {
+                                    let distance_to_target = (movement.target - camera_transform.translation.x).abs();
+                                    let distance_to_new_translation = (movement.target - new_translation).abs();
+
+                                    if distance_to_target < distance_to_new_translation {
+                                        camera_transform.translation.x = movement.target;
+                                        movement.current_movement_time = movement.finish_movement_time;
+                                        main_camera.current_followx_target = None;
+                                    } else {
+                                        camera_transform.translation.x = new_translation;
+                                    }
                                 }
                             },
                             None => {
                                 let x_distance = target_transform.translation.x - camera_transform.translation.x;
                                 if x_distance > *max || x_distance < *min {
                                     main_camera.current_followx_target = Some(
-                                        target_transform.translation.x 
-                                        - ((*max - *min) / 2.0)
-                                        - *min
+                                        CameraMovement {
+                                            target: target_transform.translation.x 
+                                                    - ((*max - *min) / 2.0)
+                                                    - *min,
+                                            starting_from: camera_transform.translation.x,
+                                            current_movement_time: 0.0,
+                                            finish_movement_time: 0.5,
+                                        }
                                     );
                                 } 
                             }
@@ -385,9 +401,15 @@ pub fn create_camera(
 #[derive(Bundle)]
 struct Player { }
 
-pub struct MainCamera
-{
-    pub current_followx_target: Option<f32>,
+pub struct CameraMovement {
+    target: f32,
+    starting_from: f32,
+    current_movement_time: f32,
+    finish_movement_time: f32,
+}
+
+pub struct MainCamera {
+    pub current_followx_target: Option<CameraMovement>,
 }
 
 static DEFAULT_FOV: f32 = 0.7853982; 
