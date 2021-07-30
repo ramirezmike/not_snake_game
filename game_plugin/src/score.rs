@@ -150,6 +150,7 @@ pub fn displaying_score(
                 text.sections[0].value = "".to_string();
             }
         }
+        println!("Score: {} Death: {}",score.total, score.current_death_count);
         *text_set = true;
     }
 

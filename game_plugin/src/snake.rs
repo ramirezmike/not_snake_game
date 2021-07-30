@@ -33,14 +33,14 @@ pub enum SnakeTarget {
 
 #[derive(Debug, Clone)]
 pub struct BodyPosition {
-    translation: Vec3,
+    pub translation: Vec3,
     rotation: Quat,
 }
 
 #[derive(Clone)]
 pub struct Enemy {
     body_parts: Vec::<Entity>,
-    body_positions: Vec::<BodyPosition>,
+    pub body_positions: Vec::<BodyPosition>,
     pub speed: f32, 
     movement: Option::<SnakeMovement>,
     pub is_dead: bool,

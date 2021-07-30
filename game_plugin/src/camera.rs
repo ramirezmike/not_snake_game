@@ -17,7 +17,7 @@ pub struct CameraTarget;
 #[uuid = "59cadc56-aa9c-4543-8640-a018b74b5052"] // this needs to be actually generated
 pub enum CameraBehavior {
     Static,
-    FollowX,
+    FollowX(f32, f32),
     FollowY(f32),
     FollowZ(f32),
     LooseFollowX(f32),
@@ -41,11 +41,23 @@ impl Plugin for CameraPlugin {
                          .with_system(toggle_fly.system())
            )
            .add_system_set(
+               SystemSet::on_enter(crate::AppState::InGame)
+                         .with_system(reset_camera_on_enter_ingame.system())
+           )
+           .add_system_set(
                SystemSet::on_update(crate::AppState::MainMenu)
                          .with_system(toggle_fly.system())
            )
            .add_plugin(FlyCameraPlugin)
            .add_system(update_camera.system());
+    }
+}
+
+pub fn reset_camera_on_enter_ingame(
+    mut main_camera: Query<&mut MainCamera>,
+) {
+    for mut camera in main_camera.iter_mut() {
+        camera.current_followx_target = None;
     }
 }
 
@@ -81,7 +93,7 @@ pub fn cull_blocks(
 }
     
 fn update_camera(
-    mut cameras: Query<(Entity, &MainCamera, &mut Transform)>,
+    mut cameras: Query<(Entity, &mut MainCamera, &mut Transform)>,
     level: Res<Level>,
     target: Query<&Transform, (With<CameraTarget>, Without<MainCamera>)>,
     keyboard_input: Res<Input<KeyCode>>,
@@ -101,23 +113,34 @@ fn update_camera(
         }
     }
 
-    for (_, _, mut camera_transform) in cameras.iter_mut() {
+    for (_, mut main_camera, mut camera_transform) in cameras.iter_mut() {
         if let Ok(target_transform) = target.single() {
             for behavior in level.camera_behaviors() {
                 match behavior {
-                    CameraBehavior::FollowX => {
-                        let x_distance = (target_transform.translation.x - camera_transform.translation.x).abs();
-                        if x_distance > 8.0 {
-                            camera_transform.translation.x += 
-                                (target_transform.translation.x - camera_transform.translation.x + 6.0) 
-                               * 0.5 
-                               * time.delta_seconds();
-                        } 
-                        if x_distance < 6.0 {
-                            camera_transform.translation.x -= 
-                                (target_transform.translation.x - camera_transform.translation.x + 6.0) 
-                                * 0.5 
-                                * time.delta_seconds();
+                    CameraBehavior::FollowX(min, max) => {
+                        match main_camera.current_followx_target {
+                            Some(target_x) => {
+                                let x_distance = (target_x - camera_transform.translation.x).abs();
+                                if x_distance > 0.1 {
+                                    camera_transform.translation.x += 
+                                        (target_x - camera_transform.translation.x) 
+                                       * 1.5 
+                                       * time.delta_seconds();
+                                } else {
+                                    camera_transform.translation.x = target_x; 
+                                    main_camera.current_followx_target = None;
+                                }
+                            },
+                            None => {
+                                let x_distance = target_transform.translation.x - camera_transform.translation.x;
+                                if x_distance > *max || x_distance < *min {
+                                    main_camera.current_followx_target = Some(
+                                        target_transform.translation.x 
+                                        - ((*max - *min) / 2.0)
+                                        - *min
+                                    );
+                                } 
+                            }
                         }
                     },
                     CameraBehavior::FollowY(offset) => {
@@ -340,7 +363,9 @@ pub fn create_camera(
                 });
 
             })
-            .insert(MainCamera)
+            .insert(MainCamera {
+                current_followx_target: None
+            })
      //       .with(PickSource::default());
                 ;
 
@@ -360,7 +385,10 @@ pub fn create_camera(
 #[derive(Bundle)]
 struct Player { }
 
-pub struct MainCamera;
+pub struct MainCamera
+{
+    pub current_followx_target: Option<f32>,
+}
 
 static DEFAULT_FOV: f32 = 0.7853982; 
 

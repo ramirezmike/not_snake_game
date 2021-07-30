@@ -59,6 +59,7 @@ pub fn displaying_title (
     level: Res<level::Level>,
     mut timer: Local<f32>,
     mut text_set: Local<bool>,
+    mut color_set: Local<bool>,
 
     mut buffer: Local<f32>,
     mut text_counter: Local<usize>,
@@ -80,21 +81,19 @@ pub fn displaying_title (
     }
 
     // change background color gradually to next level's color
-    let current_palette = &level.get_palette();
     let target_palette = &level.get_next_level_palette();
-    let current_color = Color::hex(current_palette.base.clone()).unwrap();
+    
+    let current_color = clear_color.0.clone();//Color::hex(current_palette.base.clone()).unwrap();
     let target_color = Color::hex(target_palette.base.clone()).unwrap();
     let target = Vec3::new(target_color.r(), target_color.g(), target_color.b());
     let start = Vec3::new(current_color.r(), current_color.g(), current_color.b());
     let new_color = start.lerp(target, *timer);
-    if start.distance(target) > start.distance(new_color) {
-        clear_color.0 = Color::rgb(new_color.x, new_color.y, new_color.z); 
-    }
+    clear_color.0 = Color::rgb(new_color.x, new_color.y, new_color.z); 
 
     *timer += time.delta_seconds();
 
     *buffer += time.delta_seconds();
-    if *buffer > 0.5 {
+    if *buffer > 0.2 {
         let pressed_buttons = game_controller::get_pressed_buttons(&axes, &buttons, gamepad);
         if keyboard_input.just_pressed(KeyCode::Return) || keyboard_input.just_pressed(KeyCode::Space)
         || pressed_buttons.contains(&game_controller::GameButton::Action){
@@ -107,7 +106,9 @@ pub fn displaying_title (
     if *text_counter >= level_texts.len() {
         state.set(crate::AppState::ChangingLevel).unwrap();
         *text_set = false;
+        *color_set = false;
         *text_counter = 0; 
+        *timer = 0.0;
     }
 }
 

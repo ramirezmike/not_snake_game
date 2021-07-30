@@ -240,6 +240,7 @@ fn player_input(
     let pressed_buttons = game_controller::get_pressed_buttons(&axes, &buttons, gamepad);
     for (entity, mut moveable, transform, facing, mut squash_queue) in dudes.iter_mut() {
         if (keyboard_input.just_pressed(KeyCode::Space) 
+        || keyboard_input.just_pressed(KeyCode::Return) 
         || keyboard_input.just_pressed(KeyCode::J) 
         || pressed_buttons.contains(&game_controller::GameButton::Action))
         && !moveable.is_moving() && action_buffer.is_none() {

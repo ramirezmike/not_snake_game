@@ -470,8 +470,12 @@ pub fn update_path(
         let mut claimed_targets = vec!();
         for (entity, mut snake, snake_position, snake_transform) in snake.iter_mut() {
             // try to stop snakes from moving backward
-            let first_body = snake.get_first_body();
-            claimed_nodes.push(path_find.indices[first_body.x as usize][first_body.y as usize][first_body.z as usize]); 
+            snake.body_positions
+                 .iter()
+                 .for_each(|body_position| {
+                     let body = Position::from_vec(body_position.translation);
+                     claimed_nodes.push(path_find.indices[body.x as usize][body.y as usize][body.z as usize]); 
+                 });
 
             if !snake.is_dead {
                 if let Some((_, current_path)) = &snake.current_path {
@@ -513,8 +517,6 @@ pub fn update_path(
                     }
                 }
 
-                // TODO: this needs to be rewritten because snakes can get stuck 
-                //       between two foods that are the same distance apart
                 if seek_food && snake.current_path.is_none() {
                     let mut closest_food: Option::<(&Position, &Transform)> = None;
                     for (food_position, food_transform) in food.iter() {

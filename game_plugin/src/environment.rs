@@ -262,7 +262,7 @@ pub fn change_level_screen(
     *timer += time.delta_seconds();
 
     println!("changing level...");
-    if *timer > 1.0 {
+    if *timer > 0.2 {
         level.change_to_next_level();
         state.set(crate::AppState::InGame).unwrap();
         *timer = 0.0; 
@@ -390,6 +390,7 @@ pub fn cleanup_environment(
     hud_cameras: Query<Entity, With<Hud3DCamera>>,
     ui_cameras: Query<Entity, With<bevy::render::camera::OrthographicProjection>>,
     texts: Query<Entity, With<Text>>,
+    teleporters: Query<Entity, With<teleporter::Teleporter>>,
 ) {
     level_ready.0 = false;
     for (entity, entity_type) in entities.iter() {
@@ -429,6 +430,10 @@ pub fn cleanup_environment(
     }
 
     for entity in dust.iter() {
+        commands.entity(entity).despawn_recursive();
+    }
+
+    for entity in teleporters.iter() {
         commands.entity(entity).despawn_recursive();
     }
 }
@@ -811,7 +816,12 @@ pub fn update_hud_text_position(
     for (camera, camera_transform) in camera_query.iter() {
         for mesh_position in mesh_query.iter() {
             for (mut style, calculated, mut text) in text_query.iter_mut() {
-                text.sections[0].value = format!("{} / {}", score.current_level, level.get_current_minimum_food()).into();
+                if level.current_level == 14 {
+                    text.sections[0].value = format!("{} / {}", "{UNDEFINED}", level.get_current_minimum_food()).into();
+                } else {
+                    text.sections[0].value = format!("{} / {}", score.current_level, level.get_current_minimum_food()).into();
+                }
+
                 match camera.world_to_screen(&windows, camera_transform, mesh_position.translation)
                 {
                     Some(coords) => {
