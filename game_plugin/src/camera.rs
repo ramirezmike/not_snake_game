@@ -17,7 +17,8 @@ pub struct CameraTarget;
 #[uuid = "59cadc56-aa9c-4543-8640-a018b74b5052"] // this needs to be actually generated
 pub enum CameraBehavior {
     Static,
-    FollowX(f32, f32),
+    LockFollowX(f32, f32),
+    LockFollowY(f32, f32, f32),
     FollowY(f32),
     FollowZ(f32),
     LooseFollowX(f32),
@@ -58,6 +59,7 @@ pub fn reset_camera_on_enter_ingame(
 ) {
     for mut camera in main_camera.iter_mut() {
         camera.current_followx_target = None;
+        camera.current_followy_target = None;
     }
 }
 
@@ -80,8 +82,11 @@ pub fn cull_blocks(
                                   && block_transform.translation.x > camera_transform.translation.x - min_x;
             } 
             if let Some((min_y, max_y)) = cull_y {
-                is_visible = block_transform.translation.y < camera_transform.translation.y + max_y 
-                                  && block_transform.translation.y > camera_transform.translation.y - min_y;
+                is_visible = (block_transform.translation.y < camera_transform.translation.y + max_y 
+                                  && block_transform.translation.y > camera_transform.translation.y - min_y)
+                                // hack to show bottom level blocks which are much lower than 0 if we happen
+                                // to be close enough to 0
+                            || ((camera_transform.translation.y - min_y) < 0.0 && block_transform.translation.y < 0.0);
             } 
             if let Some((min_z, max_z)) = cull_z {
                 is_visible = block_transform.translation.z < camera_transform.translation.z + max_z 
@@ -121,7 +126,7 @@ fn update_camera(
         if let Ok(target_transform) = target.single() {
             for behavior in level.camera_behaviors() {
                 match behavior {
-                    CameraBehavior::FollowX(min, max) => {
+                    CameraBehavior::LockFollowX(min, max) => {
                         match &mut main_camera.current_followx_target {
                             Some(movement) => {
                                 movement.current_movement_time += time.delta_seconds();
@@ -129,17 +134,11 @@ fn update_camera(
                                 let new_translation = lerp(movement.starting_from, movement.target, 
                                                            movement.current_movement_time / movement.finish_movement_time);
                                                      
-                                if !new_translation.is_nan() {
-                                    let distance_to_target = (movement.target - camera_transform.translation.x).abs();
-                                    let distance_to_new_translation = (movement.target - new_translation).abs();
-
-                                    if distance_to_target < distance_to_new_translation {
-                                        camera_transform.translation.x = movement.target;
-                                        movement.current_movement_time = movement.finish_movement_time;
-                                        main_camera.current_followx_target = None;
-                                    } else {
-                                        camera_transform.translation.x = new_translation;
-                                    }
+                                if movement.current_movement_time > movement.finish_movement_time {
+                                    camera_transform.translation.x = movement.target;
+                                    main_camera.current_followx_target = None;
+                                } else if !new_translation.is_nan() {
+                                    camera_transform.translation.x = new_translation;
                                 }
                             },
                             None => {
@@ -151,6 +150,36 @@ fn update_camera(
                                                     - ((*max - *min) / 2.0)
                                                     - *min,
                                             starting_from: camera_transform.translation.x,
+                                            current_movement_time: 0.0,
+                                            finish_movement_time: 0.5,
+                                        }
+                                    );
+                                } 
+                            }
+                        }
+                    },
+                    CameraBehavior::LockFollowY(min, max, offset) => {
+                        match &mut main_camera.current_followy_target {
+                            Some(movement) => {
+                                movement.current_movement_time += time.delta_seconds();
+
+                                let new_translation = lerp(movement.starting_from, movement.target, 
+                                                           movement.current_movement_time / movement.finish_movement_time);
+                                                     
+                                if movement.current_movement_time > movement.finish_movement_time {
+                                    camera_transform.translation.y = movement.target;
+                                    main_camera.current_followy_target = None;
+                                } else if !new_translation.is_nan() {
+                                    camera_transform.translation.y = new_translation;
+                                }
+                            },
+                            None => {
+                                let y_distance = target_transform.translation.y - camera_transform.translation.y;
+                                if y_distance > *max || y_distance < *min {
+                                    main_camera.current_followy_target = Some(
+                                        CameraMovement {
+                                            target: target_transform.translation.y + offset,
+                                            starting_from: camera_transform.translation.y,
                                             current_movement_time: 0.0,
                                             finish_movement_time: 0.5,
                                         }
@@ -380,7 +409,8 @@ pub fn create_camera(
 
             })
             .insert(MainCamera {
-                current_followx_target: None
+                current_followx_target: None,
+                current_followy_target: None
             })
      //       .with(PickSource::default());
                 ;
@@ -410,6 +440,7 @@ pub struct CameraMovement {
 
 pub struct MainCamera {
     pub current_followx_target: Option<CameraMovement>,
+    pub current_followy_target: Option<CameraMovement>,
 }
 
 static DEFAULT_FOV: f32 = 0.7853982; 
