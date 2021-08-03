@@ -1,5 +1,5 @@
 use bevy::{prelude::*,};
-use crate::{credits, level, dude, moveable, environment, game_controller};
+use crate::{credits, level, dude, moveable, environment, game_controller, snake::Enemy};
 
 pub struct LevelOverEvent {}
 pub struct LevelOverText {} // TODO: change this to like "BetweenLevelEntity" or something marker or something
@@ -121,6 +121,7 @@ pub fn level_over_check(
     time: Res<Time>, 
     mut commands: Commands,
     mut dudes: Query<Entity, With<dude::Dude>>,
+    mut snakes: Query<&mut Enemy>,
     mut credits_delay: ResMut<credits::CreditsDelay>,
     mut credits_event_writer: EventWriter<crate::credits::CreditsEvent>,
 ) {
@@ -130,6 +131,9 @@ pub fn level_over_check(
             for mut text in query.iter_mut() {
                 for entity in dudes.iter_mut() {
                     commands.entity(entity).remove::<moveable::Moveable>();
+                }
+                for mut snake in snakes.iter_mut() {
+                    snake.is_dead = true;
                 }
                 text.sections[0].value = "YOU WIN!".to_string();
                 game_is_over.0 = true;

@@ -436,7 +436,7 @@ pub fn update_path(
     mut kill_snake_event_writer: EventWriter::<snake::KillSnakeEvent>,
     level_ready: Res<LevelReady>,
 ) {
-    if !level_ready.0 {
+    if !level_ready.0 || dude.iter().count() == 0 {
         return; 
     }
     *time += timer.delta_seconds();

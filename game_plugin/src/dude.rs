@@ -383,6 +383,7 @@ pub fn handle_kill_dude(
     mut sound_writer: EventWriter<sounds::SoundEvent>,
 ) {
     for event in kill_dude_event_reader.iter() {
+        println!("Dude kill event made");
         for entity in dudes.iter_mut() {
             commands.entity(entity).insert(environment::Shrink { });
             if event.death_type == DudeDeath::Electric {
