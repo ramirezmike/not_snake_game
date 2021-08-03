@@ -1,11 +1,6 @@
 use bevy::prelude::*;
 use serde::Deserialize;
 use bevy::reflect::{TypeUuid};
-//  use bevy_mod_picking::*;
-//  use bevy_rapier3d::rapier::geometry::ColliderBuilder;
-//  use bevy_rapier3d::rapier::dynamics::{RigidBodyBuilder,RigidBodySet};
-//  use bevy_rapier3d::physics::RigidBodyHandleComponent;
-//  use bevy_rapier3d::rapier::math::Isometry;
 use crate::{level::Level, dude, environment};
 use bevy::render::camera::PerspectiveProjection;
 

@@ -72,7 +72,7 @@ pub fn setup_score_screen(
                 "".to_string(),
                 TextStyle {
                     font: asset_server.load("fonts/FiraSans-Bold.ttf"),
-                    font_size: 100.0,
+                    font_size: 80.0,
                     color: Color::WHITE,
                 },
                 TextAlignment {
@@ -158,6 +158,7 @@ pub fn displaying_score(
     if *buffer > 0.5 {
         let pressed_buttons = game_controller::get_pressed_buttons(&axes, &buttons, gamepad);
         if keyboard_input.just_pressed(KeyCode::Return) || keyboard_input.just_pressed(KeyCode::Space)
+        || keyboard_input.just_pressed(KeyCode::J)    
         || pressed_buttons.contains(&game_controller::GameButton::Action){
             *text_counter += 1;
             *text_set = false;

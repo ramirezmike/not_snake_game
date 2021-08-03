@@ -455,8 +455,8 @@ LevelsAsset (
                 ScoreBeforeAfter("uhh your score is", ""),
             ],
             level_text: [
-                JustText("ok so in the next level you can walk on the snake,\nit won't hurt you"),
-                JustText("\n\ni promise"),
+                JustText("ok so in the next level you can walk on the snake"),
+                JustText("it won't hurt you i promise"),
                 JustText("(it can eat you though so be careful of that)"),
                 JustText("(also, try not to fall either)"),
             ],
@@ -528,12 +528,13 @@ LevelsAsset (
         ), LevelInfo (
             title: "Up & Over",
             score_text: [
-                JustText("you figured it out, that's great. that's probably all you need to know to beat the game"),
+                JustText("you figured it out, that's great"),
+                JustText("that's probably all you need to know to beat the game"),
                 ScoreBeforeAfter("after that level your score is now", " which is perfect."),
                 JustText("seriously, that's a perfect score, don't change it"),
             ],
             level_text: [
-                JustText("in this next level there's a block that is different from the others"),
+                JustText("in this next level there's a block that is different"),
                 JustText("you can pick it up with that action button"),
                 JustText("yeah, the button you just pressed. \nthat one"),
                 JustText("i don't remember how to put the block down"),
@@ -617,7 +618,7 @@ LevelsAsset (
                 JustText("the nokia 3210, it was released in 1999"),
                 JustText("and it had this cool game. i played it all the time"),
                 JustText("(it was about snakes)"),
-                JustText("\nand I thought it would be cool to make a level like that game"),
+                JustText("and I thought it would be cool to make a level like that game"),
                 JustText("but the colors are terrible"),
                 JustText("it makes me uncomfortable"),
                 JustText("it's only two colors but they're both awful"),
@@ -908,7 +909,16 @@ LevelsAsset (
             camera_cull_x: None,
             camera_cull_y: None,
             camera_cull_z: None,
-            palette: None,
+            palette: Some(Palette (
+                base:     "b7b7a4",
+                ground_1: "6b705c",
+                ground_2: "6b705c",
+                dude:     "f3a787",
+                enemy:    "ff4f69",
+                block:    "d8e2dc",//"85daeb",
+                flag:     "fdfe89",
+                food:     "fdfe89",
+            )),
             teleporter_links: [],
         ), LevelInfo (
             title: "Run",
@@ -1051,7 +1061,8 @@ LevelsAsset (
                 JustText("the next level is space themed"),
                 JustText("i wanted it to have rockets and stars in the background"),
                 JustText("but i ran out of time so you'll have to use your imagination"),
-                JustText("oh and say things aloud like\n\"wow, those rockets are cool\""),
+                JustText("oh and say things aloud like.."),
+                JustText("\"wow, those rockets are cool\""),
                 JustText("\"those stars are a little too bright, what were they thinking?\""),
             ],
             level: [[
@@ -3567,7 +3578,7 @@ LevelsAsset (
             // 12 spaces on the X axis
 
             is_food_random: false,
-            minimum_food: 100,
+            minimum_food: 1,//100,
             snake_speed: Some(0.30),
             snake_min_length: Some(10),
             snake_target: Some(OnlyDude),

@@ -2,8 +2,8 @@ use bevy::{prelude::*,};
 use bevy::app::AppExit;
 use bevy::app::Events;
 //use bevy_prototype_debug_lines::*;
-use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 use bevy::reflect::{TypeUuid};
+use bevy::window::WindowMode;
 use serde::Deserialize;
 
 mod camera;
@@ -61,8 +61,9 @@ impl Plugin for GamePlugin {
            .add_event::<credits::CreditsEvent>()
 
 //           .add_state(AppState::MainMenu)
-            .add_state(AppState::Loading)
-
+           .add_state(AppState::Loading)
+           .add_system_set(SystemSet::on_exit(AppState::Loading)
+                                .with_system(fullscreen_app.system()))
            .add_system_set(SystemSet::on_enter(AppState::MainMenu))
            .add_system_set(
                SystemSet::on_enter(AppState::MainMenu)
@@ -117,10 +118,7 @@ impl Plugin for GamePlugin {
           //.add_startup_system(setup.system())
           //.add_system(print_on_load.system())
 
-           .add_system(exit.system())
-    //     .add_plugin(LogDiagnosticsPlugin::default())
-    //     .add_plugin(FrameTimeDiagnosticsPlugin::default())
-           ;
+           .add_system(exit.system());
     }
 }
 
@@ -183,4 +181,13 @@ impl Position {
     pub fn matches(&self, v: Vec3) -> bool {
         v.x as i32 == self.x && v.y as i32 == self.y && v.z as i32 == self.z
     }
+}
+
+pub fn fullscreen_app(
+    mut windows: ResMut<Windows>,
+) {
+    let window = windows.get_primary_mut().unwrap();
+    println!("Setting fullscreen...");
+    window.set_maximized(true);
+    window.set_mode(WindowMode::BorderlessFullscreen);
 }

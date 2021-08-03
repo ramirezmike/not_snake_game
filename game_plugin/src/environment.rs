@@ -174,12 +174,13 @@ impl Plugin for EnvironmentPlugin {
                .with_system(food::animate_spawn_particles.system())
                //.with_system(sounds::play_sounds.system())
                .with_system(game_controller::gamepad_connections.system())
-               .with_system(update_fps.system())
+//               .with_system(update_fps.system())
                .with_system(camera::cull_blocks.system())
                .with_system(animate_shader.system())
                .with_system(snake::detect_dude_on_electric_snake.system())
                .with_system(shrink_shrinkables.system())
                .with_system(grow_growables.system())
+               .with_system(debug_level_over.system())
                .with_system(dust::handle_create_dust_event.system())
                .with_system(dust::animate_dust.system())
                .with_system(snake::debug_trigger_snake_death.system())
@@ -758,38 +759,38 @@ fn create_hud(
         })
         .insert(FollowText);
 
-        commands
-        .spawn_bundle(TextBundle {
-            style: Style {
-                align_self: AlignSelf::FlexEnd,
-                ..Default::default()
-            },
-            // Use `Text` directly
-            text: Text {
-                // Construct a `Vec` of `TextSection`s
-                sections: vec![
-                    TextSection {
-                        value: "FPS: ".to_string(),
-                        style: TextStyle {
-                            font: font.clone(),
-                            font_size: 20.0,
-                            color: Color::WHITE,
-                        },
-                    },
-                    TextSection {
-                        value: "".to_string(),
-                        style: TextStyle {
-                            font: font.clone(),
-                            font_size: 20.0,
-                            color: Color::GOLD,
-                        },
-                    },
-                ],
-                ..Default::default()
-            },
-            ..Default::default()
-        })
-        .insert(FpsText);
+//      commands
+//      .spawn_bundle(TextBundle {
+//          style: Style {
+//              align_self: AlignSelf::FlexEnd,
+//              ..Default::default()
+//          },
+//          // Use `Text` directly
+//          text: Text {
+//              // Construct a `Vec` of `TextSection`s
+//              sections: vec![
+//                  TextSection {
+//                      value: "FPS: ".to_string(),
+//                      style: TextStyle {
+//                          font: font.clone(),
+//                          font_size: 20.0,
+//                          color: Color::WHITE,
+//                      },
+//                  },
+//                  TextSection {
+//                      value: "".to_string(),
+//                      style: TextStyle {
+//                          font: font.clone(),
+//                          font_size: 20.0,
+//                          color: Color::GOLD,
+//                      },
+//                  },
+//              ],
+//              ..Default::default()
+//          },
+//          ..Default::default()
+//      })
+//      .insert(FpsText);
 
 
     println!("Added HUD");
@@ -918,5 +919,14 @@ pub struct GameShaders {
 pub fn animate_shader(time: Res<Time>, mut query: Query<&mut TimeUniform>) {
     for mut time_uniform in query.iter_mut() {
         time_uniform.value = time.seconds_since_startup() as f32;
+    }
+}
+
+pub fn debug_level_over(
+    keyboard_input: Res<Input<KeyCode>>,
+    mut level_over_event_writer: EventWriter<level_over::LevelOverEvent>,
+) {
+    if keyboard_input.just_pressed(KeyCode::N) {
+        level_over_event_writer.send(level_over::LevelOverEvent {});
     }
 }
