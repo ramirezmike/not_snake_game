@@ -759,7 +759,7 @@ LevelsAsset (
         ), LevelInfo (
             title: "Build",
             score_text: [
-                JustText("sorry i wasnt paying attention"),
+                JustText("sorry i wasn't paying attention"),
             ],
             level_text: [
                 JustText("im gonna stop helping now"),
@@ -1161,7 +1161,7 @@ LevelsAsset (
             ],
             level_text: [
                 JustText("ok i have to apologize again"),
-                JustText("there's a bug in next level and i gave up trying to fix it"),
+                JustText("there's a bug in the next level and i gave up trying to fix it"),
                 JustText("the game crashes terribly if you happen to die"),
                 JustText("just don't die"),
             ],
@@ -3376,7 +3376,7 @@ LevelsAsset (
 
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
-    [0, 0,11, 0, 6, 6, 6, 6, 6, 3, 0 ],
+    [0, 0,11, 0, 6, 6, 6, 6, 6, 0, 0 ],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
     [5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
 ], [                      
@@ -3578,7 +3578,7 @@ LevelsAsset (
             // 12 spaces on the X axis
 
             is_food_random: false,
-            minimum_food: 1,//100,
+            minimum_food: 100,
             snake_speed: Some(0.30),
             snake_min_length: Some(10),
             snake_target: Some(OnlyDude),
