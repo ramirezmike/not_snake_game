@@ -32,7 +32,7 @@ pub fn setup_menu(
                 ..Default::default()
             },
             text: Text::with_section(
-                "by michael ramirez".to_string(),
+                "".to_string(),
                 TextStyle {
                     font: asset_server.load("fonts/FiraSans-Bold.ttf"),
                     font_size: 40.0,

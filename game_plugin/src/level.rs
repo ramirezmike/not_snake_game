@@ -69,6 +69,7 @@ pub struct LevelInfo {
     camera_cull_y: Option<(f32, f32)>,
     camera_cull_z: Option<(f32, f32)>,
     teleporter_links: Vec::<teleporter::Teleporter>,
+    music: sounds::LevelMusic,
 }
 
 #[derive(Debug, Clone, Deserialize, TypeUuid)]
@@ -212,6 +213,15 @@ impl Level {
             info.teleporter_links.clone()
         } else {
             vec!()
+        }
+    }
+
+    pub fn get_music(&self, current: bool) -> sounds::LevelMusic {
+        let level = if current { self.current_level } else { self.current_level + 1 };
+        if let Some(info) = self.level_info.get(level) {
+            info.music.clone()
+        } else {
+            sounds::LevelMusic::new()
         }
     }
 

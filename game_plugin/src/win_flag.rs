@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use crate::{score::Score, level};
+use crate::{score::Score, level, sounds};
 
 pub struct WinFlag { }
 pub struct WinFlagInnerMesh { }
@@ -17,6 +17,7 @@ pub fn update_flag(
     level: ResMut<level::Level>,
     time: Res<Time>,
     mut is_flag_scaling_up: Local<bool>,
+    mut sound_writer: EventWriter<sounds::SoundEvent>,
 ) {
     if score.current_level < level.get_current_minimum_food() { return; }
 
@@ -42,6 +43,12 @@ pub fn update_flag(
 
     for (_flag, mut visible, mut transform) in flags.iter_mut() {
         //transform.translation.y = 0.5 + (0.2 * time.seconds_since_startup().sin() as f32);
+
+        if !visible.is_visible {
+            print!("Making flag visible and sending sound!");
+            // flag is becoming visible so send spawn sound
+            sound_writer.send(sounds::SoundEvent(sounds::Sounds::FlagSpawn));
+        }
         visible.is_visible = true;
         transform.rotate(Quat::from_rotation_y(time.delta_seconds()));
 

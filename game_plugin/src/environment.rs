@@ -32,6 +32,7 @@ impl Plugin for EnvironmentPlugin {
            .insert_resource(LevelReady(false))
            .insert_resource(GameOver(false))
            .insert_resource(score::Score::new())
+           .insert_resource(sounds::CollectSounds::new())
            .init_resource::<crate::pause::PauseButtonMaterials>()
            .init_resource::<dude::DudeMeshes>()
            .init_resource::<snake::EnemyMeshes>()
@@ -70,6 +71,8 @@ impl Plugin for EnvironmentPlugin {
            )
            .add_system_set(
                SystemSet::on_enter(crate::AppState::ScoreDisplay)
+                   .with_system(sounds::stop_electricity.system())
+                   .with_system(sounds::play_after_music.system())
                    .with_system(score::setup_score_screen.system())
            )
            .add_system_set(
@@ -82,7 +85,13 @@ impl Plugin for EnvironmentPlugin {
            )
            .add_system_set(
                SystemSet::on_enter(crate::AppState::LevelTitle)
+                   .with_system(sounds::set_level_music.system().label("level_music"))
+                   .with_system(sounds::play_before_music.system().after("level_music"))
                    .with_system(level_over::setup_level_over_screen.system())
+           )
+           .add_system_set(
+               SystemSet::on_exit(crate::AppState::LevelTitle)
+                   .with_system(sounds::play_fanfare.system())
            )
            .add_system_set(
                SystemSet::on_update(crate::AppState::LevelTitle)
@@ -110,6 +119,7 @@ impl Plugin for EnvironmentPlugin {
            )
            .add_system_set(
                SystemSet::on_enter(crate::AppState::Pause)
+                   .with_system(sounds::pause_music.system())
                    .with_system(crate::pause::setup_menu.system())
            )
            .add_system_set(
@@ -119,6 +129,7 @@ impl Plugin for EnvironmentPlugin {
            .add_system_set(
                SystemSet::on_exit(crate::AppState::Pause)
                    .with_system(crate::pause::cleanup_pause_menu.system())
+                   .with_system(sounds::unpause_music.system())
            )
            .add_system_set(
                SystemSet::on_update(crate::AppState::ResetLevel)
@@ -131,6 +142,8 @@ impl Plugin for EnvironmentPlugin {
                          .with_system(set_clear_color.system().after("loading_level"))
                          .with_system(load_level_into_path_finder.system().after("loading_level"))
                          .with_system(reset_score.system())
+                         .with_system(sounds::reset_sounds.system())
+                         .with_system(sounds::play_ingame_music.system())
                          .with_system(level_over::setup_level_over_screen.system().after("loading_level"))
            )
 
@@ -159,6 +172,7 @@ impl Plugin for EnvironmentPlugin {
                .with_system(snake::add_body_parts.system())
                .with_system(snake::add_body_to_reach_level_min.system())
                .with_system(snake::update_following.system())
+               .with_system(sounds::adjust_electricity_volume.system())
                .with_system(snake::handle_kill_snake.system())
                .with_system(dude::handle_squashes.system())
                .with_system(camera::handle_player_death.system())
@@ -172,7 +186,7 @@ impl Plugin for EnvironmentPlugin {
 //               .with_system(update_text_position.system())
                .with_system(level::broadcast_changes.system().after("handle_moveables"))
                .with_system(food::animate_spawn_particles.system())
-               //.with_system(sounds::play_sounds.system())
+               .with_system(sounds::play_sounds.system())
                .with_system(game_controller::gamepad_connections.system())
 //               .with_system(update_fps.system())
                .with_system(camera::cull_blocks.system())
@@ -490,7 +504,6 @@ pub fn load_level(
     }
 
     level.reset_level();
-    audio_state.stop_electricity(&audio);
 
     let palette = &level.get_palette();
 

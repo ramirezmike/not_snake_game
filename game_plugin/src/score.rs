@@ -136,6 +136,9 @@ pub fn displaying_score(
     buttons: Res<Input<GamepadButton>>,
     gamepad: Option<Res<game_controller::GameController>>,
 ) {
+    // TODO: remove
+//    state.set(crate::AppState::LevelTitle).unwrap();
+
     if !*score_added {
         score.total += score.current_level;
         *score_added = true;

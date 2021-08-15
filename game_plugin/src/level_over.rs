@@ -68,6 +68,10 @@ pub fn displaying_title (
     buttons: Res<Input<GamepadButton>>,
     gamepad: Option<Res<game_controller::GameController>>,
 ) {
+
+    // TODO: Remove
+    state.set(crate::AppState::ChangingLevel).unwrap();
+
     let level_texts = level.get_level_text();
     if !*text_set {
         for mut text in query.iter_mut() {
