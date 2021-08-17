@@ -246,15 +246,15 @@ pub fn debug_add_body_part(
     time: Res<Time>,
     mut timer: Local<f32>,
 ) {
-    if *timer > 0.2 && keyboard_input.pressed(KeyCode::P) {
-        *timer = 0.0;
+//  if *timer > 0.2 && keyboard_input.pressed(KeyCode::P) {
+//      *timer = 0.0;
 
-        for entity in enemies.iter() {
-            body_part_writer.send(AddBodyPartEvent { snake: entity });
-        }
-    }
+//      for entity in enemies.iter() {
+//          body_part_writer.send(AddBodyPartEvent { snake: entity });
+//      }
+//  }
 
-    *timer += time.delta_seconds();
+//  *timer += time.delta_seconds();
 }
 
 pub fn add_body_to_reach_level_min(
@@ -314,11 +314,11 @@ pub fn update_enemy(
     mut timer: Local<f32>,
 ) {
     // FOR DEBUGGING
-    if *timer > 0.2 && keyboard_input.pressed(KeyCode::L) {
-        *is_active = !*is_active;
-        *timer = 0.0;
-    }
-    *timer += time.delta_seconds();
+//  if *timer > 0.2 && keyboard_input.pressed(KeyCode::L) {
+//      *is_active = !*is_active;
+//      *timer = 0.0;
+//  }
+//  *timer += time.delta_seconds();
     // FOR DEBUGGING
 
     if !*is_active {

@@ -68,6 +68,7 @@ impl Plugin for GamePlugin {
            .add_system_set(
                SystemSet::on_enter(AppState::MainMenu)
                          .with_system(environment::load_level.system().label("loading_level"))
+                         .with_system(sounds::play_ingame_music.system())
                          .with_system(menu::setup_menu.system().after("loading_level"))
                          .with_system(camera::create_camera.system().after("loading_level"))
                          .with_system(environment::set_clear_color.system().after("loading_level"))
@@ -104,6 +105,7 @@ impl Plugin for GamePlugin {
            .add_system_set(
                SystemSet::on_enter(AppState::Credits)
                .with_system(environment::cleanup_change_level_screen.system())
+               .with_system(sounds::play_credits_music.system())
                .with_system(credits::setup_credits.system())
            )
            .add_system_set(SystemSet::on_update(AppState::Credits).with_system(credits::update_credits.system()))

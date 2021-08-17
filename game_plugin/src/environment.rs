@@ -194,10 +194,10 @@ impl Plugin for EnvironmentPlugin {
                .with_system(snake::detect_dude_on_electric_snake.system())
                .with_system(shrink_shrinkables.system())
                .with_system(grow_growables.system())
-               .with_system(debug_level_over.system())
+               //.with_system(debug_level_over.system())
                .with_system(dust::handle_create_dust_event.system())
                .with_system(dust::animate_dust.system())
-               .with_system(snake::debug_trigger_snake_death.system())
+               //.with_system(snake::debug_trigger_snake_death.system())
            );
 //        println!("{}", schedule_graph(&app.app.schedule));
 

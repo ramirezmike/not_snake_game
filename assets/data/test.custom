@@ -42,7 +42,7 @@ LevelsAsset (
             level_text: [],
             music: LevelMusic (
                 before: [],
-                during: [],
+                during: [Intro],
                 after: [],
             ),
             level: [[
@@ -206,8 +206,8 @@ LevelsAsset (
             title: "you're not the snake\nthis is not snake",
             music: LevelMusic (
                 before: [],
-                during: [LevelOne],
-                after: [DrumAndBell],
+                during: [TickTock],
+                after: [],
             ),
             score_text: [
                 JustText("you did it, good job"),
@@ -457,8 +457,8 @@ LevelsAsset (
             title: "you can walk on the snake it won't hurt you \n i promise",
             music: LevelMusic (
                 before: [],
-                during: [],
-                after: [],
+                during: [LevelOne],
+                after: [LevelOne],
             ),
             score_text: [
                 JustText("oh wow i can't believe you did that, that was dangerous"),
@@ -514,7 +514,7 @@ LevelsAsset (
 ],
             ],
             is_food_random: false,
-            minimum_food: 5,
+            minimum_food: 9,
             snake_speed: Some(0.35),
             snake_min_length: Some(3),
             snake_target: Some(OnlyDude),
@@ -543,9 +543,9 @@ LevelsAsset (
         ), LevelInfo (
             title: "Up & Over",
             music: LevelMusic (
-                before: [],
-                during: [],
-                after: [],
+                before: [LevelOne],
+                during: [LevelOne],
+                after: [LevelOne],
             ),
             score_text: [
                 JustText("you figured it out, that's great"),
@@ -629,8 +629,8 @@ LevelsAsset (
             title: "no key uh",
             music: LevelMusic (
                 before: [],
-                during: [],
-                after: [],
+                during: [LevelOne8Bit],
+                after: [LevelOne8Bit],
             ),
             score_text: [
                 JustText("amazing. that was cool to watch"),
@@ -709,8 +709,8 @@ LevelsAsset (
             title: "Hole",
             music: LevelMusic (
                 before: [],
-                during: [],
-                after: [],
+                during: [Classic],
+                after: [Classic],
             ),
             score_text: [
                 JustText("thank goodness, you made it"),
@@ -789,9 +789,9 @@ LevelsAsset (
         ), LevelInfo (
             title: "Build",
             music: LevelMusic (
-                before: [],
-                during: [],
-                after: [],
+                before: [Classic],
+                during: [Classic],
+                after: [Classic],
             ),
             score_text: [
                 JustText("sorry i wasn't paying attention"),
@@ -877,7 +877,7 @@ LevelsAsset (
             title: "Walls",
             music: LevelMusic (
                 before: [],
-                during: [],
+                during: [Qwerty],
                 after: [],
             ),
             score_text: [
@@ -964,7 +964,7 @@ LevelsAsset (
             title: "Run",
             music: LevelMusic (
                 before: [],
-                during: [],
+                during: [Hurry],
                 after: [],
             ),
             score_text: [
@@ -1070,7 +1070,7 @@ LevelsAsset (
             ],
             is_food_random: false,
             minimum_food: 1,
-            snake_speed: Some(0.5),
+            snake_speed: Some(0.35),
             snake_min_length: Some(7),
             snake_target: Some(OnlyDude),
             camera_x: -5.488422,
@@ -1100,8 +1100,8 @@ LevelsAsset (
             title: "Layers",
             music: LevelMusic (
                 before: [],
-                during: [],
-                after: [],
+                during: [Space],
+                after: [Space],
             ),
             score_text: [
                 ScoreBeforeAfter("don't worry, i kept track that time. you now have", "yellow things"),
@@ -1203,7 +1203,7 @@ LevelsAsset (
             title: "It's Electric",
             music: LevelMusic (
                 before: [],
-                during: [],
+                during: [Boss],
                 after: [],
             ),
             score_text: [
@@ -1289,7 +1289,7 @@ LevelsAsset (
             title: "High Ground",
             music: LevelMusic (
                 before: [],
-                during: [],
+                during: [Organ],
                 after: [],
             ),
             score_text: [
@@ -1466,7 +1466,7 @@ LevelsAsset (
             title: "Run Run Run",
             music: LevelMusic (
                 before: [],
-                during: [],
+                during: [Halloween],
                 after: [],
             ),
             score_text: [
@@ -1486,19 +1486,19 @@ LevelsAsset (
     [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 ], [
     [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 6, 0, 0, 0, 0, 0],
-    [6, 6, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
     [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
-    [6, 6, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 6, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 6, 0, 0, 0, 0],
     [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
-    [6, 6, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
     [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 6, 0, 0, 0, 0, 0],
 ], [
     [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0],
-    [6, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0],
+    [0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0],
     [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0],
-    [6, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 6, 0, 0, 0, 0],
+    [0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 6, 0, 0, 0, 0],
     [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0],
-    [6, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0],
+    [0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0],
     [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0],
 ], [
     [0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0],
@@ -1569,7 +1569,7 @@ LevelsAsset (
             is_food_random: false,
             minimum_food: 1,
             snake_speed: Some(0.5),
-            snake_min_length: None,
+            snake_min_length: Some(4),
             snake_target: Some(OnlyDude),
             camera_x: -5.488422,
             camera_y: 12.027599,
@@ -1598,7 +1598,7 @@ LevelsAsset (
             title: "up & down",
             music: LevelMusic (
                 before: [],
-                during: [],
+                during: [DrumAndBell],
                 after: [],
             ),
             score_text: [
@@ -1766,7 +1766,7 @@ LevelsAsset (
             title: "Tunnel 2",
             music: LevelMusic (
                 before: [],
-                during: [],
+                during: [Space],
                 after: [],
             ),
             score_text: [
@@ -1883,21 +1883,21 @@ LevelsAsset (
 */
                 Teleporter ( 
                     position: Position ( x: 4, y: 1, z: 4 ),
-                    target: Position ( x: 4, y: 5, z: 4 ),
-                    move_to: Position ( x: 4, y: 5, z: 5 ),
-                    facing: Right
+                    target: Position ( x: 4, y: 5, z: 12 ),
+                    move_to: Position ( x: 4, y: 5, z: 11 ),
+                    facing: Left 
                 ),
                 Teleporter ( 
                     position: Position ( x: 4, y: 5, z: 4 ),
-                    target: Position ( x: 4, y: 1, z: 12 ),
-                    move_to: Position ( x: 4, y: 1, z: 11 ),
-                    facing: Left 
-                ),
-                Teleporter (
-                    position: Position ( x: 4, y: 5, z: 12 ),
                     target: Position ( x: 2, y: 6, z: 8 ),
                     move_to: Position ( x: 2, y: 5, z: 8 ),
                     facing: Beneath
+                ),
+                Teleporter (
+                    position: Position ( x: 4, y: 5, z: 12 ),
+                    target: Position ( x: 4, y: 1, z: 4 ),
+                    move_to: Position ( x: 4, y: 1, z: 5 ),
+                    facing: Right 
                 ),
                 Teleporter (
                     position: Position ( x: 4, y: 1, z: 12 ),
@@ -1910,8 +1910,8 @@ LevelsAsset (
             title: "The Pit",
             music: LevelMusic (
                 before: [],
-                during: [],
-                after: [],
+                during: [Organ],
+                after: [Organ],
             ),
             score_text: [
                 ScoreBeforeAfter("you have", ""),
@@ -1986,7 +1986,7 @@ LevelsAsset (
             title: "Race Level",
             music: LevelMusic (
                 before: [],
-                during: [],
+                during: [Qwerty],
                 after: [],
             ),
             score_text: [],

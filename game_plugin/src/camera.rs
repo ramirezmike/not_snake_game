@@ -34,7 +34,7 @@ impl Plugin for CameraPlugin {
         app//.add_plugin(PickingPlugin)
            .add_system_set(
                SystemSet::on_update(crate::AppState::InGame)
-                         .with_system(toggle_fly.system())
+                         //.with_system(toggle_fly.system())
            )
            .add_system_set(
                SystemSet::on_enter(crate::AppState::InGame)
@@ -42,7 +42,7 @@ impl Plugin for CameraPlugin {
            )
            .add_system_set(
                SystemSet::on_update(crate::AppState::MainMenu)
-                         .with_system(toggle_fly.system())
+                         //.with_system(toggle_fly.system())
            )
            .add_plugin(FlyCameraPlugin)
            .add_system(update_camera.system());
@@ -103,19 +103,21 @@ fn update_camera(
     keyboard_input: Res<Input<KeyCode>>,
     time: Res<Time>,
 ) {
-    if keyboard_input.just_pressed(KeyCode::P) {
-        for (_e, _camera, transform) in cameras.iter_mut() {
-            let translation = transform.translation;
-            let (rotation, axis) = transform.rotation.to_axis_angle();
-            println!("camera_x: {:?},", translation.x); 
-            println!("camera_y: {:?},", translation.y); 
-            println!("camera_z: {:?},", translation.z); 
-            println!("camera_rotation_x: {:?},", rotation.x); 
-            println!("camera_rotation_y: {:?},", rotation.y); 
-            println!("camera_rotation_z: {:?},", rotation.z); 
-            println!("camera_rotation_angle: {:?},", axis); 
-        }
-    }
+//  if keyboard_input.just_pressed(KeyCode::P) {
+//      for (_e, _camera, transform) in cameras.iter_mut() {
+//          let translation = transform.translation;
+//          let (rotation, axis) = transform.rotation.to_axis_angle();
+//          println!("camera_x: {:?},", translation.x); 
+//          println!("camera_y: {:?},", translation.y); 
+//          println!("camera_z: {:?},", translation.z); 
+//          println!("camera_rotation_x: {:?},", rotation.x); 
+//          println!("camera_rotation_y: {:?},", rotation.y); 
+//          println!("camera_rotation_z: {:?},", rotation.z); 
+//          println!("camera_rotation_angle: {:?},", axis); 
+//      }
+//  }
+
+    let is_menu = level.current_level == 0;
 
     for (_, mut main_camera, mut camera_transform) in cameras.iter_mut() {
         if let Ok(target_transform) = target.single() {
@@ -186,7 +188,7 @@ fn update_camera(
                     CameraBehavior::FollowY(offset) => {
                         camera_transform.translation.y += 
                             (target_transform.translation.y - camera_transform.translation.y + offset) 
-                           * 0.8 
+                           * if is_menu { 0.4 } else { 0.8 } 
                            * time.delta_seconds();
                     },
                     CameraBehavior::LooseFollowX(offset) => {
