@@ -201,9 +201,9 @@ fn player_input(
     mut create_dust_event_writer: EventWriter<dust::CreateDustEvent>,
 ) {
     let time_buffer = 100;
-    if keyboard_input.just_pressed(KeyCode::R) {
-        kill_dude_event_writer.send(KillDudeEvent { death_type: DudeDeath::Eaten });
-    }
+//  if keyboard_input.just_pressed(KeyCode::R) {
+//      kill_dude_event_writer.send(KillDudeEvent { death_type: DudeDeath::Eaten });
+//  }
 
     // this is for debugging. If we're flying, don't move the player
     if camera.iter().count() > 0 {

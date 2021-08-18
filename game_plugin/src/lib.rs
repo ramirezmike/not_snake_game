@@ -68,7 +68,7 @@ impl Plugin for GamePlugin {
            .add_system_set(
                SystemSet::on_enter(AppState::MainMenu)
                          .with_system(environment::load_level.system().label("loading_level"))
-                         .with_system(sounds::play_ingame_music.system())
+                         .with_system(sounds::play_ingame_music.system().after("loading_level"))
                          .with_system(menu::setup_menu.system().after("loading_level"))
                          .with_system(camera::create_camera.system().after("loading_level"))
                          .with_system(environment::set_clear_color.system().after("loading_level"))
@@ -125,9 +125,9 @@ impl Plugin for GamePlugin {
 }
 
 fn exit(keys: Res<Input<KeyCode>>, mut exit: ResMut<Events<AppExit>>) {
-    if keys.just_pressed(KeyCode::Q) {
-        exit.send(AppExit);
-    }
+//  if keys.just_pressed(KeyCode::Q) {
+//      exit.send(AppExit);
+//  }
 }
 
 #[derive(Copy, Clone, PartialEq, Debug)]
