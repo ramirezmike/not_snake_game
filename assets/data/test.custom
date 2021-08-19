@@ -3664,7 +3664,7 @@ LevelsAsset (
 
             is_food_random: false,
             minimum_food: 100,
-            snake_speed: Some(0.35),
+            snake_speed: Some(0.30),
             snake_min_length: Some(10),
             snake_target: Some(OnlyDude),
             camera_x: -6.0000000,
