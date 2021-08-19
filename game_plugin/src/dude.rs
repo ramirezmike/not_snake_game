@@ -10,7 +10,7 @@ impl Plugin for DudePlugin {
                SystemSet::on_update(crate::AppState::InGame)
                    .with_system(player_input.system())
                    .with_system(hop_on_snake.system())
-                   .with_system(push_block.system())
+                   //.with_system(push_block.system())
            );
     }
 }
@@ -201,9 +201,9 @@ fn player_input(
     mut create_dust_event_writer: EventWriter<dust::CreateDustEvent>,
 ) {
     let time_buffer = 100;
-    if keyboard_input.just_pressed(KeyCode::R) {
-        kill_dude_event_writer.send(KillDudeEvent { death_type: DudeDeath::Eaten });
-    }
+//  if keyboard_input.just_pressed(KeyCode::R) {
+//      kill_dude_event_writer.send(KillDudeEvent { death_type: DudeDeath::Eaten });
+//  }
 
     // this is for debugging. If we're flying, don't move the player
     if camera.iter().count() > 0 {
