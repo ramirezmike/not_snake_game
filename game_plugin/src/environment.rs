@@ -546,6 +546,10 @@ pub fn load_level(
         for y in 0..level.height() {
             for z in 0..level.length() {
                 match level.get_level_info(x, y, z) {
+                    14 => {
+                        let entity = commands.spawn_bundle(PbrBundle { ..Default::default() }).id();
+                        level.set(x as i32, y as i32, z as i32, Some(GameObject::new(entity, EntityType::Block)));
+                    },
                     item @ 1 | item @ 8 | item @ 9 => { // platform
                         let entity_type = if item == 9 {
                                               EntityType::UnstandableBlock
