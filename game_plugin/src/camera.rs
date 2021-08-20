@@ -4,8 +4,6 @@ use bevy::reflect::{TypeUuid};
 use crate::{level::Level, dude, environment};
 use bevy::render::camera::PerspectiveProjection;
 
-pub mod fly_camera;
-
 pub struct CameraTarget;
 
 #[derive(Debug, Clone, Deserialize, TypeUuid)]
@@ -26,8 +24,6 @@ pub struct CameraMeshes {
     pub spikes: Handle<Mesh>,
 }
 
-use fly_camera::*;
-
 pub struct CameraPlugin;
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut AppBuilder) {
@@ -44,7 +40,6 @@ impl Plugin for CameraPlugin {
                SystemSet::on_update(crate::AppState::MainMenu)
                          //.with_system(toggle_fly.system())
            )
-           .add_plugin(FlyCameraPlugin)
            .add_system(update_camera.system());
     }
 }
@@ -616,48 +611,5 @@ pub fn handle_player_death(
                                                        }
                                                    };
         }
-    }
-}
-
-fn toggle_fly(
-    mut commands: Commands, 
-    keys: Res<Input<KeyCode>>, 
-    mut windows: ResMut<Windows>,
-    mut camera: Query<(Entity, &mut MainCamera, Option<&FlyCamera>, &mut Transform)>,
-    mut cooldown: Local<f32>,
-    timer: Res<Time>,
-) {
-    *cooldown += timer.delta_seconds();
-
-    if *cooldown < 2.0 {
-        return;
-    }
-
-    if keys.just_pressed(KeyCode::F) {
-        println!("PRESSED F");
-        let window = windows.get_primary_mut().unwrap();
-        for (e, _, f, mut t) in camera.iter_mut() {
-            match f {
-                Some(_) => {
-                    commands.entity(e).remove::<FlyCamera>();
-                    window.set_cursor_lock_mode(false);
-                    window.set_cursor_visibility(true);
-                },
-                None => {
-                    let mut fly_camera = FlyCamera::default();
-                    fly_camera.key_forward = KeyCode::Up; 
-                    fly_camera.key_backward = KeyCode::Down; 
-                    fly_camera.key_left = KeyCode::Left; 
-                    fly_camera.key_right = KeyCode::Right; 
-                    commands.entity(e).insert(fly_camera);
-                    t.translation = Vec3::new(-6.867214, 5.8081317, 5.4974184);
-                    t.rotation = Quat::from_xyzw(-0.14680715, -0.6914177, -0.14668213, 0.692007);
-                    window.set_cursor_lock_mode(true);
-                    window.set_cursor_visibility(false);
-                },
-            }
-        }
-
-        *cooldown = 0.0;
     }
 }

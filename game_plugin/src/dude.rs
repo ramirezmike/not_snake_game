@@ -188,7 +188,7 @@ fn player_input(
     time: Res<Time>, 
     mut lift_holdable_event_writer: EventWriter<holdable::LiftHoldableEvent>,
     mut dudes: Query<(Entity, &mut moveable::Moveable, &Transform, &Facing, &mut SquashQueue), With<Dude>>, 
-    camera: Query<&crate::camera::fly_camera::FlyCamera>,
+//    camera: Query<&crate::camera::fly_camera::FlyCamera>,
     mut kill_dude_event_writer: EventWriter<KillDudeEvent>,
     mut action_buffer: Local<Option::<u128>>,
     mut up_buffer: Local<Option::<u128>>,
@@ -205,10 +205,10 @@ fn player_input(
 //      kill_dude_event_writer.send(KillDudeEvent { death_type: DudeDeath::Eaten });
 //  }
 
-    // this is for debugging. If we're flying, don't move the player
-    if camera.iter().count() > 0 {
-        return;
-    }
+//  // this is for debugging. If we're flying, don't move the player
+//  if camera.iter().count() > 0 {
+//      return;
+//  }
 
     let time_since_startup = time.time_since_startup().as_millis();
     if let Some(time_since_up) = *up_buffer {

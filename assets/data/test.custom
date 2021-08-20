@@ -3466,7 +3466,7 @@ LevelsAsset (
 
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
-    [0, 0,11, 0, 6, 6, 6, 6, 6, 0, 0 ],
+    [0, 0,11, 0, 6, 6, 6, 6, 6, 3, 0 ],
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
     [5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 ],
 ], [                      
@@ -3668,7 +3668,7 @@ LevelsAsset (
             // 12 spaces on the X axis
 
             is_food_random: false,
-            minimum_food: 100,
+            minimum_food: 1,//100,
             snake_speed: Some(0.30),
             snake_min_length: Some(10),
             snake_target: Some(OnlyDude),

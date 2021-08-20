@@ -1,43 +1,53 @@
-# A Bevy game template
+# Not Snake
 
-Template for a Game using the awesome [Bevy engine][bevy] featuring out of the box builds for Windows, Linux, macOS and Web (WASM).
+This is a game made in Rust using the awesome [Bevy engine][bevy]. It can be played [here][itch]. 
 
-_Since Bevy is in heavy development, there regularly are unpublished new features or bug fixes. If you like living on the edge, you can use the branch `bevy_main` of this template to be close to the current state of Bevys main branch_
- 
-# What does this template give you?
-* basic setup with an executable crate on the root level and your game as a Bevy plugin in a library
-* small example game (*warning: biased; e.g. split into a lot of plugins and using `bevy_kira_audio` for sound*)
-* workflow for GitHub actions creating releases for Windows, Linux, macOS and Web (WASM) ready for distribution
-    * push a tag in the form of `v[0-9]+.[0-9]+.[0-9]+*` (e.g. `v1.1.42`) to trigger the flow
+I started this project with the only goal of completing a game, following two guidelines of "if it ain't broke, don't fix it" and "save it for the next game" in an attempt to progress while preventing scope creep. It helped me move forward and complete the game, but the cost can be clearly seen across the code base.
 
-# How to use this template?
- 1. Create a repository based on this template
- 2. Look for `ToDo` to use your own game name everywhere
- 3. [Update the icons as described below](#updating-the-icons)
- 4. Start coding :tada:
-    * Start the native app: `cargo run --features native`
-    * Start the web build: `cargo make serve` (requires `cargo-make`; to install run `cargo install cargo-make`)
+There is *a lot* that can be improved in this code base and I strongly advise anyone wanting to learn from this code to keep the above in mind. Again, this project was made while learning bevy, ecs concepts and how to make a game in general while also just throwing ideas at the wall and seeing what sticks.
 
-You should keep the `credits` directory up to date. The release workflow automatically includes the directory in every build.
- 
-### Updating the icons
- 1. Replace `build/windows/icon.ico` (icon used for windows executable and as favicon for the web-builds)
- 2. Replace `build/macos/icon_1024x1024.png` with a `1024` times `1024` pixel png icon and run `create_icns.sh` (make sure to run the script inside the `macos` directory) - _Warning: sadly this seems to require a mac..._
+I learned a lot making this game and am getting started on a new game that will (hopefully) be much more idiomatic. I hope pieces of this project can be useful to others with the understanding that my priorities were finishing a game, not making anything reusable. 
 
-# Getting started with Bevy
+I'm always hanging out in the [bevy discord][bevy-discord], definitely feel free to @ramirezmike me and ask questions or criticize me :)
 
-You should checkout the [bevy website][bevy] for [links to resources][bevy-learn]. I can also recommend the [official Discord server][bevy-discord] as a place to keep up to date with the development and get feedback + help from other Bevy users. 
+Also, feel free to fork/make issues!
 
-# Known issues
 
-*  Audio in web-builds might sound bad in some browsers. See [bevy_kira_audio/#9][firefox-sound-issue] for more information.
+# Special Thanks
+cart - for being a cool dude
 
-# License
+alice/IvyLashes - for being really knowledgable and super helpful
 
-This project is licensed under [CC0 1.0 Universal](LICENSE) except some content of `assets` and the Bevy icons in the `build` directory (see [Credits](credits/CREDITS.md)). Go crazy and feel free to show me whatever you build with this ([@nikl_me][nikl-twitter]).
+[TheRawMeatball][meatball] - for being really helpful a lot
+
+NiklasEi - the [Bevy game template][bevy-template] and [kira audio][audio] are amazing!!
+
+OptimisticPeach - for answering my shader questions that was neat
+
+StarToaster - also for answering my other shader questions 
+
+robswain - your [bevy-hud-pass][bevy-hud-pass] made my hud all cool
+
+[aevyrie][aevyrie] - I think I managed to use all of your plugins
+
+gin - for making really out-of-the-box suggestions
+
+Toqoz - your [line crate][linecrate] helped me fix a ton of bugs
+
+Joy - for helping me learn rotations
+
+Ida Iyes - your [bevy cheatbook][cheatbook] was super super helpful!
+
+and thanks to everyone else in the Bevy discord!
+
 
 [bevy]: https://bevyengine.org/
-[bevy-learn]: https://bevyengine.org/learn/
+[itch]: https://ramirezmike2.itch.io/not-snake 
 [bevy-discord]: https://discord.gg/bevy
-[nikl-twitter]: https://twitter.com/nikl_me
-[firefox-sound-issue]: https://github.com/NiklasEi/bevy_kira_audio/issues/9
+[bevy-template]: https://github.com/NiklasEi/bevy_game_template
+[aevyrie]: https://github.com/aevyrie
+[audio]: https://github.com/NiklasEi/bevy_kira_audio
+[meatball]: https://github.com/TheRawMeatball
+[bevy-hud-pass]: https://github.com/superdump/bevy-hud-pass
+[cheatbook]: https://github.com/bevy-cheatbook/bevy-cheatbook
+[lincrate]: https://github.com/Toqozz/bevy_debug_lines
