@@ -1,6 +1,6 @@
 # Not Snake
 
-This is a game made in Rust using the awesome [Bevy engine][bevy]. It can be played [here][itch]. 
+This is a game made in Rust using the awesome [Bevy engine][bevy]. It can be played [here][itch] (the release branch points to the version that is deployed at this link).
 
 I started this project with the only goal of completing a game, following two guidelines of "if it ain't broke, don't fix it" and "save it for the next game" in an attempt to progress while preventing scope creep. It helped me move forward and complete the game, but the cost can be clearly seen across the code base.
 
