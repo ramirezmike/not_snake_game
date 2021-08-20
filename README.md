@@ -12,6 +12,7 @@ I'm always hanging out in the [bevy discord][bevy-discord], definitely feel free
 
 Also, feel free to fork/make issues!
 
+https://user-images.githubusercontent.com/1421719/130297030-7209dcca-e0be-41e4-afcc-e76404be9817.mp4
 
 # Running the Game
 
