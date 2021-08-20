@@ -13,6 +13,22 @@ I'm always hanging out in the [bevy discord][bevy-discord], definitely feel free
 Also, feel free to fork/make issues!
 
 
+# Running the Game
+
+To run the game locally
+
+```
+cargo run --release --features native
+```
+
+To run the browser version
+
+```
+cargo make serve
+```
+
+which will compile and serve the web version at http://127.0.0.1:4000
+
 # Special Thanks
 cart - for being a cool dude
 
