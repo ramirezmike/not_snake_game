@@ -26,6 +26,7 @@ pub fn spawn_food(
     show_shadow: bool,
     is_bonus: bool,
 ) -> Entity {
+    let show_shadow = false;
     let bonus_food_color = Color::hex("97D8B2").unwrap(); 
     let bonus_food_color = Color::rgba(bonus_food_color.r(), bonus_food_color.g(), bonus_food_color.b(), 1.0); 
     let shaded_bonus_food_color = Color::rgba(bonus_food_color.r(), bonus_food_color.g(), bonus_food_color.b(), 0.4);

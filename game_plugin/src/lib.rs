@@ -188,6 +188,6 @@ pub fn fullscreen_app(
 ) {
     let window = windows.get_primary_mut().unwrap();
     println!("Setting fullscreen...");
-    window.set_maximized(true);
-    window.set_mode(WindowMode::BorderlessFullscreen);
+//  window.set_maximized(true);
+//  window.set_mode(WindowMode::BorderlessFullscreen);
 }

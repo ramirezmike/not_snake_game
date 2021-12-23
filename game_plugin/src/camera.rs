@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use serde::Deserialize;
 use bevy::reflect::{TypeUuid};
+use bevy::pbr::NotShadowCaster;
 use crate::{level::Level, dude, environment};
 use bevy::render::camera::PerspectiveProjection;
 
@@ -28,8 +29,7 @@ pub struct CameraMeshes {
 pub struct CameraPlugin;
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
-        app//.add_plugin(PickingPlugin)
-           .add_system_set(
+        app.add_system_set(
                SystemSet::on_update(crate::AppState::InGame)
                          //.with_system(toggle_fly.system())
            )
@@ -332,25 +332,29 @@ pub fn create_camera(
                     material: block_material.clone(),
                     transform: Transform::from_translation(upper_left.start),
                     ..Default::default()
-                }).insert(upper_left);
+                }).insert(upper_left)
+                  .insert(NotShadowCaster);
                 parent.spawn_bundle(PbrBundle {
                     mesh: plane.clone(),
                     material: block_material.clone(),
                     transform: Transform::from_translation(upper_right.start),
                     ..Default::default()
-                }).insert(upper_right);
+                }).insert(upper_right)
+                  .insert(NotShadowCaster);
                 parent.spawn_bundle(PbrBundle {
                     mesh: plane.clone(),
                     material: block_material.clone(),
                     transform: Transform::from_translation(lower_left.start),
                     ..Default::default()
-                }).insert(lower_left);
+                }).insert(lower_left)
+                  .insert(NotShadowCaster);
                 parent.spawn_bundle(PbrBundle {
                     mesh: plane.clone(),
                     material: block_material.clone(),
                     transform: Transform::from_translation(lower_right.start),
                     ..Default::default()
-                }).insert(lower_right);
+                }).insert(lower_right)
+                  .insert(NotShadowCaster);
 
 
                 // Bolt 
@@ -370,7 +374,8 @@ pub fn create_camera(
                         t
                     },
                     ..Default::default()
-                }).insert(camera_bolt);
+                }).insert(camera_bolt)
+                  .insert(NotShadowCaster);
 
                 // Spike
                 let distance_from_camera = -3.0;
@@ -389,26 +394,37 @@ pub fn create_camera(
                         t
                     },
                     ..Default::default()
-                }).insert(camera_spike);
+                }).insert(camera_spike)
+                  .insert(NotShadowCaster);
 
-                // Light
-                parent.spawn_bundle(PointLightBundle {
-                    transform: Transform::from_xyz(0.0, 8.0, 0.0),
-                    point_light: PointLight {
-                        intensity: 0.0,
-                        range: 0.0,
+                // directional 'sun' light
+                const HALF_SIZE: f32 = 100.0;
+                parent.spawn_bundle(DirectionalLightBundle {
+                    directional_light: DirectionalLight {
+                        // Configure the projection to better fit the scene
+                        shadow_projection: OrthographicProjection {
+                            left: -HALF_SIZE,
+                            right: HALF_SIZE,
+                            bottom: -HALF_SIZE,
+                            top: HALF_SIZE,
+                            near: -10.0 * HALF_SIZE,
+                            far: 10.0 * HALF_SIZE,
+                            ..Default::default()
+                        },
+                        shadows_enabled: true,
+                        ..Default::default()
+                    },
+                    transform: Transform {
+                        rotation: Quat::from_rotation_x(-std::f32::consts::FRAC_PI_4),
                         ..Default::default()
                     },
                     ..Default::default()
                 });
-
             })
             .insert(MainCamera {
                 current_followx_target: None,
                 current_followy_target: None
-            })
-     //       .with(PickSource::default());
-                ;
+            });
 
     //   let window = windows.get_primary_mut().unwrap();
     //  window.set_cursor_lock_mode(true);

@@ -180,7 +180,7 @@ impl Plugin for EnvironmentPlugin {
                .with_system(food::animate_spawn_particles.system())
                .with_system(sounds::play_sounds.system())
                .with_system(game_controller::gamepad_connections.system())
-//               .with_system(update_fps.system())
+               .with_system(update_fps.system())
                .with_system(camera::cull_blocks.system())
                .with_system(snake::detect_dude_on_electric_snake.system())
                .with_system(shrink_shrinkables.system())
@@ -469,7 +469,13 @@ pub fn load_level(
 
     dude_meshes.material = materials.add(Color::hex(palette.dude.clone()).unwrap().into());
     let enemy_color = Color::hex(palette.enemy.clone()).unwrap();
-    enemy_meshes.material = materials.add(enemy_color.into());
+    enemy_meshes.material = materials.add(StandardMaterial {
+                                base_color: enemy_color,
+                                perceptual_roughness: 1.0,
+                                metallic: 0.4,
+                                ..Default::default()
+                            });
+
     enemy_meshes.shadow_material = materials.add(Color::rgba(enemy_color.r(), enemy_color.g(), enemy_color.b(), 0.4).into());
 
     let plane = meshes.add(Mesh::from(shape::Plane { size: 1.0 }));
@@ -728,38 +734,38 @@ fn create_hud(
         })
         .insert(FollowText);
 
-//      commands
-//      .spawn_bundle(TextBundle {
-//          style: Style {
-//              align_self: AlignSelf::FlexEnd,
-//              ..Default::default()
-//          },
-//          // Use `Text` directly
-//          text: Text {
-//              // Construct a `Vec` of `TextSection`s
-//              sections: vec![
-//                  TextSection {
-//                      value: "FPS: ".to_string(),
-//                      style: TextStyle {
-//                          font: font.clone(),
-//                          font_size: 20.0,
-//                          color: Color::WHITE,
-//                      },
-//                  },
-//                  TextSection {
-//                      value: "".to_string(),
-//                      style: TextStyle {
-//                          font: font.clone(),
-//                          font_size: 20.0,
-//                          color: Color::GOLD,
-//                      },
-//                  },
-//              ],
-//              ..Default::default()
-//          },
-//          ..Default::default()
-//      })
-//      .insert(FpsText);
+        commands
+        .spawn_bundle(TextBundle {
+            style: Style {
+                align_self: AlignSelf::FlexEnd,
+                ..Default::default()
+            },
+            // Use `Text` directly
+            text: Text {
+                // Construct a `Vec` of `TextSection`s
+                sections: vec![
+                    TextSection {
+                        value: "FPS: ".to_string(),
+                        style: TextStyle {
+                            font: font.clone(),
+                            font_size: 20.0,
+                            color: Color::WHITE,
+                        },
+                    },
+                    TextSection {
+                        value: "".to_string(),
+                        style: TextStyle {
+                            font: font.clone(),
+                            font_size: 20.0,
+                            color: Color::GOLD,
+                        },
+                    },
+                ],
+                ..Default::default()
+            },
+            ..Default::default()
+        })
+        .insert(FpsText);
 
 
     println!("Added HUD");
