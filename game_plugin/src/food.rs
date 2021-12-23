@@ -1,11 +1,14 @@
 use bevy::prelude::*;
 use crate::{level, level::Level, Position, EntityType, GameObject, environment::HudFoodMesh, dude, snake};
 
+#[derive(Component)]
 pub struct Food { 
     pub is_bonus: bool
 }
+#[derive(Component)]
 pub struct FoodInnerMesh { }
 pub struct FoodEatenEvent(pub Entity, pub bool);
+#[derive(Component)]
 pub struct FoodSpawnParticle {
     parent: Entity,
     shadow_id: Option::<Entity>,
@@ -51,9 +54,8 @@ pub fn spawn_food(
                         }
                     },
                     transform: Transform::from_xyz(0.0, 0.5, 0.0),
-                    visible: Visible {
-                        is_visible: false,
-                        is_transparent: false
+                    visibility: Visibility {
+                        is_visible: false
                     },
                     ..Default::default()
                 })
@@ -74,9 +76,8 @@ pub fn spawn_food(
                                 }
                             },
                             transform: Transform::from_xyz(0.0, 0.05, 0.0),
-                            visible: Visible {
-                                is_visible: false,
-                                is_transparent: false
+                            visibility: Visibility {
+                                is_visible: false
                             },
                             ..Default::default()
                         })
@@ -142,7 +143,7 @@ pub fn spawn_food(
 pub fn animate_spawn_particles(
     mut commands: Commands,
     mut particles: Query<(Entity, &mut Transform, &mut FoodSpawnParticle)>,
-    mut food_visibles: Query<&mut Visible, With<FoodInnerMesh>>,
+    mut food_visibles: Query<&mut Visibility, With<FoodInnerMesh>>,
     time: Res<Time>,
 ) {
     let target = Vec3::new(0.0, 0.5, 0.0);

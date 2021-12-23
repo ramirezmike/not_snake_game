@@ -3,7 +3,7 @@ name = "game_plugin"
 publish = false
 version = "0.1.0"
 authors = ["mramirez <ramirezmike2@gmail.com>"]
-edition = "2018"
+edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -20,17 +20,25 @@ default = [
 ]
 
 native = [
-    "bevy/bevy_wgpu",
 ]
 
 [dependencies]
-bevy = { version = "0.5.0", default-features = false }
-bevy_mod_raycast = { git = "https://github.com/aevyrie/bevy_mod_raycast" }
-bevy_mod_picking = { git = "https://github.com/aevyrie/bevy_mod_picking", rev = "30a9124" }
+bevy = { git = "https://github.com/bevyengine/bevy", rev = "081350916c39fc1c7c9d659ccb6d86413832b465", default-features = false }
+#bevy_mod_raycast = { git = "https://github.com/aevyrie/bevy_mod_raycast" }
+#bevy_mod_picking = { git = "https://github.com/aevyrie/bevy_mod_picking" }
 petgraph = "0.5.1"
 #bevy_prototype_debug_lines = "0.2.2"
 rand = "0.8"
 serde = {version = "1", features = ["derive"]}
 anyhow = "1.0"
 ron = "0.6.2"
-bevy_kira_audio = {version = "0.5.0", features = ["wav"]}
+bevy_kira_audio = { git = "https://github.com/NiklasEi/bevy_kira_audio", rev = "9a9a4c87e01ad2fb446852317e63f8fc103406c1", features = ["wav"]}
+
+
+
+[patch.crates-io]
+# override it with bevy from git
+bevy = { path = "../../../../repos/bevy" }
+
+[patch."https://github.com/bevyengine/bevy"]
+bevy = { path = "../../../../repos/bevy" }

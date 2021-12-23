@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use crate::{level::Level, Position, moveable::Moveable, Dude};
 
+#[derive(Component)]
 pub struct Fallable { 
     pub is_jumping: bool 
 }

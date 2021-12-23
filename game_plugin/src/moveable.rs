@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use crate::{Direction, level::Level, Position, EntityType, GameObject, facing::Facing, sounds, snake, dude, teleporter, dust};
 use rand::seq::SliceRandom;
 
-#[derive(Debug)]
+#[derive(Debug, Component)]
 pub struct Moveable {
     // (position, current movement time, finish movement time, Direction, original_position, movement_type)
     target_position: Option::<(Vec3, f32, f32, Direction, Vec3, MovementType)>, 
@@ -77,7 +77,7 @@ pub fn update_moveable(
                           Option::<&mut dude::SquashQueue>,
                           &Children)>,
     mut inner_meshes: Query<&mut Transform, Without<Moveable>>,
-    mut inner_meshes_visibility: Query<&mut Visible, Without<Moveable>>,
+    mut inner_meshes_visibility: Query<&mut Visibility, Without<Moveable>>,
     mut level: ResMut<Level>,
     mut sound_writer: EventWriter<sounds::SoundEvent>,
     mut kill_dude_event_writer: EventWriter<dude::KillDudeEvent>,
@@ -222,7 +222,7 @@ pub fn update_moveable(
                             Direction::Beneath => (position.x, position.y - 1, position.z),
                             Direction::Above => (position.x, position.y + 1, position.z),
                         };
-                    let target_position = IVec3::new(target_position.0, target_position.1, target_position.2).as_f32();
+                    let target_position = IVec3::new(target_position.0, target_position.1, target_position.2).as_vec3();
 
                     let target_is_enterable = level.is_enterable_with_vec(target_position);
                     if let Some(mut facing) = maybe_facing {
@@ -293,7 +293,7 @@ pub fn update_moveable(
                                       moveable.movement_speed, queued_movement.0,
                                       transform.translation, MovementType::Step));
                         } else {
-                            let above_moveable = IVec3::new(position.x, position.y + 1, position.z).as_f32(); 
+                            let above_moveable = IVec3::new(position.x, position.y + 1, position.z).as_vec3(); 
                             let above_target = Vec3::new(target_position.x, target_position.y + 1.0, target_position.z);
                             
                             if level.is_enterable_with_vec(above_moveable) && level.is_enterable_with_vec(above_target) {
@@ -374,7 +374,7 @@ pub fn update_moveable(
                         }
                     }
 
-                    let target_position = IVec3::new(target_position.x, target_position.y, target_position.z).as_f32();
+                    let target_position = IVec3::new(target_position.x, target_position.y, target_position.z).as_vec3();
                     moveable.target_position = 
                         Some((target_position, 0.0, 
                               moveable.movement_speed * number_of_steps as f32, 
@@ -389,7 +389,7 @@ pub fn update_moveable(
 
         // for gravity
         if !moveable.is_climbing //&& moveable.target_position.is_none()
-        && level.is_enterable_with_vec(IVec3::new(position.x, position.y - 1, position.z).as_f32()) {
+        && level.is_enterable_with_vec(IVec3::new(position.x, position.y - 1, position.z).as_vec3()) {
             moveable.set_movement(Direction::Beneath, MovementType::Step);
         }
     }

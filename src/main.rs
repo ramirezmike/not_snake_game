@@ -11,7 +11,7 @@ use game_plugin::GamePlugin;
 pub static COLOR_BLACK: &str = "000000";
 
 fn main() {
-    let mut app = App::build();
+    let mut app = App::new();
     app
         .insert_resource(Msaa { samples: 1 })
         .insert_resource(ClearColor(Color::hex(COLOR_BLACK).unwrap()))

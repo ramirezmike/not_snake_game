@@ -1,51 +1,43 @@
-use bevy::{
-    prelude::*,
-    render::{
-        pipeline::{PipelineDescriptor},
-        render_graph::{base, RenderGraph, RenderResourcesNode},
-        renderer::RenderResources,
-        shader::{ShaderStage, ShaderStages},
-    },
-};
+use bevy::prelude::*;
 use bevy::reflect::{TypeUuid};
 use bevy::render::camera::Camera;
 use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, Diagnostics};
 use bevy_kira_audio::{Audio, AudioPlugin};
 
-use crate::{level::Level, Position, collectable, dude, snake, level, hud_pass,
+use crate::{level::Level, Position, collectable, dude, snake, level, 
             EntityType, GameObject, holdable, win_flag, moveable, food, score,
             camera::MainCamera, sounds, game_controller, teleporter, dust,
             level_over, credits, block, camera, path_find, path_find::PathFinder};
 //use bevy_mod_debugdump::print_schedule_runner;
 
 // material.shaded = false
+#[derive(Component)]
 pub struct Shadow;
+#[derive(Component)]
 pub struct PlatformMesh;
+#[derive(Component)]
 pub struct BlockMesh;
 pub struct LevelReady(pub bool);
 pub struct GameOver(pub bool);
 pub struct EnvironmentPlugin;
 impl Plugin for EnvironmentPlugin {
-    fn build(&self, app: &mut AppBuilder) {
+    fn build(&self, app: &mut App) {
         app.insert_resource(Level::new())
            .insert_resource(PathFinder::new())
            .insert_resource(LevelReady(false))
            .insert_resource(GameOver(false))
            .insert_resource(score::Score::new())
            .insert_resource(sounds::CollectSounds::new())
-           .init_resource::<crate::pause::PauseButtonMaterials>()
            .init_resource::<dude::DudeMeshes>()
            .init_resource::<snake::EnemyMeshes>()
            .init_resource::<camera::CameraMeshes>()
            .init_resource::<win_flag::WinFlagMeshes>()
-           .init_resource::<GameShaders>()
            .init_resource::<camera::CameraMouthMovement>()
            .init_resource::<camera::CameraBoltMovement>()
            .init_resource::<camera::CameraSpikeMovement>()
            .init_resource::<AssetsLoading>()
            .add_plugin(AudioPlugin)
            .add_plugin(camera::CameraPlugin)
-           .add_plugin(hud_pass::HUDPassPlugin)
            .add_event::<holdable::LiftHoldableEvent>()
            .add_event::<level::PositionChangeEvent>()
            .add_event::<level_over::LevelOverEvent>()
@@ -167,7 +159,7 @@ impl Plugin for EnvironmentPlugin {
                .with_system(food::update_food.system())
                .with_system(food::handle_food_eaten.system())
 //               .with_system(hide_blocks.system())
-//               .with_system(light_thing.system())
+               .with_system(light_thing.system())
 //              .with_system(snake::add_body_part.system())
                .with_system(snake::add_body_parts.system())
                .with_system(snake::add_body_to_reach_level_min.system())
@@ -190,7 +182,6 @@ impl Plugin for EnvironmentPlugin {
                .with_system(game_controller::gamepad_connections.system())
 //               .with_system(update_fps.system())
                .with_system(camera::cull_blocks.system())
-               .with_system(animate_shader.system())
                .with_system(snake::detect_dude_on_electric_snake.system())
                .with_system(shrink_shrinkables.system())
                .with_system(grow_growables.system())
@@ -228,6 +219,7 @@ pub fn restart_level(
     }
 }
 
+#[derive(Component)]
 pub struct Grow;
 pub fn grow_growables(
     mut commands: Commands,
@@ -245,6 +237,7 @@ pub fn grow_growables(
     }
 }
 
+#[derive(Component)]
 pub struct Shrink;
 pub fn shrink_shrinkables(
     mut shrinkables: Query<&mut Transform, With<Shrink>>,
@@ -294,10 +287,6 @@ pub fn load_assets(
     mut flag_meshes: ResMut<win_flag::WinFlagMeshes>,
     mut loading: ResMut<AssetsLoading>,
     mut level_asset_state: ResMut<level::LevelAssetState>, 
-    mut pipelines: ResMut<Assets<PipelineDescriptor>>,
-    mut game_shaders: ResMut<GameShaders>,
-    mut render_graph: ResMut<RenderGraph>,
-
 ) {
     dude_meshes.step1 = asset_server.load("models/dude.glb#Mesh0/Primitive0");
     dude_meshes.body = asset_server.load("models/chip.glb#Mesh0/Primitive0");
@@ -312,27 +301,6 @@ pub fn load_assets(
 
     flag_meshes.flag = asset_server.load("models/winflag.glb#Mesh0/Primitive0");
 
-    // Create a new shader pipeline.
-    let shader_paths = get_shader_paths();
-    game_shaders.electric = pipelines.add(PipelineDescriptor::default_config(ShaderStages {
-        vertex: asset_server.load::<Shader, _>(shader_paths.0),
-        fragment: Some(asset_server.load::<Shader, _>(shader_paths.1)),
-    }));
-
-
-    // Add a `RenderResourcesNode` to our `RenderGraph`. This will bind `TimeComponent` to our
-    // shader.
-    render_graph.add_system_node(
-        "time_uniform",
-        RenderResourcesNode::<TimeUniform>::new(true),
-    );
-
-    // Add a `RenderGraph` edge connecting our new "time_component" node to the main pass node. This
-    // ensures that "time_component" runs before the main pass.
-    render_graph
-        .add_node_edge("time_uniform", base::node::MAIN_PASS)
-        .unwrap();
-
     let audio_state = sounds::AudioState::new(&asset_server);
 
     loading.0.push(dude_meshes.step1.clone_untyped());
@@ -344,7 +312,6 @@ pub fn load_assets(
     loading.0.push(camera_meshes.bolt.clone_untyped());
     loading.0.push(camera_meshes.spikes.clone_untyped());
 
-//    loading.0.push(game_shaders.electric.clone_untyped());
     loading.0.append(&mut audio_state.get_sound_handles());
 
     level_asset_state.handle = asset_server.load("data/test.custom");
@@ -399,9 +366,7 @@ pub fn cleanup_environment(
     mut level_ready: ResMut<LevelReady>,
     entities: Query<(Entity, &EntityType)>,
     dust: Query<Entity, With<dust::Dust>>,
-    lights: Query<Entity, With<Light>>,
     platforms: Query<Entity, With<PlatformMesh>>,
-    hud_entities: Query<Entity, With<hud_pass::HUDPass>>,
     hud_cameras: Query<Entity, With<Hud3DCamera>>,
     ui_cameras: Query<Entity, With<bevy::render::camera::OrthographicProjection>>,
     texts: Query<Entity, With<Text>>,
@@ -417,15 +382,6 @@ pub fn cleanup_environment(
             }
             _ => commands.entity(entity).despawn()
         }
-    }
-
-    // light is on camera so don't need to despawn now?
-//  for entity in lights.iter() {
-//      commands.entity(entity).despawn_recursive();
-//  }
-
-    for entity in hud_entities.iter() {
-        commands.entity(entity).despawn_recursive();
     }
 
     for entity in ui_cameras.iter() {
@@ -483,7 +439,6 @@ pub fn load_level(
     mut dude_meshes: ResMut<dude::DudeMeshes>,
     mut enemy_meshes: ResMut<snake::EnemyMeshes>,
     flag_meshes: ResMut<win_flag::WinFlagMeshes>,
-    game_shaders: Res<GameShaders>,
     audio: Res<Audio>,
     mut audio_state: ResMut<sounds::AudioState>,
 //  entities: Query<Entity>,
@@ -505,6 +460,11 @@ pub fn load_level(
 
     level.reset_level();
 
+    commands.insert_resource(AmbientLight {
+        color: Color::WHITE,
+        brightness: 0.50,
+    });
+
     let palette = &level.get_palette();
 
     dude_meshes.material = materials.add(Color::hex(palette.dude.clone()).unwrap().into());
@@ -525,7 +485,6 @@ pub fn load_level(
         materials.add(StandardMaterial {
                         base_color: Color::BLACK,
                         unlit: true,
-                        roughness: 1.0,
                         reflectance: 0.0,
                         ..Default::default()
                     });
@@ -533,7 +492,6 @@ pub fn load_level(
         materials.add(StandardMaterial {
                         base_color: Color::BLACK,
                         unlit: true,
-                        roughness: 1.0,
                         reflectance: 0.0,
                         ..Default::default()
                     });
@@ -648,9 +606,8 @@ pub fn load_level(
                                 parent.spawn_bundle(PbrBundle {
                                     mesh: flag_meshes.flag.clone(),
                                     material: materials.add(flag_color.into()),
-                                    visible: Visible {
+                                    visibility: Visibility {
                                         is_visible: false,
-                                        is_transparent: true,
                                     },
                                     transform: {
                                         let mut t = Transform::from_xyz(0.0, 1.50, 0.0);
@@ -675,7 +632,7 @@ pub fn load_level(
                     },
                     11 => dude::spawn_player(&mut commands, &dude_meshes, &mut level, x, y, z),
                     item @ 5 | item @ 10 => {
-                        snake::spawn_enemy(&mut commands, &enemy_meshes, &mut level, &game_shaders, x, y, z, item == 10);
+                        snake::spawn_enemy(&mut commands, &enemy_meshes, &mut level, x, y, z, item == 10);
 
                         if item == 10 {
                             audio_state.play_electricity(&audio);
@@ -715,7 +672,9 @@ pub fn load_level(
     level_ready.0 = true;
 }
 
+#[derive(Component)]
 pub struct Hud3DCamera;
+#[derive(Component)]
 pub struct HudFoodMesh;
 fn create_hud(
     commands: &mut Commands,
@@ -727,15 +686,8 @@ fn create_hud(
     commands.spawn_bundle(UiCameraBundle::default());
     let food_color = Color::hex(level.get_palette().food.clone()).unwrap();
     let food_color = Color::rgba(food_color.r(), food_color.g(), food_color.b(), 1.0);
-    commands.spawn_bundle(hud_pass::HUDPbrBundle {
-        mesh: meshes.add(Mesh::from(shape::Icosphere { radius: 0.25, subdivisions: 0 })),
-        material: materials.add(food_color.into()),
-        transform: Transform::from_translation(Vec3::new(0.0, 5.2, -9.5)),
-        ..Default::default()
-    })
-    .insert(HudFoodMesh);
 
-    commands.spawn_bundle(hud_pass::HUDCameraBundle {
+    commands.spawn_bundle(PbrBundle {
         transform: Transform::from_translation(Vec3::new(-15.0, 0.0, 0.0))
             .looking_at(Vec3::ZERO, Vec3::Y),
         ..Default::default()
@@ -870,7 +822,7 @@ pub fn pause_game(
 }
 
 pub fn hide_blocks(
-    mut blocks: Query<&mut Visible>,
+    mut blocks: Query<&mut Visibility>,
     keyboard_input: Res<Input<KeyCode>>,
 ) {
     if keyboard_input.just_pressed(KeyCode::T) {
@@ -881,63 +833,43 @@ pub fn hide_blocks(
 }
 
 pub fn light_thing(
-    mut light: Query<&mut Light>,
+    mut light: Query<&mut PointLight>,
     keyboard_input: Res<Input<KeyCode>>,
 ) {
     if keyboard_input.just_pressed(KeyCode::T) {
-        if let Ok(mut light) = light.single_mut() {
+        if let Ok(mut light) = light.get_single_mut() {
             light.intensity += 1.0;
             println!("Intense: {}",light.intensity);
         }
     }
 
     if keyboard_input.just_pressed(KeyCode::G) {
-        if let Ok(mut light) = light.single_mut() {
+        if let Ok(mut light) = light.get_single_mut() {
             light.intensity -= 1.0;
             println!("Intense: {}",light.intensity);
         }
     }
 
     if keyboard_input.just_pressed(KeyCode::Y) {
-        if let Ok(mut light) = light.single_mut() {
+        if let Ok(mut light) = light.get_single_mut() {
             light.range += 100.0;
             println!("Range : {}",light.range);
         }
     }
 
     if keyboard_input.just_pressed(KeyCode::H) {
-        if let Ok(mut light) = light.single_mut() {
+        if let Ok(mut light) = light.get_single_mut() {
             light.range -= 100.0;
             println!("Range : {}",light.range);
         }
     }
 }
 
-#[derive(Bundle)]
-pub struct MyLightBundle {
-    light: bevy::pbr::AmbientLight
-}
-
 pub struct DisplayText(pub String);
+#[derive(Component)]
 pub struct FollowText;
+#[derive(Component)]
 pub struct FpsText;
-
-#[derive(RenderResources, Default, TypeUuid)]
-#[uuid = "463e4b8a-d555-4fc2-ba9f-4c880063ba92"]
-pub struct TimeUniform {
-    pub value: f32,
-}
-
-#[derive(Default)]
-pub struct GameShaders {
-    pub electric: Handle<PipelineDescriptor>
-}
-
-pub fn animate_shader(time: Res<Time>, mut query: Query<&mut TimeUniform>) {
-    for mut time_uniform in query.iter_mut() {
-        time_uniform.value = time.seconds_since_startup() as f32;
-    }
-}
 
 pub fn debug_level_over(
     keyboard_input: Res<Input<KeyCode>>,

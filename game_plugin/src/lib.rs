@@ -23,7 +23,6 @@ pub mod win_flag;
 pub mod food;
 pub mod score;
 pub mod path_find;
-pub mod hud_pass;
 pub mod sounds;
 pub mod game_controller;
 pub mod pause;
@@ -54,73 +53,72 @@ pub enum AppState {
 pub struct GamePlugin;
 
 impl Plugin for GamePlugin {
-    fn build(&self, app: &mut AppBuilder) {
+    fn build(&self, app: &mut App) {
         app.add_plugins(DefaultPlugins)
 //         .add_plugin(DebugLinesPlugin)
-           .init_resource::<menu::ButtonMaterials>()
            .add_event::<credits::CreditsEvent>()
 
 //           .add_state(AppState::MainMenu)
            .add_state(AppState::Loading)
            .add_system_set(SystemSet::on_exit(AppState::Loading)
-                                .with_system(fullscreen_app.system()))
+                                .with_system(fullscreen_app))
            .add_system_set(SystemSet::on_enter(AppState::MainMenu))
            .add_system_set(
                SystemSet::on_enter(AppState::MainMenu)
-                         .with_system(environment::load_level.system().label("loading_level"))
-                         .with_system(sounds::play_ingame_music.system().after("loading_level"))
-                         .with_system(menu::setup_menu.system().after("loading_level"))
-                         .with_system(camera::create_camera.system().after("loading_level"))
-                         .with_system(environment::set_clear_color.system().after("loading_level"))
-                         .with_system(environment::load_level_into_path_finder.system().after("loading_level"))
+                         .with_system(environment::load_level.label("loading_level"))
+                         .with_system(sounds::play_ingame_music.after("loading_level"))
+                         .with_system(menu::setup_menu.after("loading_level"))
+                         .with_system(camera::create_camera.after("loading_level"))
+                         .with_system(environment::set_clear_color.after("loading_level"))
+                         .with_system(environment::load_level_into_path_finder.after("loading_level"))
            )
            .add_system_set(
                SystemSet::on_update(AppState::MainMenu)
-                   .with_system(menu::menu.system())
+                   .with_system(menu::menu)
 
-                   .with_system(holdable::lift_holdable.system().label("handle_lift_events"))
-                   .with_system(holdable::update_held.system().before("handle_lift_events"))
-                   .with_system(moveable::update_moveable.system().label("handle_moveables"))
-                   .with_system(collectable::check_collected.system())
-                   .with_system(snake::update_enemy.system())
-                   .with_system(snake::handle_food_eaten.system())
-                   .with_system(score::handle_food_eaten.system())
-                   .with_system(food::animate_food.system())
-                   .with_system(food::animate_spawn_particles.system())
-                   .with_system(food::update_food.system())
-                   .with_system(food::handle_food_eaten.system())
-                   .with_system(snake::add_body_parts.system())
-                   .with_system(snake::update_following.system())
-                   .with_system(snake::handle_kill_snake.system())
-                   .with_system(path_find::update_graph.system().label("graph_update"))
-                   .with_system(path_find::update_path.system().after("graph_update"))
-                   .with_system(level::broadcast_changes.system().after("handle_moveables"))
-                   .with_system(game_controller::gamepad_connections.system())
+                   .with_system(holdable::lift_holdable.label("handle_lift_events"))
+                   .with_system(holdable::update_held.before("handle_lift_events"))
+                   .with_system(moveable::update_moveable.label("handle_moveables"))
+                   .with_system(collectable::check_collected)
+                   .with_system(snake::update_enemy)
+                   .with_system(snake::handle_food_eaten)
+                   .with_system(score::handle_food_eaten)
+                   .with_system(food::animate_food)
+                   .with_system(food::animate_spawn_particles)
+                   .with_system(food::update_food)
+                   .with_system(food::handle_food_eaten)
+                   .with_system(snake::add_body_parts)
+                   .with_system(snake::update_following)
+                   .with_system(snake::handle_kill_snake)
+                   .with_system(path_find::update_graph.label("graph_update"))
+                   .with_system(path_find::update_path.after("graph_update"))
+                   .with_system(level::broadcast_changes.after("handle_moveables"))
+                   .with_system(game_controller::gamepad_connections)
            )
            .add_system_set(
                SystemSet::on_exit(AppState::MainMenu)
-                            .with_system(menu::cleanup_menu.system())
-                            .with_system(environment::cleanup_environment.system())
+                            .with_system(menu::cleanup_menu)
+                            .with_system(environment::cleanup_environment)
            )
            .add_system_set(
                SystemSet::on_enter(AppState::Credits)
-               .with_system(environment::cleanup_change_level_screen.system())
-               .with_system(sounds::play_credits_music.system())
-               .with_system(credits::setup_credits.system())
+               .with_system(environment::cleanup_change_level_screen)
+               .with_system(sounds::play_credits_music)
+               .with_system(credits::setup_credits)
            )
-           .add_system_set(SystemSet::on_update(AppState::Credits).with_system(credits::update_credits.system()))
-           .add_system_set(SystemSet::on_update(AppState::InGame).with_system(credits::show_credits.system()))
-           .add_system_set(SystemSet::on_exit(AppState::InGame).with_system(environment::cleanup_environment.system()))
+           .add_system_set(SystemSet::on_update(AppState::Credits).with_system(credits::update_credits))
+           .add_system_set(SystemSet::on_update(AppState::InGame).with_system(credits::show_credits))
+           .add_system_set(SystemSet::on_exit(AppState::InGame).with_system(environment::cleanup_environment))
            .add_plugin(EnvironmentPlugin)
            .add_plugin(DudePlugin)
 
            .init_resource::<level::LevelAssetState>()
            .add_asset::<level::LevelsAsset>()
            .init_asset_loader::<level::LevelsAssetLoader>()
-          //.add_startup_system(setup.system())
-          //.add_system(print_on_load.system())
+          //.add_startup_system(setup)
+          //.add_system(print_on_load)
 
-           .add_system(exit.system());
+           .add_system(exit);
     }
 }
 
@@ -142,7 +140,7 @@ impl GameObject {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Debug, Component)]
 pub enum EntityType {
     Block,
     UnstandableBlock,
@@ -161,7 +159,7 @@ pub enum Direction {
     Up, Down, Left, Right, Beneath, Above
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Deserialize, TypeUuid)]
+#[derive(Copy, Clone, Debug, PartialEq, Deserialize, TypeUuid, Component)]
 #[uuid = "93cadc56-aa9c-4543-8640-a018b74b5052"] // this needs to be actually generated
 pub struct Position { pub x: i32, pub y: i32, pub z: i32 }
 impl Position {

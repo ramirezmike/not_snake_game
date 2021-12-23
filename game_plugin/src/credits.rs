@@ -127,6 +127,7 @@ any second now...
         .insert(EndCredits(60.0));
 }
 
+#[derive(Component)]
 pub struct EndCredits(f32);
 
 pub fn update_credits(

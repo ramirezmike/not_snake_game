@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use crate::{food::FoodEatenEvent, Dude, sounds, level, level_over, game_controller, dude};
 
+#[derive(Component)]
 pub struct ContinueText;
 pub struct Score {
     pub total: usize,

@@ -4,12 +4,13 @@ use bevy::app::AppExit;
 use std::collections::HashMap;
 use crate::{game_controller, level, score};
 
+#[derive(Component)]
 pub struct BylineText;
+#[derive(Component)]
 pub struct MenuButton;
 pub fn setup_menu(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    button_materials: Res<ButtonMaterials>,
 ) {
     // ui camera
     commands.spawn_bundle(UiCameraBundle::default());
@@ -65,11 +66,10 @@ pub fn setup_menu(
                 },
                 ..Default::default()
             },
-            visible: Visible {
-                is_visible: false,
-                is_transparent: false,
-            },
-            material: button_materials.normal.clone(),
+//          visibility: Visibility {
+//              is_visible: false,
+//          },
+            color: NORMAL_BUTTON.into(),
             ..Default::default()
         })
         .with_children(|parent| {
@@ -83,10 +83,9 @@ pub fn setup_menu(
                     },
                     Default::default(),
                 ),
-                visible: Visible {
-                    is_visible: false,
-                    is_transparent: false,
-                },
+//              visibility: Visibility {
+//                  is_visible: false,
+//              },
                 ..Default::default()
             }).insert(MenuButton);
         })
@@ -111,11 +110,10 @@ pub fn setup_menu(
                 },
                 ..Default::default()
             },
-            visible: Visible {
-                is_visible: false,
-                is_transparent: false,
-            },
-            material: button_materials.normal.clone(),
+//          visibility: Visibility {
+//              is_visible: false,
+//          },
+            color: NORMAL_BUTTON.into(),
             ..Default::default()
         })
         .with_children(|parent| {
@@ -129,10 +127,9 @@ pub fn setup_menu(
                     },
                     Default::default(),
                 ),
-                visible: Visible {
-                    is_visible: false,
-                    is_transparent: false,
-                },
+//              visibility: Visibility {
+//                  is_visible: false,
+//              },
                 ..Default::default()
             }).insert(MenuButton);
         })
@@ -166,15 +163,14 @@ pub fn menu(
     mut exit: ResMut<Events<AppExit>>,
     mut menu_data: ResMut<MenuData>,
     keyboard_input: Res<Input<KeyCode>>,
-    button_materials: Res<ButtonMaterials>,
-    mut button_colors: Query<(Entity, &mut Handle<ColorMaterial>), With<Button>>,
+    mut button_colors: Query<(Entity, &mut UiColor), With<Button>>,
     interaction_query: Query<(Entity, &Interaction), (Changed<Interaction>, With<Button>)>,
     axes: Res<Axis<GamepadAxis>>,
     buttons: Res<Input<GamepadButton>>,
     gamepad: Option<Res<game_controller::GameController>>,
     mut gamepad_buffer: Local<f32>,
     mut bylines: Query<&mut Text, With<BylineText>>,
-    mut menu_buttons: Query<&mut Visible, With<MenuButton>>,
+//    mut menu_buttons: Query<&mut Visibility, With<MenuButton>>,
     time: Res<Time>,
     mut score: ResMut<score::Score>,
 ) {
@@ -189,9 +185,9 @@ pub fn menu(
 
         if a > 0.8 {
             // make buttons visible now that byline is visible enough
-            for mut visible in menu_buttons.iter_mut() {
-                visible.is_visible = true; 
-            }
+//          for mut visible in menu_buttons.iter_mut() {
+//              visible.is_visible = true; 
+//          }
         }
     }
 
@@ -249,26 +245,13 @@ pub fn menu(
 
     for (entity, mut color) in button_colors.iter_mut() {
         if entity == menu_data.selected {
-            *color = button_materials.hovered.clone();
+            *color = HOVERED_BUTTON.into();
         } else {
-            *color = button_materials.normal.clone();
+            *color = NORMAL_BUTTON.into();
         }
     }
 }
 
-pub struct ButtonMaterials {
-    normal: Handle<ColorMaterial>,
-    hovered: Handle<ColorMaterial>,
-    pressed: Handle<ColorMaterial>,
-}
-
-impl FromWorld for ButtonMaterials {
-    fn from_world(world: &mut World) -> Self {
-        let mut materials = world.get_resource_mut::<Assets<ColorMaterial>>().unwrap();
-        ButtonMaterials {
-            normal: materials.add(Color::rgb(0.15, 0.15, 0.15).into()),
-            hovered: materials.add(Color::rgb(0.25, 0.25, 0.25).into()),
-            pressed: materials.add(Color::rgb(0.35, 0.75, 0.35).into()),
-        }
-    }
-}
+const NORMAL_BUTTON: Color = Color::rgb(0.15, 0.15, 0.15);
+const HOVERED_BUTTON: Color = Color::rgb(0.25, 0.25, 0.25);
+const PRESSED_BUTTON: Color = Color::rgb(0.35, 0.75, 0.35);

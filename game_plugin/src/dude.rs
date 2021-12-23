@@ -5,7 +5,7 @@ use std::collections::HashMap;
 
 pub struct DudePlugin;
 impl Plugin for DudePlugin {
-    fn build(&self, app: &mut AppBuilder) {
+    fn build(&self, app: &mut App) {
         app.add_system_set(
                SystemSet::on_update(crate::AppState::InGame)
                    .with_system(player_input.system())
@@ -18,10 +18,12 @@ impl Plugin for DudePlugin {
 pub static SCALE: f32 = 0.36;
 static SPEED: f32 = 0.1;
 
+#[derive(Component)]
 pub struct SquashQueue {
     pub squashes: Vec::<Squash>,
 }
 
+#[derive(Component)]
 pub struct Squash {
     pub start_scale: Vec3,
     pub target_scale: Vec3,
@@ -435,4 +437,5 @@ pub fn handle_snake_escapes(
     }
 }
 
+#[derive(Component)]
 pub struct Dude;

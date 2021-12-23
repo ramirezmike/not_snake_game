@@ -502,7 +502,7 @@ pub fn update_path(
                 snake.speed = snake_speed;
 
                 if seek_dude {
-                    if let Ok((dude_transform, dude_position)) = dude.single() {
+                    if let Ok((dude_transform, dude_position)) = dude.get_single() {
                         if claimed_targets.iter().any(|x| path_find.get_position(*x) == *dude_position) {
                             // dude is claimed by another snake, so just seek random for a step
                             seek_random = true;

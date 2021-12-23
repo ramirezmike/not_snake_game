@@ -531,7 +531,7 @@ pub fn set_level_music(
     audio: Res<Audio>,
     audio_state: Res<AudioState>,
 ) {
-    audio.set_volume_in_channel(1.0, &audio_state.music_channel);
+    audio.set_volume_in_channel(0.0, &audio_state.music_channel);
 }
 
 pub fn reset_sounds(

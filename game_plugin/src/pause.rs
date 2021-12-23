@@ -7,7 +7,6 @@ use crate::game_controller;
 pub fn setup_menu(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    button_materials: Res<PauseButtonMaterials>,
 ) {
     // ui camera
     commands.spawn_bundle(UiCameraBundle::default());
@@ -31,7 +30,7 @@ pub fn setup_menu(
                 },
                 ..Default::default()
             },
-            material: button_materials.normal.clone(),
+            color: NORMAL_BUTTON.into(),
             ..Default::default()
         })
         .with_children(|parent| {
@@ -68,7 +67,7 @@ pub fn setup_menu(
                 },
                 ..Default::default()
             },
-            material: button_materials.normal.clone(),
+            color: NORMAL_BUTTON.into(),
             ..Default::default()
         })
         .with_children(|parent| {
@@ -105,7 +104,7 @@ pub fn setup_menu(
                 },
                 ..Default::default()
             },
-            material: button_materials.normal.clone(),
+            color: NORMAL_BUTTON.into(),
             ..Default::default()
         })
         .with_children(|parent| {
@@ -143,7 +142,7 @@ pub fn setup_menu(
                 },
                 ..Default::default()
             },
-            material: button_materials.normal.clone(),
+            color: NORMAL_BUTTON.into(),
             ..Default::default()
         })
         .with_children(|parent| {
@@ -194,8 +193,7 @@ pub fn pause_menu(
     mut level: ResMut<crate::level::Level>,
     mut menu_data: ResMut<PauseMenuData>,
     keyboard_input: Res<Input<KeyCode>>,
-    button_materials: Res<PauseButtonMaterials>,
-    mut button_colors: Query<(Entity, &mut Handle<ColorMaterial>), With<Button>>,
+    mut button_colors: Query<(Entity, &mut UiColor), With<Button>>,
     interaction_query: Query<(Entity, &Interaction), (Changed<Interaction>, With<Button>)>,
     axes: Res<Axis<GamepadAxis>>,
     buttons: Res<Input<GamepadButton>>,
@@ -270,26 +268,13 @@ pub fn pause_menu(
 
     for (entity, mut color) in button_colors.iter_mut() {
         if entity == menu_data.selected {
-            *color = button_materials.hovered.clone();
+            *color = HOVERED_BUTTON.into();
         } else {
-            *color = button_materials.normal.clone();
+            *color = NORMAL_BUTTON.into();
         }
     }
 }
 
-pub struct PauseButtonMaterials {
-    normal: Handle<ColorMaterial>,
-    hovered: Handle<ColorMaterial>,
-    pressed: Handle<ColorMaterial>,
-}
-
-impl FromWorld for PauseButtonMaterials {
-    fn from_world(world: &mut World) -> Self {
-        let mut materials = world.get_resource_mut::<Assets<ColorMaterial>>().unwrap();
-        PauseButtonMaterials {
-            normal: materials.add(Color::rgb(0.15, 0.15, 0.15).into()),
-            hovered: materials.add(Color::rgb(0.25, 0.25, 0.25).into()),
-            pressed: materials.add(Color::rgb(0.35, 0.75, 0.35).into()),
-        }
-    }
-}
+const NORMAL_BUTTON: Color = Color::rgb(0.15, 0.15, 0.15);
+const HOVERED_BUTTON: Color = Color::rgb(0.25, 0.25, 0.25);
+const PRESSED_BUTTON: Color = Color::rgb(0.35, 0.75, 0.35);

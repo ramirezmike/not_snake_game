@@ -1,12 +1,4 @@
-use bevy::{
-    prelude::*,
-    render::{
-        pipeline::{PipelineDescriptor, RenderPipeline},
-        render_graph::{base, RenderGraph, RenderResourcesNode},
-        renderer::RenderResources,
-        shader::{ShaderStage, ShaderStages},
-    },
-};
+use bevy::prelude::*;
 use crate::{Direction, EntityType, GameObject, level::Level, path_find::PathFinder, dude,
             teleporter, environment, sounds, Position, food::FoodEatenEvent};
 use petgraph::{graph::NodeIndex};
@@ -31,13 +23,13 @@ pub enum SnakeTarget {
     OnlyRandom,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Component)]
 pub struct BodyPosition {
     pub translation: Vec3,
     rotation: Quat,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Component)]
 pub struct Enemy {
     body_parts: Vec::<Entity>,
     pub body_positions: Vec::<BodyPosition>,
@@ -67,14 +59,18 @@ impl Enemy {
     }
 }
 
+#[derive(Component)]
 pub struct Snake;
+#[derive(Component)]
 pub struct SnakeBody;
+#[derive(Component)]
 pub struct SnakeInnerMesh;
+#[derive(Component)]
 pub struct SnakeVisibleMesh {
     parent: Entity
 }
 pub struct KillSnakeEvent(pub Entity);
-#[derive(Clone)]
+#[derive(Clone, Component)]
 struct SnakeMovement {
     target: Vec3,
     starting_from: Vec3,
@@ -95,7 +91,6 @@ pub fn generate_snake_body(
     transform: Transform,
     rotation: Option::<Quat>,
     is_electric: bool,
-    game_shaders: &Res<environment::GameShaders>,
 ) -> Entity {
     commands.spawn_bundle(PbrBundle {
                 transform: {
@@ -130,9 +125,6 @@ pub fn generate_snake_body(
                         inner_parent.spawn_bundle(PbrBundle {
                             mesh: meshes.body.clone(),
                             material: meshes.material.clone(),
-                            render_pipelines: RenderPipelines::from_pipelines(
-                                vec![RenderPipeline::new(game_shaders.electric.clone())]
-                            ),
                             transform: {
                                 let mut t = Transform::from_translation(Vec3::new(0.0, 0.0, 0.0));
                                 t.rotate(Quat::from_axis_angle(Vec3::new(0.0, 1.0, 0.0), std::f32::consts::PI / 2.0));
@@ -140,7 +132,7 @@ pub fn generate_snake_body(
                                 t
                             },
                             ..Default::default()
-                        }).insert(environment::TimeUniform { value: 0.0 });
+                        });
                     }
 
                     inner_parent.spawn_bundle(PbrBundle {
@@ -161,7 +153,6 @@ pub fn spawn_enemy(
     commands: &mut Commands, 
     meshes: &ResMut<EnemyMeshes>, 
     level: &mut ResMut<Level>,
-    game_shaders: &Res<environment::GameShaders>,
     x: usize,
     y: usize,
     z: usize,
@@ -173,7 +164,7 @@ pub fn spawn_enemy(
     transform.apply_non_uniform_scale(Vec3::new(0.50, 0.50, 0.50)); 
     transform.rotate(Quat::from_axis_angle(Vec3::new(0.0, 1.0, 0.0), std::f32::consts::FRAC_PI_2));
 
-    let body_part_entity = generate_snake_body(commands, meshes, transform, None, is_electric, &game_shaders);
+    let body_part_entity = generate_snake_body(commands, meshes, transform, None, is_electric);
         
     let snake_speed = level.snake_speed();
     let enemy_entity = 
@@ -212,16 +203,13 @@ pub fn spawn_enemy(
                         inner_parent.spawn_bundle(PbrBundle {
                             mesh: meshes.head.clone(),
                             material: meshes.material.clone(),
-                            render_pipelines: RenderPipelines::from_pipelines(
-                                vec![RenderPipeline::new(game_shaders.electric.clone())]
-                            ),
                             transform: {
                                 let mut t = Transform::from_translation(Vec3::new(0.0, 0.0, 0.0));
                                 t.scale = Vec3::new(1.1, 1.1, 1.1);
                                 t
                             },
                             ..Default::default()
-                        }).insert(environment::TimeUniform { value: 0.0 });
+                        });
                     } 
 
                     inner_parent.spawn_bundle(PbrBundle {
@@ -284,7 +272,6 @@ pub fn add_body_parts(
     mut body_part_reader: EventReader<AddBodyPartEvent>,
     mut snake_enemies: Query<&mut Enemy>,
     mut commands: Commands, 
-    game_shaders: Res<environment::GameShaders>,
     meshes: ResMut<EnemyMeshes>, 
 ) {
     for part_to_add in body_part_reader.iter() {
@@ -295,7 +282,7 @@ pub fn add_body_parts(
             transform.apply_non_uniform_scale(Vec3::new(0.50, 0.50, 0.50)); 
             let rotation = snake_enemy.body_positions.last().unwrap().rotation;
 
-            let body_part_entity = generate_snake_body(&mut commands, &meshes, transform, Some(rotation), snake_enemy.is_electric, &game_shaders);
+            let body_part_entity = generate_snake_body(&mut commands, &meshes, transform, Some(rotation), snake_enemy.is_electric);
             snake_enemy.body_parts.push(body_part_entity);
         }
     }
@@ -378,7 +365,7 @@ pub fn update_enemy(
                 }
 
                 if let Some(target) = new_target {
-                    let current = transform.translation.as_i32();
+                    let current = transform.translation.as_ivec3();
                     let facing = if target.z > current.z { Direction::Right } 
                             else if target.z < current.z { Direction::Left } 
                             else if target.x > current.x { Direction::Up } 
@@ -646,7 +633,7 @@ pub fn handle_kill_snake(
     mut kill_snake_event_reader: EventReader<KillSnakeEvent>,
     mut snakes: Query<(&mut Enemy, &mut Transform, &mut Position), (With<Snake>, Without<SnakeBody>)>,
     snake_part_transforms: Query<&Transform, With<SnakeBody>>,
-    mut snake_part_meshes: Query<(&SnakeVisibleMesh, &mut Visible)>, 
+    mut snake_part_meshes: Query<(&SnakeVisibleMesh, &mut Visibility)>, 
     mut dying_snakes: Local<Vec::<(Entity, u32, Timer)>>, // entity, number of flashes, timer
     time: Res<Time>,
     mut level: ResMut<Level>,
@@ -660,7 +647,7 @@ pub fn handle_kill_snake(
             for body_part in snake.body_parts.iter() {
                 dying_snakes.push((*body_part, 0, Timer::from_seconds(0.5, true)));
                 if let Ok(transform) = snake_part_transforms.get(*body_part) {
-                    let translation = transform.translation.as_i32();
+                    let translation = transform.translation.as_ivec3();
                     level.set(translation.x, translation.y, translation.z, None);
                 }
                 level.set(position.x, position.y, position.z, None);

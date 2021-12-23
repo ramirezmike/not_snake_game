@@ -1,8 +1,11 @@
 use bevy::prelude::*;
 use crate::{score::Score, level, sounds};
 
+#[derive(Component)]
 pub struct WinFlag { }
+#[derive(Component)]
 pub struct WinFlagInnerMesh { }
+#[derive(Component)]
 pub struct WinFlagOuterMesh { }
 
 #[derive(Default)]
@@ -11,8 +14,8 @@ pub struct WinFlagMeshes {
 }
 
 pub fn update_flag(
-    mut flags: Query<(&WinFlagInnerMesh, &mut Visible, &mut Transform), Without<WinFlagOuterMesh>>,
-    mut outer_flags: Query<(&WinFlagOuterMesh, &mut Visible, &mut Transform), Without<WinFlagInnerMesh>>,
+    mut flags: Query<(&WinFlagInnerMesh, &mut Visibility, &mut Transform), Without<WinFlagOuterMesh>>,
+    mut outer_flags: Query<(&WinFlagOuterMesh, &mut Visibility, &mut Transform), Without<WinFlagInnerMesh>>,
     score: Res<Score>,
     level: ResMut<level::Level>,
     time: Res<Time>,
@@ -28,11 +31,9 @@ pub fn update_flag(
         if transform.scale.x < 1.0 {
             transform.scale = Vec3::new(0.0, 0.0, 0.0);
             visible.is_visible = true;
-            visible.is_transparent = true;
             continue;
         } else {
             visible.is_visible = true;
-            visible.is_transparent = true;
         }
 
         transform.scale -= Vec3::splat(time.delta_seconds() * 75.0);

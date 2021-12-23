@@ -1,10 +1,13 @@
 use bevy::prelude::*;
 use crate::{level::Level, Position, Direction, EntityType, GameObject, facing::Facing};
 
+#[derive(Component)]
 pub struct Holdable { }
+#[derive(Component)]
 pub struct Holder {
     pub holding: Option::<Entity>
 }
+#[derive(Component)]
 pub struct BeingHeld {
     pub held_by: Entity
 }

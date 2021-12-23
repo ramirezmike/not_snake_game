@@ -4,6 +4,7 @@ use bevy::reflect::{TypeUuid};
 use crate::{level::Level, dude, environment};
 use bevy::render::camera::PerspectiveProjection;
 
+#[derive(Component)]
 pub struct CameraTarget;
 
 #[derive(Debug, Clone, Deserialize, TypeUuid)]
@@ -26,7 +27,7 @@ pub struct CameraMeshes {
 
 pub struct CameraPlugin;
 impl Plugin for CameraPlugin {
-    fn build(&self, app: &mut AppBuilder) {
+    fn build(&self, app: &mut App) {
         app//.add_plugin(PickingPlugin)
            .add_system_set(
                SystemSet::on_update(crate::AppState::InGame)
@@ -56,7 +57,7 @@ pub fn reset_camera_on_enter_ingame(
 pub fn cull_blocks(
     level: Res<Level>,
     camera: Query<&Transform, With<MainCamera>>,
-    mut blocks: Query<(&Transform, &mut Visible), 
+    mut blocks: Query<(&Transform, &mut Visibility), 
                         (Without<MainCamera>, 
                             Or<(With<environment::BlockMesh>, With<environment::PlatformMesh>)>)>
 ) {
@@ -115,7 +116,7 @@ fn update_camera(
     let is_menu = level.current_level == 0;
 
     for (_, mut main_camera, mut camera_transform) in cameras.iter_mut() {
-        if let Ok(target_transform) = target.single() {
+        if let Ok(target_transform) = target.get_single() {
             for behavior in level.camera_behaviors() {
                 match behavior {
                     CameraBehavior::LockFollowX(min, max) => {
@@ -224,6 +225,7 @@ pub struct CameraMouthMovement {
     current_movement_step: MovementStep,  
 }
 
+#[derive(Component)]
 pub struct CameraMouth {
     start: Vec3,
     middle: Vec3,
@@ -237,6 +239,7 @@ pub struct CameraBoltMovement {
     current_movement_step: MovementStep,  
 }
 
+#[derive(Component)]
 pub struct CameraBolt {
     start: Vec3,
     middle: Vec3,
@@ -250,6 +253,7 @@ pub struct CameraSpikeMovement {
     current_movement_step: MovementStep,  
 }
 
+#[derive(Component)]
 pub struct CameraSpike {
     start: Vec3,
     middle: Vec3,
@@ -273,7 +277,7 @@ pub fn create_camera(
     transform.translation = level.get_camera_position();
     transform.rotation = level.get_camera_rotation();
 
-    if let Ok(mut camera_transform) = cameras.single_mut() {
+    if let Ok(mut camera_transform) = cameras.get_single_mut() {
         *camera_transform = transform;
     } else {
         println!("Creating camera!");
@@ -388,12 +392,11 @@ pub fn create_camera(
                 }).insert(camera_spike);
 
                 // Light
-                parent.spawn_bundle(LightBundle {
+                parent.spawn_bundle(PointLightBundle {
                     transform: Transform::from_xyz(0.0, 8.0, 0.0),
-                    light: Light {
-                        fov: 180.0,
-                        intensity: 1000.0,
-                        range: 100.0,
+                    point_light: PointLight {
+                        intensity: 0.0,
+                        range: 0.0,
                         ..Default::default()
                     },
                     ..Default::default()
@@ -430,6 +433,7 @@ pub struct CameraMovement {
     finish_movement_time: f32,
 }
 
+#[derive(Component)]
 pub struct MainCamera {
     pub current_followx_target: Option<CameraMovement>,
     pub current_followy_target: Option<CameraMovement>,

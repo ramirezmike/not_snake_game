@@ -2,6 +2,7 @@ use bevy::prelude::*;
 
 use crate::{dude, Position, EntityType, level_over, level, score::Score, sounds};
 
+#[derive(Component)]
 pub struct Collectable { 
     pub collected: bool 
 }

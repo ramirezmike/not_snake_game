@@ -2,6 +2,7 @@ use bevy::prelude::*;
 use crate::{level, level::Level, Direction, Position, EntityType, GameObject, environment::HudFoodMesh};
 use rand::{thread_rng, Rng};
 
+#[derive(Component)]
 pub struct Dust {
     pub move_toward: Vec3,
 }
@@ -78,8 +79,8 @@ pub fn handle_create_dust_event(
             let transform = Transform::from_xyz(position.x as f32, position.y as f32, position.z as f32);
 
             for _ in 0..3 {
-                let inner_mesh_x = thread_rng().gen_range(-25..25) as f32 / 100.0;
-                let inner_mesh_z = thread_rng().gen_range(-25..25) as f32 / 100.0;
+                let inner_mesh_x = thread_rng().gen_range(-25 as i32..25) as f32 / 100.0;
+                let inner_mesh_z = thread_rng().gen_range(-25 as i32..25) as f32 / 100.0;
 
                 let color = Color::rgba(color.r(), color.g(), color.b(), 0.7 + inner_mesh_x.abs());
                 let move_toward = match event.move_away_from {
@@ -104,9 +105,8 @@ pub fn handle_create_dust_event(
                             t.rotate(Quat::from_rotation_y(inner_mesh_x));
                             t
                         },
-                        visible: Visible {
+                        visibility: Visibility {
                             is_visible: true,
-                            is_transparent: true,
                         },
                         ..Default::default()
                     })

@@ -2,6 +2,7 @@ use bevy::{prelude::*,};
 use crate::{credits, level, dude, moveable, environment, game_controller, snake::Enemy};
 
 pub struct LevelOverEvent {}
+#[derive(Component)]
 pub struct LevelOverText {} // TODO: change this to like "BetweenLevelEntity" or something marker or something
 
 pub fn setup_level_over_screen(
