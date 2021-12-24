@@ -35,7 +35,7 @@ pub fn setup_menu(
             text: Text::with_section(
                 "by michael ramirez".to_string(),
                 TextStyle {
-                    font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                    font: asset_server.load(crate::FONT),
                     font_size: 40.0,
                     color: Color::rgba(0.8, 0.8, 0.8, -0.4),
                 },
@@ -77,7 +77,7 @@ pub fn setup_menu(
                 text: Text::with_section(
                     "Start",
                     TextStyle {
-                        font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                        font: asset_server.load(crate::FONT),
                         font_size: 40.0,
                         color: Color::rgb(0.9, 0.9, 0.9),
                     },
@@ -121,7 +121,7 @@ pub fn setup_menu(
                 text: Text::with_section(
                     "Quit",
                     TextStyle {
-                        font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                        font: asset_server.load(crate::FONT),
                         font_size: 40.0,
                         color: Color::rgb(0.9, 0.9, 0.9),
                     },

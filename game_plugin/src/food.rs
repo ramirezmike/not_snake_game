@@ -183,6 +183,7 @@ pub fn animate_food(
 ) {
     for mut transform in foods.iter_mut() {
         transform.rotate(Quat::from_rotation_y(time.delta_seconds()));
+        transform.rotate(Quat::from_rotation_x(time.delta_seconds()));
     }
 }
 

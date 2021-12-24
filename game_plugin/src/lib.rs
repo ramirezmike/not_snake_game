@@ -35,6 +35,7 @@ use environment::*;
 use dude::*;
 
 pub static COLOR_BLACK: &str = "000000";
+pub const FONT: &str = "fonts/monogram.ttf";
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum AppState {

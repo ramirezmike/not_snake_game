@@ -1,8 +1,7 @@
 TODO
 - re-add electric snake shader
 - re-add food icon next to score? (not super important)
-- change font
-- change buttons
+- change menu buttons' style
 - add "endless mode"
 - refactor level position code to use a trait
 - fix performance bug when snake dies
@@ -12,6 +11,7 @@ TODO
 - add ability to control snake 
 - FIX BACKWARD SNAKE OMG (TRY TO AGAIN)
 - Re-model snake or texture it so the inside of its mouth is black?
+- update bevy and re-add visibility on buttons in main menu
 
 
 
@@ -113,6 +113,7 @@ Done
 - make credits
 - make electric snake only audibly buzz when you're near it and have the buzz get louder the nearer you are
 - make icon
+- change font
 
 To Run
 cargo run --release --features native

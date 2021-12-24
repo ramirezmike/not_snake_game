@@ -113,7 +113,7 @@ any second now...
 
 ", (score.total + score.current_level)),
                 TextStyle {
-                    font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                    font: asset_server.load(crate::FONT),
                     font_size: 60.0,
                     color: Color::WHITE,
                 },

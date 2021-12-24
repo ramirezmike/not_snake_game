@@ -337,7 +337,6 @@ fn check_assets_ready(
     server: Res<AssetServer>,
     loading: Res<AssetsLoading>,
 ) {
-    println!("Loading...");
     use bevy::asset::LoadState;
 
     let mut ready = true;
@@ -345,6 +344,7 @@ fn check_assets_ready(
     for handle in loading.0.iter() {
         match server.get_load_state(handle) {
             LoadState::Failed => {
+                println!("Something failed...{:?}", handle);
                 // one of our assets had an error
             }
             LoadState::Loaded => {
@@ -682,7 +682,7 @@ fn create_hud(
     commands.spawn_bundle(UiCameraBundle::default());
 
     // Set up UI labels for clarity
-    let font = asset_server.load("fonts/FiraSans-Bold.ttf");
+    let font = asset_server.load(crate::FONT);
 
     commands
         .spawn_bundle(TextBundle {

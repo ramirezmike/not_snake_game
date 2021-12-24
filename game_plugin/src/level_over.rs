@@ -37,7 +37,7 @@ pub fn setup_level_over_screen(
             text: Text::with_section(
                 "".to_string(),
                 TextStyle {
-                    font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                    font: asset_server.load(crate::FONT),
                     font_size: 80.0,
                     color: Color::WHITE,
                 },
