@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use crate::{level, level::Level, Position, EntityType, GameObject, environment::HudFoodMesh, dude, snake};
+use crate::{level, level::Level, Position, EntityType, GameObject, dude, snake};
 
 #[derive(Component)]
 pub struct Food { 
@@ -178,14 +178,11 @@ pub fn animate_spawn_particles(
 }
 
 pub fn animate_food(
-    mut foods: Query<&mut Transform, Or<(With<FoodInnerMesh>, With<HudFoodMesh>)>>,
+    mut foods: Query<&mut Transform, With<FoodInnerMesh>>,
     time: Res<Time>,
 ) {
     for mut transform in foods.iter_mut() {
-//        transform.translation.y = 0.5 + (0.2 * time.seconds_since_startup().sin() as f32);
         transform.rotate(Quat::from_rotation_y(time.delta_seconds()));
-//        transform.rotate(Quat::from_rotation_z(time.delta_seconds()));
-//        transform.rotate(Quat::from_rotation_x(time.delta_seconds()));
     }
 }
 

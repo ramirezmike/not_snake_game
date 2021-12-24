@@ -130,7 +130,8 @@ impl Plugin for EnvironmentPlugin {
            .add_system_set(
                SystemSet::on_enter(crate::AppState::InGame)
                          .with_system(load_level.system().label("loading_level"))
-                         .with_system(crate::camera::create_camera.system().after("loading_level"))
+                         .with_system(crate::camera::create_camera.label("create_camera").after("loading_level"))
+                         .with_system(create_hud.after("create_camera"))
                          .with_system(set_clear_color.system().after("loading_level"))
                          .with_system(load_level_into_path_finder.system().after("loading_level"))
                          .with_system(reset_score.system())
@@ -269,7 +270,6 @@ pub fn change_level_screen(
 ) {
     *timer += time.delta_seconds();
 
-    println!("changing level...");
     if *timer > 0.2 {
         level.change_to_next_level();
         state.set(crate::AppState::InGame).unwrap();
@@ -367,7 +367,6 @@ pub fn cleanup_environment(
     entities: Query<(Entity, &EntityType)>,
     dust: Query<Entity, With<dust::Dust>>,
     platforms: Query<Entity, With<PlatformMesh>>,
-    hud_cameras: Query<Entity, With<Hud3DCamera>>,
     ui_cameras: Query<Entity, With<bevy::render::camera::OrthographicProjection>>,
     texts: Query<Entity, With<Text>>,
     teleporters: Query<Entity, With<teleporter::Teleporter>>,
@@ -385,10 +384,6 @@ pub fn cleanup_environment(
     }
 
     for entity in ui_cameras.iter() {
-        commands.entity(entity).despawn_recursive();
-    }
-
-    for entity in hud_cameras.iter() {
         commands.entity(entity).despawn_recursive();
     }
 
@@ -441,7 +436,7 @@ pub fn load_level(
     flag_meshes: ResMut<win_flag::WinFlagMeshes>,
     audio: Res<Audio>,
     mut audio_state: ResMut<sounds::AudioState>,
-//  entities: Query<Entity>,
+    camera: Query<Entity, With<camera::MainCamera>>,
     level_asset_state: Res<level::LevelAssetState>, 
     levels_asset: ResMut<Assets<level::LevelsAsset>>,
     asset_server: Res<AssetServer>,
@@ -668,37 +663,23 @@ pub fn load_level(
         food::spawn_food(&mut commands, &mut level, &mut meshes, &mut materials, None, true, false);
     }
 
-
-    if *state.current() != crate::AppState::MainMenu {
-        create_hud(&mut commands, &mut meshes, &mut materials, &asset_server, &level);
-    }
-
 //    println!("Level is Loaded... Number of items{:?}", entities.iter().len());
 
     level_ready.0 = true;
 }
 
-#[derive(Component)]
-pub struct Hud3DCamera;
-#[derive(Component)]
-pub struct HudFoodMesh;
 fn create_hud(
-    commands: &mut Commands,
-    meshes: &mut ResMut<Assets<Mesh>>,
-    materials: &mut ResMut<Assets<StandardMaterial>>,
-    asset_server: &Res<AssetServer>,
-    level: &ResMut<Level>,
+    mut commands: Commands,
+    state: Res<State<crate::AppState>>,
+    main_camera: Query<Entity, With<camera::MainCamera>>, 
+    asset_server: Res<AssetServer>,
+    mut level: ResMut<Level>,
 ) {
-    commands.spawn_bundle(UiCameraBundle::default());
-    let food_color = Color::hex(level.get_palette().food.clone()).unwrap();
-    let food_color = Color::rgba(food_color.r(), food_color.g(), food_color.b(), 1.0);
+    if *state.current() == crate::AppState::MainMenu {
+        return;
+    }
 
-    commands.spawn_bundle(PbrBundle {
-        transform: Transform::from_translation(Vec3::new(-15.0, 0.0, 0.0))
-            .looking_at(Vec3::ZERO, Vec3::Y),
-        ..Default::default()
-    })
-    .insert(Hud3DCamera);
+    commands.spawn_bundle(UiCameraBundle::default());
 
     // Set up UI labels for clarity
     let font = asset_server.load("fonts/FiraSans-Bold.ttf");
@@ -707,20 +688,10 @@ fn create_hud(
         .spawn_bundle(TextBundle {
             style: Style {
                 align_self: AlignSelf::FlexEnd,
-                position_type: PositionType::Absolute,
-                position: Rect {
-                    bottom: Val::Px(5.0),
-                    left: Val::Px(15.0),
-                    ..Default::default()
-                },
-                size: Size {
-                    //width: Val::Px(200.0),
-                    ..Default::default()
-                },
                 ..Default::default()
             },
             text: Text::with_section(
-                "blah".to_string(),
+                "Score".to_string(),
                 TextStyle {
                     font: font.clone(),
                     font_size: 50.0,
@@ -782,34 +753,17 @@ pub fn update_fps(diagnostics: Res<Diagnostics>, mut query: Query<&mut Text, Wit
 }
 
 pub fn update_hud_text_position(
-    windows: Res<Windows>,
     mut text_query: Query<(&mut Style, &CalculatedSize, &mut Text), With<FollowText>>,
-    mesh_query: Query<&Transform, With<HudFoodMesh>>,
-    camera_query: Query<(&Camera, &GlobalTransform), With<Hud3DCamera>>,
     score: Res<score::Score>,
     level: Res<Level>,
 ) {
-    for (camera, camera_transform) in camera_query.iter() {
-        for mesh_position in mesh_query.iter() {
-            for (mut style, calculated, mut text) in text_query.iter_mut() {
-                if level.current_level == 14 {
-                    text.sections[0].value = format!("{} / {}", "{UNDEFINED}", level.get_current_minimum_food()).into();
-                } else {
-                    text.sections[0].value = format!("{} / {}", score.current_level, level.get_current_minimum_food()).into();
-                }
-
-                match camera.world_to_screen(&windows, camera_transform, mesh_position.translation)
-                {
-                    Some(coords) => {
-                        style.position.left = Val::Px(coords.x + 100.0 - calculated.size.width / 2.0);
-                        style.position.bottom = Val::Px(coords.y - calculated.size.height / 2.0);
-                    }
-                    None => {
-                        // A hack to hide the text when the cube is behind the camera
-                        style.position.bottom = Val::Px(-1000.0);
-                    }
-                }
-            }
+    for (mut style, calculated, mut text) in text_query.iter_mut() {
+        if level.current_level == 14 {
+            text.sections[0].value = format!("Score: {} / {}", "{UNDEFINED}", 
+                                                               level.get_current_minimum_food()).into();
+        } else {
+            text.sections[0].value = format!("Score: {} / {}", score.current_level, 
+                                                               level.get_current_minimum_food()).into();
         }
     }
 }

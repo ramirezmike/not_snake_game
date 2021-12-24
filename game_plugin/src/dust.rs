@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use crate::{level, level::Level, Direction, Position, EntityType, GameObject, environment::HudFoodMesh};
+use crate::{level, level::Level, Direction, Position, EntityType, GameObject};
 use rand::{thread_rng, Rng};
 
 #[derive(Component)]
