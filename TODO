@@ -1,5 +1,19 @@
 TODO
-I did it!
+- re-add electric snake shader
+- re-add food icon next to score? (not super important)
+- change font
+- change buttons
+- add "endless mode"
+- refactor level position code to use a trait
+- fix performance bug when snake dies
+- fix teleporting snake bug where the segments start to separate
+- start work on level editor
+    - need to be able to mark blocks as not casting shadows
+- add ability to control snake 
+- FIX BACKWARD SNAKE OMG (TRY TO AGAIN)
+- Re-model snake or texture it so the inside of its mouth is black?
+
+
 
 
 (Levels)
@@ -46,7 +60,6 @@ Level Ideas
 
 will not fix
 - fix 40/60 fps issue (may be just what it is on this laptop)
-- FIX BACKWARD SNAKE OMG (NOT GONNA DO THIS)
 - make snake animate open/close mouth and have it open its mouth when it's near dude and try to close it when eating dude. There's like a weirdness where if the snake misses the dude it should re-open its mouth because it is still near the dude so like.. it has to bite but then quickly reopen all the way so it can bite again quickly
 
 Done
