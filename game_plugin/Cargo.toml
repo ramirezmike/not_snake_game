@@ -17,6 +17,7 @@ default = [
     "bevy/hdr",
     "bevy/x11",
     "bevy_kira_audio/ogg",
+    "bevy/dynamic"
 ]
 
 native = [

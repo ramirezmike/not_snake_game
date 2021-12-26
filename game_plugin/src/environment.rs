@@ -58,6 +58,10 @@ impl Plugin for EnvironmentPlugin {
                          .with_system(cleanup_environment.system())
            )
            .add_system_set(
+               SystemSet::on_exit(crate::AppState::Loading)
+                         .with_system(sounds::load_rest_of_sounds)
+           )
+           .add_system_set(
                SystemSet::on_update(crate::AppState::Loading)
                    .with_system(check_assets_ready.system())
            )
@@ -288,6 +292,9 @@ pub fn load_assets(
     mut loading: ResMut<AssetsLoading>,
     mut level_asset_state: ResMut<level::LevelAssetState>, 
 ) {
+    let audio_state = sounds::AudioState::new(&asset_server);
+    let font_handle: Handle<Font> = asset_server.load(crate::FONT);
+
     dude_meshes.step1 = asset_server.load("models/dude.glb#Mesh0/Primitive0");
     dude_meshes.body = asset_server.load("models/chip.glb#Mesh0/Primitive0");
     dude_meshes.head = asset_server.load("models/chip.glb#Mesh1/Primitive0");
@@ -300,8 +307,11 @@ pub fn load_assets(
     camera_meshes.spikes = asset_server.load("models/spikes.glb#Mesh0/Primitive0");
 
     flag_meshes.flag = asset_server.load("models/winflag.glb#Mesh0/Primitive0");
+    level_asset_state.handle = asset_server.load("data/test.custom");
 
-    let audio_state = sounds::AudioState::new(&asset_server);
+    loading.0.append(&mut audio_state.get_sound_handles());
+    loading.0.push(level_asset_state.handle.clone_untyped());
+    loading.0.push(font_handle.clone_untyped());
 
     loading.0.push(dude_meshes.step1.clone_untyped());
     loading.0.push(dude_meshes.head.clone_untyped());
@@ -312,9 +322,6 @@ pub fn load_assets(
     loading.0.push(camera_meshes.bolt.clone_untyped());
     loading.0.push(camera_meshes.spikes.clone_untyped());
 
-    loading.0.append(&mut audio_state.get_sound_handles());
-
-    level_asset_state.handle = asset_server.load("data/test.custom");
     asset_server.watch_for_changes().unwrap();
     commands.insert_resource(audio_state);
 }
@@ -344,11 +351,10 @@ fn check_assets_ready(
     for handle in loading.0.iter() {
         match server.get_load_state(handle) {
             LoadState::Failed => {
-                println!("Something failed...{:?}", handle);
                 // one of our assets had an error
+                println!("Failed to load {:?}", handle);
             }
-            LoadState::Loaded => {
-            }
+            LoadState::Loaded => (),
             _ => {
                 ready = false;
             }

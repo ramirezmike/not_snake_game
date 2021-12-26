@@ -6,10 +6,11 @@ TODO
 - refactor level position code to use a trait
 - fix performance bug when snake dies
 - fix teleporting snake bug where the segments start to separate
+    instead of "teleporting" just despawn the snake and re-spawn it at the other end
 - start work on level editor
     - need to be able to mark blocks as not casting shadows
 - add ability to control snake 
-- FIX BACKWARD SNAKE OMG (TRY TO AGAIN)
+- FIX BACKWARD SNAKE OMG (TRY AGAIN, YOU CAN DO IT I BELIEVE IN YOU)
 - Re-model snake or texture it so the inside of its mouth is black?
 - update bevy and re-add visibility on buttons in main menu
 
@@ -114,11 +115,12 @@ Done
 - make electric snake only audibly buzz when you're near it and have the buzz get louder the nearer you are
 - make icon
 - change font
+- change the way we're loading files so that when the game launches it's only waiting on what's on the title screen.
+    - the .ogg format is the bottleneck, so only load one music file
+
 
 To Run
 cargo run --release --features native
-
-
 
 
 [patch.crates-io]

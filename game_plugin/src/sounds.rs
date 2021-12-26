@@ -128,6 +128,7 @@ impl AudioState {
         let sound_channel = AudioChannel::new("first".to_owned());
         let music_channel = AudioChannel::new("music".to_owned());
         let electricity_channel = AudioChannel::new("electricity".to_owned());
+        let intro_handle = asset_server.load("music/intro.ogg");
 
         channels.insert(
             sound_channel.clone(),
@@ -143,86 +144,41 @@ impl AudioState {
         );
 
         AudioState {
+            intro_handle: intro_handle.clone(),
             sound_channel,
             music_channel,
             electricity_channel, 
             channels,
             current_music: None,
-            pickup_handle: vec!(
-                asset_server.load("sounds/pickup0.ogg"),
-                asset_server.load("sounds/pickup1.ogg"),
-                asset_server.load("sounds/pickup2.ogg"),
-                asset_server.load("sounds/pickup3.ogg"),
-                asset_server.load("sounds/pickup4.ogg"),
-            ),
-            bite_handle: vec!(
-                asset_server.load("sounds/bite0.ogg"),
-                asset_server.load("sounds/bite1.ogg"),
-                asset_server.load("sounds/bite2.ogg"),
-                asset_server.load("sounds/bite3.ogg"),
-            ),
-            flag_spawn_handle: asset_server.load("sounds/flagspawn.ogg"),
-            land_handle: asset_server.load("sounds/land.ogg"),
-            shock_handle: asset_server.load("sounds/electric.ogg"),
-            electricity_handle: asset_server.load("sounds/electricity.ogg"),
-            level_end_handle: asset_server.load("sounds/levelend.ogg"),
-            slide_handle: asset_server.load("sounds/slide.ogg"),
-            fall_handle: asset_server.load("sounds/fall.ogg"),
+            pickup_handle: vec!(),
+            bite_handle: vec!(),
+            flag_spawn_handle: intro_handle.clone(),
+            land_handle: intro_handle.clone(),
+            shock_handle: intro_handle.clone(),
+            electricity_handle: intro_handle.clone(),
+            level_end_handle: intro_handle.clone(),
+            slide_handle: intro_handle.clone(),
+            fall_handle: intro_handle.clone(),
 
-            bass_drum_handle: asset_server.load("music/bassdrum.ogg"),
-            bass_drum_reverb_handle: asset_server.load("music/bassdrum_reverb.ogg"),
-            drum_and_bell_handle: asset_server.load("music/drum_and_bell.ogg"),
-            level_one_handle: asset_server.load("music/01.ogg"),
-            level_one_8bit_handle: asset_server.load("music/018bit.ogg"),
-            halloween_handle: asset_server.load("music/halloween.ogg"),
-            classic_handle: asset_server.load("music/classic.ogg"),
-            boss_handle: asset_server.load("music/boss.ogg"),
-            space_handle: asset_server.load("music/space.ogg"),
-            hurry_handle: asset_server.load("music/hurry.ogg"),
-            qwerty_handle: asset_server.load("music/qwerty.ogg"),
-            credits_handle: asset_server.load("music/credits.ogg"),
-            intro_handle: asset_server.load("music/intro.ogg"),
-            organ_handle: asset_server.load("music/organ.ogg"),
-            tick_tock_handle: asset_server.load("music/ticktock.ogg"),
+            bass_drum_handle: intro_handle.clone(),
+            bass_drum_reverb_handle: intro_handle.clone(),
+            drum_and_bell_handle: intro_handle.clone(),
+            level_one_handle: intro_handle.clone(),
+            level_one_8bit_handle: intro_handle.clone(),
+            halloween_handle: intro_handle.clone(),
+            classic_handle: intro_handle.clone(),
+            boss_handle: intro_handle.clone(),
+            space_handle: intro_handle.clone(),
+            hurry_handle: intro_handle.clone(),
+            qwerty_handle: intro_handle.clone(),
+            credits_handle: intro_handle.clone(),
+            organ_handle: intro_handle.clone(),
+            tick_tock_handle: intro_handle.clone(),
         }
     }
 
     pub fn get_sound_handles(&self) -> Vec<HandleUntyped> {
-        let mut sounds = 
-            vec!(
-                self.flag_spawn_handle.clone_untyped(),
-                self.land_handle.clone_untyped(),
-                self.shock_handle.clone_untyped(),
-                self.electricity_handle.clone_untyped(),
-                self.level_end_handle.clone_untyped(),
-                self.slide_handle.clone_untyped(),
-                self.fall_handle.clone_untyped(),
-
-                self.bass_drum_handle.clone_untyped(),
-                self.bass_drum_reverb_handle.clone_untyped(),
-                self.drum_and_bell_handle.clone_untyped(),
-                self.level_one_handle.clone_untyped(),
-                self.level_one_8bit_handle.clone_untyped(),
-                self.halloween_handle.clone_untyped(),
-                self.classic_handle.clone_untyped(),
-                self.boss_handle.clone_untyped(),
-                self.space_handle.clone_untyped(),
-                self.hurry_handle.clone_untyped(),
-                self.qwerty_handle.clone_untyped(),
-                self.credits_handle.clone_untyped(),
-                self.intro_handle.clone_untyped(),
-                self.organ_handle.clone_untyped(),
-                self.tick_tock_handle.clone_untyped(),
-            );
-
-        self.pickup_handle.iter().for_each(|s| {
-            sounds.push(s.clone_untyped());
-        });
-        self.bite_handle.iter().for_each(|s| {
-            sounds.push(s.clone_untyped());
-        });
-
-        sounds
+        vec!(self.intro_handle.clone_untyped())
     }
 
     pub fn play(&mut self, 
@@ -539,4 +495,45 @@ pub fn reset_sounds(
 ) {
     collect_sounds_tracker.dude = 0;
     collect_sounds_tracker.snake = 0;
+}
+
+pub fn load_rest_of_sounds(
+    mut audio_state: ResMut<AudioState>,
+    asset_server: Res<AssetServer>
+) {
+    audio_state.pickup_handle = vec!(
+        asset_server.load("sounds/pickup0.ogg"),
+        asset_server.load("sounds/pickup1.ogg"),
+        asset_server.load("sounds/pickup2.ogg"),
+        asset_server.load("sounds/pickup3.ogg"),
+        asset_server.load("sounds/pickup4.ogg"),
+    );
+    audio_state.bite_handle = vec!(
+        asset_server.load("sounds/bite0.ogg"),
+        asset_server.load("sounds/bite1.ogg"),
+        asset_server.load("sounds/bite2.ogg"),
+        asset_server.load("sounds/bite3.ogg"),
+    );
+    audio_state.flag_spawn_handle = asset_server.load("sounds/flagspawn.ogg");
+    audio_state.land_handle = asset_server.load("sounds/land.ogg");
+    audio_state.shock_handle = asset_server.load("sounds/electric.ogg");
+    audio_state.electricity_handle = asset_server.load("sounds/electricity.ogg");
+    audio_state.level_end_handle = asset_server.load("sounds/levelend.ogg");
+    audio_state.slide_handle = asset_server.load("sounds/slide.ogg");
+    audio_state.fall_handle = asset_server.load("sounds/fall.ogg");
+
+    audio_state.bass_drum_handle = asset_server.load("music/bassdrum.ogg");
+    audio_state.bass_drum_reverb_handle = asset_server.load("music/bassdrum_reverb.ogg");
+    audio_state.drum_and_bell_handle = asset_server.load("music/drum_and_bell.ogg");
+    audio_state.level_one_handle = asset_server.load("music/01.ogg");
+    audio_state.level_one_8bit_handle = asset_server.load("music/018bit.ogg");
+    audio_state.halloween_handle = asset_server.load("music/halloween.ogg");
+    audio_state.classic_handle = asset_server.load("music/classic.ogg");
+    audio_state.boss_handle = asset_server.load("music/boss.ogg");
+    audio_state.space_handle = asset_server.load("music/space.ogg");
+    audio_state.hurry_handle = asset_server.load("music/hurry.ogg");
+    audio_state.qwerty_handle = asset_server.load("music/qwerty.ogg");
+    audio_state.credits_handle = asset_server.load("music/credits.ogg");
+    audio_state.organ_handle = asset_server.load("music/organ.ogg");
+    audio_state.tick_tock_handle = asset_server.load("music/ticktock.ogg");
 }
