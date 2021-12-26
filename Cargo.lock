@@ -224,6 +224,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy-crevice-derive"
+version = "0.5.0"
+dependencies = [
+ "bevy_macro_utils",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "bevy_app"
 version = "0.5.0"
 dependencies = [
@@ -283,6 +293,16 @@ dependencies = [
  "bevy_core",
  "bevy_ecs",
  "bevy_render",
+]
+
+[[package]]
+name = "bevy_crevice"
+version = "0.5.0"
+dependencies = [
+ "bevy-crevice-derive",
+ "bytemuck",
+ "glam",
+ "mint",
 ]
 
 [[package]]
@@ -481,8 +501,6 @@ dependencies = [
  "bevy_window",
  "bitflags",
  "bytemuck",
- "crevice",
- "wgpu",
 ]
 
 [[package]]
@@ -519,6 +537,7 @@ dependencies = [
  "bevy_app",
  "bevy_asset",
  "bevy_core",
+ "bevy_crevice",
  "bevy_derive",
  "bevy_ecs",
  "bevy_math",
@@ -528,7 +547,6 @@ dependencies = [
  "bevy_window",
  "bitflags",
  "codespan-reporting",
- "crevice",
  "downcast-rs",
  "futures-lite",
  "hex",
@@ -577,7 +595,6 @@ dependencies = [
  "bevy_transform",
  "bevy_utils",
  "bytemuck",
- "crevice",
  "guillotiere",
  "rectangle-pack",
  "serde",
@@ -651,7 +668,6 @@ dependencies = [
  "bevy_utils",
  "bevy_window",
  "bytemuck",
- "crevice",
  "serde",
  "smallvec",
  "stretch",
@@ -1096,25 +1112,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "crevice"
-version = "0.8.0"
-dependencies = [
- "bytemuck",
- "crevice-derive",
- "glam",
- "mint",
-]
-
-[[package]]
-name = "crevice-derive"
-version = "0.8.0"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
 name = "crossbeam"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1496,6 +1493,7 @@ checksum = "9a5e5bb97bf9a0d9519a28cf38839cf1d6d9bb572b48e3c67202271fec2ed5e7"
 dependencies = [
  "core-foundation 0.6.4",
  "io-kit-sys",
+ "js-sys",
  "libc",
  "libudev-sys",
  "log",
@@ -1504,6 +1502,7 @@ dependencies = [
  "stdweb 0.4.20",
  "uuid",
  "vec_map",
+ "web-sys",
  "winapi",
 ]
 

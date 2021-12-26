@@ -24,7 +24,7 @@ native = [
 ]
 
 [dependencies]
-bevy = { git = "https://github.com/bevyengine/bevy", rev = "081350916c39fc1c7c9d659ccb6d86413832b465", default-features = false }
+bevy = { git = "https://github.com/bevyengine/bevy", rev = "585d0b84672b0309e2bc0487e9c43d9df29212d0", default-features = false }
 #bevy_mod_raycast = { git = "https://github.com/aevyrie/bevy_mod_raycast" }
 #bevy_mod_picking = { git = "https://github.com/aevyrie/bevy_mod_picking" }
 petgraph = "0.5.1"

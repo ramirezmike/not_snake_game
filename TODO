@@ -12,7 +12,6 @@ TODO
 - add ability to control snake 
 - FIX BACKWARD SNAKE OMG (TRY AGAIN, YOU CAN DO IT I BELIEVE IN YOU)
 - Re-model snake or texture it so the inside of its mouth is black?
-- update bevy and re-add visibility on buttons in main menu
 
 
 
@@ -117,6 +116,7 @@ Done
 - change font
 - change the way we're loading files so that when the game launches it's only waiting on what's on the title screen.
     - the .ogg format is the bottleneck, so only load one music file
+- update bevy and re-add visibility on buttons in main menu
 
 
 To Run

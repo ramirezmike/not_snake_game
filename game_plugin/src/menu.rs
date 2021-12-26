@@ -66,9 +66,9 @@ pub fn setup_menu(
                 },
                 ..Default::default()
             },
-//          visibility: Visibility {
-//              is_visible: false,
-//          },
+            visibility: Visibility {
+                is_visible: false,
+            },
             color: NORMAL_BUTTON.into(),
             ..Default::default()
         })
@@ -83,9 +83,9 @@ pub fn setup_menu(
                     },
                     Default::default(),
                 ),
-//              visibility: Visibility {
-//                  is_visible: false,
-//              },
+                visibility: Visibility {
+                    is_visible: false,
+                },
                 ..Default::default()
             }).insert(MenuButton);
         })
@@ -110,9 +110,9 @@ pub fn setup_menu(
                 },
                 ..Default::default()
             },
-//          visibility: Visibility {
-//              is_visible: false,
-//          },
+            visibility: Visibility {
+                is_visible: false,
+            },
             color: NORMAL_BUTTON.into(),
             ..Default::default()
         })
@@ -127,9 +127,9 @@ pub fn setup_menu(
                     },
                     Default::default(),
                 ),
-//              visibility: Visibility {
-//                  is_visible: false,
-//              },
+                visibility: Visibility {
+                    is_visible: false,
+                },
                 ..Default::default()
             }).insert(MenuButton);
         })
@@ -170,7 +170,7 @@ pub fn menu(
     gamepad: Option<Res<game_controller::GameController>>,
     mut gamepad_buffer: Local<f32>,
     mut bylines: Query<&mut Text, With<BylineText>>,
-//    mut menu_buttons: Query<&mut Visibility, With<MenuButton>>,
+    mut menu_buttons: Query<&mut Visibility, With<MenuButton>>,
     time: Res<Time>,
     mut score: ResMut<score::Score>,
 ) {
@@ -179,15 +179,17 @@ pub fn menu(
 
     for mut byline in bylines.iter_mut() {
         let a = byline.sections[0].style.color.a();
-        if a < 1.0 {
+        if a < 0.95 {
             byline.sections[0].style.color.set_a(a + time.delta_seconds() / 5.0);
-        } 
+        } else {
+            byline.sections[0].style.color.set_a(1.0);
+        }
 
         if a > 0.8 {
             // make buttons visible now that byline is visible enough
-//          for mut visible in menu_buttons.iter_mut() {
-//              visible.is_visible = true; 
-//          }
+            for mut visible in menu_buttons.iter_mut() {
+                visible.is_visible = true; 
+            }
         }
     }
 
