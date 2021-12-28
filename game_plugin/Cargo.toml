@@ -26,7 +26,6 @@ native = [
 [dependencies]
 bevy = { git = "https://github.com/bevyengine/bevy", rev = "585d0b84672b0309e2bc0487e9c43d9df29212d0", default-features = false }
 #bevy_mod_raycast = { git = "https://github.com/aevyrie/bevy_mod_raycast" }
-#bevy_mod_picking = { git = "https://github.com/aevyrie/bevy_mod_picking" }
 petgraph = "0.5.1"
 #bevy_prototype_debug_lines = "0.2.2"
 rand = "0.8"
@@ -34,6 +33,7 @@ serde = {version = "1", features = ["derive"]}
 anyhow = "1.0"
 ron = "0.6.2"
 bevy_kira_audio = { git = "https://github.com/NiklasEi/bevy_kira_audio", rev = "9a9a4c87e01ad2fb446852317e63f8fc103406c1", features = ["wav"]}
+bevy_mod_picking = { git = "https://github.com/aevyrie/bevy_mod_picking", rev = "07189c035d6204a45a57026cdf3d22e57c9cc516" }
 
 
 

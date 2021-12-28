@@ -1,5 +1,6 @@
 TODO
 - re-add electric snake shader
+    - might want to wait until there's a better bevy 0.6 example
 - re-add food icon next to score? (not super important)
 - change menu buttons' style
 - add "endless mode"
@@ -15,12 +16,13 @@ TODO
 
 
 
-
 (Levels)
 
 (Gameplay)
 - once a level is complete, if the player grabs a food maybe show the words "BONUS MODE" or something?
     or just make it clear they've reached the target like the letters turn color or something and get big and then small
+- Add "gates" that you can only pass after reaching target number of food 
+- Snake foods can maybe be colored and indicate whether they speed up or slow down the snake?
 
 (Audio)
 

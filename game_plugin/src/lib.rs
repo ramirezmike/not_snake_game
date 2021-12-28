@@ -29,6 +29,7 @@ pub mod pause;
 pub mod teleporter;
 pub mod dust;
 mod menu;
+mod editor;
 
 use camera::*;
 use environment::*;
@@ -41,6 +42,7 @@ pub const FONT: &str = "fonts/monogram.ttf";
 pub enum AppState {
     MainMenu,
     Loading,
+    Editor,
     Pause,
     InGame,
     ScoreDisplay,
@@ -60,10 +62,11 @@ impl Plugin for GamePlugin {
            .add_event::<credits::CreditsEvent>()
 
 //           .add_state(AppState::MainMenu)
-           .add_state(AppState::Loading)
+           .add_state(AppState::Editor)
+//           .add_state(AppState::Loading)
            .add_system_set(SystemSet::on_exit(AppState::Loading)
-                                .with_system(fullscreen_app))
-           .add_system_set(SystemSet::on_enter(AppState::MainMenu))
+                                .with_system(fullscreen_app)
+           )
            .add_system_set(
                SystemSet::on_enter(AppState::MainMenu)
                          .with_system(environment::load_level.label("loading_level"))
@@ -112,6 +115,7 @@ impl Plugin for GamePlugin {
            .add_system_set(SystemSet::on_exit(AppState::InGame).with_system(environment::cleanup_environment))
            .add_plugin(EnvironmentPlugin)
            .add_plugin(DudePlugin)
+           .add_plugin(editor::EditorPlugin)
 
            .init_resource::<level::LevelAssetState>()
            .add_asset::<level::LevelsAsset>()

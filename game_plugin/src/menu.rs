@@ -60,7 +60,7 @@ pub fn setup_menu(
                 align_items: AlignItems::Center,
                 position_type: PositionType::Absolute,
                 position: Rect {
-                    bottom: Val::Percent(10.0),
+                    bottom: Val::Percent(15.0),
                     left: Val::Percent(45.0),
                     ..Default::default()
                 },
@@ -76,6 +76,50 @@ pub fn setup_menu(
             parent.spawn_bundle(TextBundle {
                 text: Text::with_section(
                     "Start",
+                    TextStyle {
+                        font: asset_server.load(crate::FONT),
+                        font_size: 40.0,
+                        color: Color::rgb(0.9, 0.9, 0.9),
+                    },
+                    Default::default(),
+                ),
+                visibility: Visibility {
+                    is_visible: false,
+                },
+                ..Default::default()
+            }).insert(MenuButton);
+        })
+        .insert(MenuButton)
+        .id();
+
+    let editor_button_entity = commands
+        .spawn_bundle(ButtonBundle {
+            style: Style {
+                size: Size::new(Val::Px(150.0), Val::Px(65.0)),
+                // center button
+                margin: Rect::all(Val::Auto),
+                // horizontally center child text
+                justify_content: JustifyContent::Center,
+                // vertically center child text
+                align_items: AlignItems::Center,
+                position_type: PositionType::Absolute,
+                position: Rect {
+                    bottom: Val::Percent(10.0),
+                    left: Val::Percent(45.0),
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
+            visibility: Visibility {
+                is_visible: false,
+            },
+            color: NORMAL_BUTTON.into(),
+            ..Default::default()
+        })
+        .with_children(|parent| {
+            parent.spawn_bundle(TextBundle {
+                text: Text::with_section(
+                    "Editor",
                     TextStyle {
                         font: asset_server.load(crate::FONT),
                         font_size: 40.0,
@@ -140,6 +184,7 @@ pub fn setup_menu(
         MenuData { 
             start_button_entity, 
             quit_button_entity, 
+            editor_button_entity,
             byline_text_entity,
             selected: start_button_entity
         });
@@ -147,6 +192,7 @@ pub fn setup_menu(
 
 pub struct MenuData {
     start_button_entity: Entity,
+    editor_button_entity: Entity,
     quit_button_entity: Entity,
     byline_text_entity: Entity, 
     selected: Entity,
@@ -154,6 +200,7 @@ pub struct MenuData {
 
 pub fn cleanup_menu(mut commands: Commands, menu_data: Res<MenuData>) {
     commands.entity(menu_data.start_button_entity).despawn_recursive();
+    commands.entity(menu_data.editor_button_entity).despawn_recursive();
     commands.entity(menu_data.quit_button_entity).despawn_recursive();
     commands.entity(menu_data.byline_text_entity).despawn_recursive();
 }
@@ -194,12 +241,14 @@ pub fn menu(
     }
 
     let mut next_button = HashMap::new();
-    next_button.insert(menu_data.start_button_entity, menu_data.quit_button_entity);
+    next_button.insert(menu_data.start_button_entity, menu_data.editor_button_entity);
+    next_button.insert(menu_data.editor_button_entity, menu_data.quit_button_entity);
     next_button.insert(menu_data.quit_button_entity, menu_data.start_button_entity);
 
     let mut prev_button = HashMap::new();
     prev_button.insert(menu_data.start_button_entity, menu_data.quit_button_entity);
-    prev_button.insert(menu_data.quit_button_entity, menu_data.start_button_entity);
+    prev_button.insert(menu_data.editor_button_entity, menu_data.start_button_entity);
+    prev_button.insert(menu_data.quit_button_entity, menu_data.editor_button_entity);
 
     let mut pressed_buttons = game_controller::get_pressed_buttons(&axes, &buttons, gamepad);
     if *gamepad_buffer < 0.25 {
@@ -239,6 +288,9 @@ pub fn menu(
         if selected_button == menu_data.start_button_entity {
             *score = score::Score::new();
             state.set(crate::AppState::LevelTitle).unwrap();
+        }
+        if selected_button == menu_data.editor_button_entity {
+            state.set(crate::AppState::Editor).unwrap();
         }
         if selected_button == menu_data.quit_button_entity {
             exit.send(AppExit);
