@@ -3,7 +3,11 @@ use bevy_mod_picking::*;
 use crate::AppState;
 
 mod editor_camera;
+mod help_text;
 mod interface; 
+
+#[derive(Component)]
+pub struct EditorTrashMarker;
 
 pub struct EditorPlugin;
 impl Plugin for EditorPlugin {
@@ -19,6 +23,7 @@ impl Plugin for EditorPlugin {
         .add_plugin(HighlightablePickingPlugin)
         .add_plugin(DebugCursorPickingPlugin)
         .add_plugin(interface::EditorInterfacePlugin)
+        .add_plugin(help_text::HelpTextPlugin)
         .add_system_set(SystemSet::on_update(AppState::Editor)
             .with_system(print_events)
             .with_system(editor_camera::update_camera)
