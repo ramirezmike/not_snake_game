@@ -149,6 +149,15 @@ pub fn generate_snake_body(
             }).id()
 }
 
+pub fn create_snake(
+    commands: &mut Commands, 
+    meshes: &ResMut<EnemyMeshes>, 
+    x: usize,
+    y: usize,
+    z: usize,
+) {
+}
+
 pub fn spawn_enemy(
     commands: &mut Commands, 
     meshes: &ResMut<EnemyMeshes>, 

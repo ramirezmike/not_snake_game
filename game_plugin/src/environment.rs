@@ -133,7 +133,8 @@ impl Plugin for EnvironmentPlugin {
            )
            .add_system_set(
                SystemSet::on_enter(crate::AppState::InGame)
-                         .with_system(load_level.system().label("loading_level"))
+                         .with_system(try_set_level_from_asset.label("load_levels_from_asset"))
+                         .with_system(load_level.system().label("loading_level").after("load_levels_from_asset"))
                          .with_system(crate::camera::create_camera.label("create_camera").after("loading_level"))
                          .with_system(create_hud.after("create_camera"))
                          .with_system(set_clear_color.system().after("loading_level"))
@@ -200,16 +201,6 @@ impl Plugin for EnvironmentPlugin {
 //        app.set_runner(print_schedule_runner);
     }
 }
-
-/*
-pub fn material_test(
-    mut materials: Query<&mut StandardMaterial>,
-) {
-    for mut material in materials.iter_mut() {
-        material.unlit = true; 
-    }
-}
-*/
 
 pub fn restart_level(
     mut state: ResMut<State<crate::AppState>>,
@@ -309,7 +300,7 @@ pub fn load_assets(
     flag_meshes.flag = asset_server.load("models/winflag.glb#Mesh0/Primitive0");
     level_asset_state.handle = asset_server.load("data/test.custom");
 
-    loading.0.append(&mut audio_state.get_sound_handles());
+//    loading.0.append(&mut audio_state.get_sound_handles());
     loading.0.push(level_asset_state.handle.clone_untyped());
     loading.0.push(font_handle.clone_untyped());
 
@@ -362,7 +353,9 @@ fn check_assets_ready(
     }
 
     if ready {
-        state.set(crate::AppState::MainMenu).unwrap();
+//        state.set(crate::AppState::MainMenu).unwrap();
+// TODO set this back, for now we're focusing on the editor
+        state.set(crate::AppState::Editor).unwrap();
     }
 }
 
@@ -431,21 +424,10 @@ pub fn load_level_into_path_finder(
     path_finder.load_level(&level);
 }
 
-pub fn load_level(
-    mut commands: Commands,
+fn try_set_level_from_asset(
     mut level: ResMut<Level>,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-    mut level_ready: ResMut<LevelReady>,
-    mut dude_meshes: ResMut<dude::DudeMeshes>,
-    mut enemy_meshes: ResMut<snake::EnemyMeshes>,
-    flag_meshes: ResMut<win_flag::WinFlagMeshes>,
-    audio: Res<Audio>,
-    mut audio_state: ResMut<sounds::AudioState>,
-    camera: Query<Entity, With<camera::MainCamera>>,
     level_asset_state: Res<level::LevelAssetState>, 
     levels_asset: ResMut<Assets<level::LevelsAsset>>,
-    asset_server: Res<AssetServer>,
     mut state: ResMut<State<crate::AppState>>,
 ) {
     println!("Starting to load level...");
@@ -458,7 +440,23 @@ pub fn load_level(
         state.set(crate::AppState::Loading).unwrap();
         return;
     }
+}
 
+pub fn load_level(
+    mut commands: Commands,
+    mut level: ResMut<Level>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    mut level_ready: ResMut<LevelReady>,
+    mut dude_meshes: ResMut<dude::DudeMeshes>,
+    mut enemy_meshes: ResMut<snake::EnemyMeshes>,
+    flag_meshes: ResMut<win_flag::WinFlagMeshes>,
+    audio: Res<Audio>,
+    mut audio_state: ResMut<sounds::AudioState>,
+    camera: Query<Entity, With<camera::MainCamera>>,
+    state: Res<State<crate::AppState>>,
+) {
+    println!("resetting level");
     level.reset_level();
 
     commands.insert_resource(AmbientLight {

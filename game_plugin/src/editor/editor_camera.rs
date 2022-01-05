@@ -1,19 +1,23 @@
 use bevy::prelude::*;
 use bevy::input::mouse::{MouseWheel,MouseMotion};
 use bevy::render::camera::PerspectiveProjection;
+use crate::editor::interface;
 use crate::camera::MainCamera;
 use bevy_mod_picking::*;
 
 #[derive(Component)]
-pub struct EditorCamera {
-    pub is_being_controlled: bool
-}
+pub struct EditorCamera;
 
 #[derive(Component, Debug)]
 pub struct PanOrbitCamera {
     pub focus: Vec3,
     pub radius: f32,
     pub upside_down: bool,
+}
+
+pub struct PositionCameraEvent {
+    pub translation: Vec3,
+    pub look_at: Vec3,
 }
 
 impl Default for PanOrbitCamera {
@@ -26,15 +30,30 @@ impl Default for PanOrbitCamera {
     }
 }
 
+pub fn handle_position_camera_event( 
+    mut event_reader: EventReader<PositionCameraEvent>,
+    mut camera: Query<(&mut Transform, &mut PanOrbitCamera), With<EditorCamera>>,
+) {
+    for event in event_reader.iter() {
+        let (mut camera_transform, mut pan_orbit_camera) = camera.single_mut();
+        let new_translation = camera_transform.translation + event.translation;
+        pan_orbit_camera.focus = event.look_at;
+        *camera_transform = Transform::from_translation(new_translation)
+                                     .looking_at(event.look_at, Vec3::Y);
+    }
+}
+
 pub fn update_camera(
     windows: Res<Windows>,
     mut ev_motion: EventReader<MouseMotion>,
     mut ev_scroll: EventReader<MouseWheel>,
     input_mouse: Res<Input<MouseButton>>,
+    interface: Res<interface::Interface>,
     mut query: Query<(&mut PanOrbitCamera, &mut Transform, &PerspectiveProjection, &EditorCamera)>,
+    state: Res<State<crate::AppState>>,
 ) {
     for (mut pan_orbit, mut transform, projection, editor_camera) in query.iter_mut() {
-        if !editor_camera.is_being_controlled { continue; }
+        if *state.current() != crate::AppState::EditorPlay && interface.current_state() != interface::InterfaceMode::Camera { continue; }
 
         // change input mapping for orbit and panning here
         let orbit_button = MouseButton::Right;
@@ -109,8 +128,33 @@ pub fn spawn_camera(
             .looking_at(Vec3::new(0.0, 0.0, 0.0), Vec3::Y),
         ..Default::default()
     })
+    .with_children(|parent| {
+        // directional 'sun' light
+        const HALF_SIZE: f32 = 100.0;
+        parent.spawn_bundle(DirectionalLightBundle {
+            directional_light: DirectionalLight {
+                // Configure the projection to better fit the scene
+                shadow_projection: OrthographicProjection {
+                    left: -HALF_SIZE,
+                    right: HALF_SIZE,
+                    bottom: -HALF_SIZE,
+                    top: HALF_SIZE,
+                    near: -10.0 * HALF_SIZE,
+                    far: 10.0 * HALF_SIZE,
+                    ..Default::default()
+                },
+                shadows_enabled: true,
+                ..Default::default()
+            },
+            transform: Transform {
+                rotation: Quat::from_rotation_x(-std::f32::consts::FRAC_PI_4),
+                ..Default::default()
+            },
+            ..Default::default()
+        });
+    })
     .insert_bundle(PickingCameraBundle::default())
-    .insert(EditorCamera { is_being_controlled: false })
+    .insert(EditorCamera)
     .insert(PanOrbitCamera {
         radius,
         ..Default::default()

@@ -31,7 +31,7 @@ fn create_help_text_box(
     commands
         .spawn_bundle(NodeBundle {
             style: Style {
-                size: Size::new(Val::Percent(100.0), Val::Percent(30.0)),
+                size: Size::new(Val::Percent(100.0), Val::Percent(8.0)),
                 ..Default::default()
             },
             color: UiColor(Color::NONE),

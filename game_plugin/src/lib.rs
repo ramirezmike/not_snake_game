@@ -43,6 +43,7 @@ pub enum AppState {
     MainMenu,
     Loading,
     Editor,
+    EditorPlay,
     Pause,
     InGame,
     ScoreDisplay,
@@ -62,8 +63,8 @@ impl Plugin for GamePlugin {
            .add_event::<credits::CreditsEvent>()
 
 //           .add_state(AppState::MainMenu)
-           .add_state(AppState::Editor)
-//           .add_state(AppState::Loading)
+//           .add_state(AppState::Editor)
+           .add_state(AppState::Loading)
            .add_system_set(SystemSet::on_exit(AppState::Loading)
                                 .with_system(fullscreen_app)
            )

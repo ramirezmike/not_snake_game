@@ -11,6 +11,11 @@ impl Plugin for DudePlugin {
                    .with_system(player_input.system())
                    .with_system(hop_on_snake.system())
                    .with_system(push_block.system())
+           ).add_system_set(
+               SystemSet::on_update(crate::AppState::EditorPlay)
+                   .with_system(player_input.system())
+                   .with_system(hop_on_snake.system())
+                   .with_system(push_block.system())
            );
     }
 }
@@ -67,17 +72,28 @@ pub fn spawn_player(
     y: usize,
     z: usize,
 ) {
+    let player_entity = create_not_snake(commands, meshes, x as isize, y as isize, z as isize);
+    level.set(x as i32, y as i32, z as i32, Some(GameObject::new(player_entity, EntityType::Dude)));
+}
+
+pub fn create_not_snake(
+    commands: &mut Commands, 
+    meshes: &ResMut<DudeMeshes>, 
+    x: isize,
+    y: isize,
+    z: isize,
+) -> Entity {
     let mut transform = Transform::from_translation(Vec3::new(x as f32, y as f32, z as f32));
     transform.apply_non_uniform_scale(Vec3::new(SCALE, SCALE, SCALE)); 
     transform.rotate(Quat::from_axis_angle(Vec3::new(0.0, 1.0, 0.0), std::f32::consts::PI));
+
     let inner_mesh_vertical_offset = 1.0;
-    let player_entity = 
     commands.spawn_bundle(PbrBundle {
                 transform,
                 ..Default::default()
             })
             .insert(Dude)
-            .insert(Position { x: x as i32, y: y as i32, z: z as i32 })
+            .insert(Position { x: transform.translation.x as i32, y: transform.translation.y as i32, z: transform.translation.z as i32 })
             .insert(EntityType::Dude)
             .insert(crate::camera::CameraTarget)
             .insert(holdable::Holder { holding: None })
@@ -97,8 +113,7 @@ pub fn spawn_player(
                     },
                     ..Default::default()
                 });
-            }).id();
-    level.set(x as i32, y as i32, z as i32, Some(GameObject::new(player_entity, EntityType::Dude)));
+            }).id()
 }
 
 pub fn handle_squashes( 
