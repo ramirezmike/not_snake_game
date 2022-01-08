@@ -44,7 +44,7 @@ Not Snake by Michael Ramirez
 
 Special Thanks To...
 
-Krystal
+Alyssa
 mi media naranja, for being a source of endless encouragment and also for not rolling your eyes too much at me
 
 My cat, Meow
