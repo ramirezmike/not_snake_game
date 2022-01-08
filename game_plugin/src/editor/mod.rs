@@ -5,6 +5,7 @@ use crate::{AppState, dude, snake};
 mod editor_camera;
 mod help_text;
 mod play;
+mod property_editor;
 mod interface; 
 mod add_entity;
 
@@ -27,6 +28,7 @@ impl Plugin for EditorPlugin {
         .add_plugin(interface::EditorInterfacePlugin)
         .add_plugin(help_text::HelpTextPlugin)
         .add_plugin(play::EditorPlayPlugin)
+        .add_plugin(property_editor::PropertyEditorPlugin)
         .add_event::<editor_camera::PositionCameraEvent>()
         .add_system_set(SystemSet::on_update(AppState::Editor)
             .with_system(handle_entity_click_events)

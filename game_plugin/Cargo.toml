@@ -34,7 +34,7 @@ anyhow = "1.0"
 ron = "0.6.2"
 bevy_kira_audio = { git = "https://github.com/NiklasEi/bevy_kira_audio", rev = "9a9a4c87e01ad2fb446852317e63f8fc103406c1", features = ["wav"]}
 bevy_mod_picking = { git = "https://github.com/aevyrie/bevy_mod_picking", rev = "07189c035d6204a45a57026cdf3d22e57c9cc516" }
-
+bevy-inspector-egui = { git = "https://github.com/jakobhellermann/bevy-inspector-egui", rev = "e5df16d441a7d32105f17b2a115ed87b8f5f9e6c" }
 
 
 [patch.crates-io]
