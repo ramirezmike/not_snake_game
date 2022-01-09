@@ -14,6 +14,10 @@ Also, feel free to fork/make issues!
 
 https://user-images.githubusercontent.com/1421719/130297030-7209dcca-e0be-41e4-afcc-e76404be9817.mp4
 
+# Branches
+
+I'm using the `main` branch for ongoing development; don't be surprised if features are disabled or the game loads differently as it should be treated as very unstable. The `release` branch is what's currently on itch.io. All other branches, like the `editor` branch that currently exists, are for specific features.
+
 # Running the Game
 
 To run the game locally
