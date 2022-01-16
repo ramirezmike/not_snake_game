@@ -88,6 +88,7 @@ fn handle_entity_click_events(
                                             add_entity::add_snake(
                                                 &mut commands,
                                                 &mut enemy_meshes,
+                                                &mut materials,
                                                 &selected_position,
                                             )
                                         }

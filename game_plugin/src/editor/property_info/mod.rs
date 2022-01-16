@@ -12,12 +12,16 @@ use bevy_mod_picking::*;
 
 mod block;
 mod common;
+mod not_snake;
+mod snake;
 
 pub struct PropertyInfoPlugin;
 impl Plugin for PropertyInfoPlugin {
     fn build(&self, app: &mut App) {
         common::CommonPropertyHandler::add_systems_to_app(app);
         block::BlockPropertyHandler::add_systems_to_app(app);
+        not_snake::NotSnakePropertyHandler::add_systems_to_app(app);
+        snake::SnakePropertyHandler::add_systems_to_app(app);
     }
 }
 

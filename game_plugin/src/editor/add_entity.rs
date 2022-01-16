@@ -22,24 +22,31 @@ pub fn add_block(
         .insert_bundle(PickableBundle::default());
 }
 
-pub fn add_snake(commands: &mut Commands, meshes: &ResMut<snake::EnemyMeshes>, position: &Vec3) {
+#[derive(Component)]
+pub struct SnakeProperties {
+    color: Color,
+}
+
+pub fn add_snake(
+    commands: &mut Commands, 
+    meshes: &ResMut<snake::EnemyMeshes>, 
+    materials: &mut ResMut<Assets<StandardMaterial>>,
+    position: &Vec3
+) {
     let mut transform = Transform::from_translation(*position);
     transform.apply_non_uniform_scale(Vec3::new(0.50, 0.50, 0.50));
     transform.rotate(Quat::from_axis_angle(
         Vec3::new(0.0, 1.0, 0.0),
         std::f32::consts::FRAC_PI_2,
     ));
+    let snake_color = Color::hex("ff4f69").unwrap();
 
     commands
         .spawn_bundle(PbrBundle {
             transform,
             ..Default::default()
         })
-        .insert(GameEntity {
-            entity_type: GameEntityType::Snake,
-        })
         .insert(EditorTrashMarker)
-        .insert_bundle(PickableBundle::default())
         .with_children(|parent| {
             let parent_entity = parent.parent_entity();
             parent
@@ -50,9 +57,16 @@ pub fn add_snake(commands: &mut Commands, meshes: &ResMut<snake::EnemyMeshes>, p
                 .with_children(|inner_parent| {
                     inner_parent.spawn_bundle(PbrBundle {
                         mesh: meshes.head.clone(),
-                        material: meshes.material.clone(),
+                        material: materials.add(snake_color.into()),
                         ..Default::default()
-                    });
+                    })
+                    .insert(GameEntity {
+                        entity_type: GameEntityType::Snake,
+                    })
+                    .insert(SnakeProperties {
+                        color: snake_color.clone(),
+                    })
+                    .insert_bundle(PickableBundle::default());
                 });
         });
 }
