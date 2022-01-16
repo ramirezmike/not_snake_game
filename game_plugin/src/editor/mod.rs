@@ -8,6 +8,7 @@ mod play;
 mod property_editor;
 mod interface; 
 mod add_entity;
+mod property_info;
 
 #[derive(Component)]
 pub struct EditorTrashMarker;
