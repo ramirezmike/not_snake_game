@@ -1,8 +1,8 @@
-use bevy::prelude::*;
-use bevy::input::mouse::{MouseWheel,MouseMotion};
-use bevy::render::camera::PerspectiveProjection;
-use crate::editor::interface;
 use crate::camera::MainCamera;
+use crate::editor::interface;
+use bevy::input::mouse::{MouseMotion, MouseWheel};
+use bevy::prelude::*;
+use bevy::render::camera::PerspectiveProjection;
 use bevy_mod_picking::*;
 
 #[derive(Component)]
@@ -30,7 +30,7 @@ impl Default for PanOrbitCamera {
     }
 }
 
-pub fn handle_position_camera_event( 
+pub fn handle_position_camera_event(
     mut event_reader: EventReader<PositionCameraEvent>,
     mut camera: Query<(&mut Transform, &mut PanOrbitCamera), With<EditorCamera>>,
 ) {
@@ -38,8 +38,8 @@ pub fn handle_position_camera_event(
         let (mut camera_transform, mut pan_orbit_camera) = camera.single_mut();
         let new_translation = camera_transform.translation + event.translation;
         pan_orbit_camera.focus = event.look_at;
-        *camera_transform = Transform::from_translation(new_translation)
-                                     .looking_at(event.look_at, Vec3::Y);
+        *camera_transform =
+            Transform::from_translation(new_translation).looking_at(event.look_at, Vec3::Y);
     }
 }
 
@@ -49,11 +49,20 @@ pub fn update_camera(
     mut ev_scroll: EventReader<MouseWheel>,
     input_mouse: Res<Input<MouseButton>>,
     interface: Res<interface::Interface>,
-    mut query: Query<(&mut PanOrbitCamera, &mut Transform, &PerspectiveProjection, &EditorCamera)>,
+    mut query: Query<(
+        &mut PanOrbitCamera,
+        &mut Transform,
+        &PerspectiveProjection,
+        &EditorCamera,
+    )>,
     state: Res<State<crate::AppState>>,
 ) {
     for (mut pan_orbit, mut transform, projection, editor_camera) in query.iter_mut() {
-        if *state.current() != crate::AppState::EditorPlay && interface.current_state() != interface::InterfaceMode::Camera { continue; }
+        if *state.current() != crate::AppState::EditorPlay
+            && interface.current_state() != interface::InterfaceMode::Camera
+        {
+            continue;
+        }
 
         // change input mapping for orbit and panning here
         let orbit_button = MouseButton::Right;
@@ -82,7 +91,11 @@ pub fn update_camera(
             let window = get_primary_window_size(&windows);
             let delta_x = {
                 let delta = rotation_move.x / window.x * std::f32::consts::PI * 2.0;
-                if pan_orbit.upside_down { -delta } else { delta }
+                if pan_orbit.upside_down {
+                    -delta
+                } else {
+                    delta
+                }
             };
             let delta_y = rotation_move.y / window.y * std::f32::consts::PI;
             let yaw = Quat::from_rotation_y(-delta_x);
@@ -101,7 +114,8 @@ pub fn update_camera(
             // parent = x and y rotation
             // child = z-offset
             let rot_matrix = Mat3::from_quat(transform.rotation);
-            transform.translation = pan_orbit.focus + rot_matrix.mul_vec3(Vec3::new(0.0, 0.0, pan_orbit.radius));
+            transform.translation =
+                pan_orbit.focus + rot_matrix.mul_vec3(Vec3::new(0.0, 0.0, pan_orbit.radius));
         }
     }
 }
@@ -112,10 +126,7 @@ fn get_primary_window_size(windows: &Res<Windows>) -> Vec2 {
     window
 }
 
-pub fn spawn_camera(
-    mut commands: Commands,
-    mut cameras: Query<Entity, With<MainCamera>>,
-) {
+pub fn spawn_camera(mut commands: Commands, mut cameras: Query<Entity, With<MainCamera>>) {
     if let Ok(camera_entity) = cameras.get_single_mut() {
         commands.entity(camera_entity).despawn_recursive();
     }
@@ -123,40 +134,41 @@ pub fn spawn_camera(
     let translation = Vec3::new(-2.0, 2.5, 0.0);
     let radius = translation.length();
 
-    commands.spawn_bundle(PerspectiveCameraBundle {
-        transform: Transform::from_translation(translation)
-            .looking_at(Vec3::new(0.0, 0.0, 0.0), Vec3::Y),
-        ..Default::default()
-    })
-    .with_children(|parent| {
-        // directional 'sun' light
-        const HALF_SIZE: f32 = 100.0;
-        parent.spawn_bundle(DirectionalLightBundle {
-            directional_light: DirectionalLight {
-                // Configure the projection to better fit the scene
-                shadow_projection: OrthographicProjection {
-                    left: -HALF_SIZE,
-                    right: HALF_SIZE,
-                    bottom: -HALF_SIZE,
-                    top: HALF_SIZE,
-                    near: -10.0 * HALF_SIZE,
-                    far: 10.0 * HALF_SIZE,
+    commands
+        .spawn_bundle(PerspectiveCameraBundle {
+            transform: Transform::from_translation(translation)
+                .looking_at(Vec3::new(0.0, 0.0, 0.0), Vec3::Y),
+            ..Default::default()
+        })
+        .with_children(|parent| {
+            // directional 'sun' light
+            const HALF_SIZE: f32 = 100.0;
+            parent.spawn_bundle(DirectionalLightBundle {
+                directional_light: DirectionalLight {
+                    // Configure the projection to better fit the scene
+                    shadow_projection: OrthographicProjection {
+                        left: -HALF_SIZE,
+                        right: HALF_SIZE,
+                        bottom: -HALF_SIZE,
+                        top: HALF_SIZE,
+                        near: -10.0 * HALF_SIZE,
+                        far: 10.0 * HALF_SIZE,
+                        ..Default::default()
+                    },
+                    shadows_enabled: true,
                     ..Default::default()
                 },
-                shadows_enabled: true,
+                transform: Transform {
+                    rotation: Quat::from_rotation_x(-std::f32::consts::FRAC_PI_4),
+                    ..Default::default()
+                },
                 ..Default::default()
-            },
-            transform: Transform {
-                rotation: Quat::from_rotation_x(-std::f32::consts::FRAC_PI_4),
-                ..Default::default()
-            },
+            });
+        })
+        .insert_bundle(PickingCameraBundle::default())
+        .insert(EditorCamera)
+        .insert(PanOrbitCamera {
+            radius,
             ..Default::default()
         });
-    })
-    .insert_bundle(PickingCameraBundle::default())
-    .insert(EditorCamera)
-    .insert(PanOrbitCamera {
-        radius,
-        ..Default::default()
-    });
 }

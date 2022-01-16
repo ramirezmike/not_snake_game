@@ -1,12 +1,14 @@
-use bevy::prelude::*;
-use bevy_mod_picking::*;
-use bevy_inspector_egui::{Inspectable};
-use crate::editor::property_editor::{EntitySelection, PropertyWrapper, get_common_color, get_selected_entities};
 use super::PropertyInfoHandler;
+use crate::editor::property_editor::{
+    get_common_color, get_selected_entities, EntitySelection, PropertyWrapper,
+};
+use bevy::prelude::*;
+use bevy_inspector_egui::Inspectable;
+use bevy_mod_picking::*;
 
 #[derive(Default, Inspectable)]
 pub struct CommonPropertyInfo {
-    color: PropertyWrapper::<Color>,
+    color: PropertyWrapper<Color>,
 }
 
 pub struct CommonPropertyHandler;
@@ -39,16 +41,19 @@ impl PropertyInfoHandler for CommonPropertyHandler {
         pickables: &Query<&PickableButton<StandardMaterial>>,
     ) {
         let selected_entities = get_selected_entities(selections);
-        let selected_entity_color = pickables.get(entity)
-                                             .ok()
-                                             .and_then(|p| p.initial.as_ref())
-                                             .and_then(|m| materials.get(m))
-                                             .and_then(|m| Some(m.base_color));
+        let selected_entity_color = pickables
+            .get(entity)
+            .ok()
+            .and_then(|p| p.initial.as_ref())
+            .and_then(|m| materials.get(m))
+            .and_then(|m| Some(m.base_color));
 
-        prop.color = get_common_color(&selected_entities,
-                                      &selected_entity_color,
-                                      pickables,
-                                      materials);
+        prop.color = get_common_color(
+            &selected_entities,
+            &selected_entity_color,
+            pickables,
+            materials,
+        );
     }
 
     fn handle_item_deselection(
@@ -59,19 +64,16 @@ impl PropertyInfoHandler for CommonPropertyHandler {
         pickables: &Query<&PickableButton<StandardMaterial>>,
     ) {
         let selected_entities = get_selected_entities(&selections);
-        prop.color = 
-            if let Some(entity) = selected_entities.first() {
-                let first_color = pickables.get(*entity)
-                                           .ok()
-                                           .and_then(|p| p.initial.as_ref())
-                                           .and_then(|m| materials.get(m))
-                                           .and_then(|m| Some(m.base_color));
-                get_common_color(&selected_entities,
-                                 &first_color,
-                                 &pickables,
-                                 &materials)
-            } else {
-                PropertyWrapper::<Color>::MultipleValues
-            };
+        prop.color = if let Some(entity) = selected_entities.first() {
+            let first_color = pickables
+                .get(*entity)
+                .ok()
+                .and_then(|p| p.initial.as_ref())
+                .and_then(|m| materials.get(m))
+                .and_then(|m| Some(m.base_color));
+            get_common_color(&selected_entities, &first_color, &pickables, &materials)
+        } else {
+            PropertyWrapper::<Color>::MultipleValues
+        };
     }
 }
