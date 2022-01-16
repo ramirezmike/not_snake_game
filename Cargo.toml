@@ -27,17 +27,16 @@ dev = [
 ]
 
 [dependencies]
-bevy = { version = "0.5", default-features = false }
+bevy = { version = "0.6", default-features = false }
 game_plugin = {path = "game_plugin"}
 winit = { version = "0.25.0" }
 
 [build-dependencies]
 embed-resource = "1.4"
 
-
 [patch.crates-io]
 # override it with bevy from git
-bevy = { path = "../../../repos/bevy" }
+bevy = { git = "https://github.com/bevyengine/bevy" }
 
 [patch."https://github.com/bevyengine/bevy"]
 bevy = { path = "../../../repos/bevy" }

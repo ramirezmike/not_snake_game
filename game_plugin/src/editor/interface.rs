@@ -388,6 +388,7 @@ fn handle_keyboard_input(
     }
 
     if keyboard_input.pressed(KeyCode::C) {
+        println!("C pressed");
         interface_event_writer.send(InterfaceActionEvent { action: InterfaceAction::ToggleCamera });
     }
 

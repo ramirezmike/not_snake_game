@@ -103,11 +103,12 @@ fn handle_entity_click_events(
     }
 }
 
-#[derive(Component)]
+#[derive(Component, Debug)]
 pub struct GameEntity {
     pub entity_type: GameEntityType 
 }
 
+#[derive(PartialEq, Eq, Clone, Copy, Hash, Debug)]
 pub enum GameEntityType {
     Block,
     Snake,
