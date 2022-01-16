@@ -63,14 +63,37 @@ impl Plugin for PropertyEditorPlugin {
 
 #[derive(Default, Inspectable)]
 struct CommonPropertyInfo {
-    color: Color,
+    color: PropertyWrapper::<Color>,
 }
 
 #[derive(Default, Inspectable)]
 struct BlockPropertyInfo {
     moveable: bool,
     visible: bool,
-    color: Color,
+    color: PropertyWrapper::<Color>,
+}
+
+#[derive(PartialEq, Inspectable)]
+enum PropertyWrapper<T: Default> {
+    MultipleValues,
+    Value(T)
+}
+impl<T: Default + PartialEq + Copy + Clone> PropertyWrapper<T> {
+    fn is_single_value(&self) -> bool {
+        *self != PropertyWrapper::<T>::MultipleValues
+    }
+
+    fn get(&self) -> T {
+        match self {
+            PropertyWrapper::<T>::Value(x) => *x,
+            _ => panic!("Wrapping multiple properties; missing check prior to calling get")
+        }
+    }
+}
+impl<T: Default> Default for PropertyWrapper<T> {
+    fn default() -> Self {
+        PropertyWrapper::MultipleValues
+    }
 }
 
 #[derive(PartialEq, Debug)]
@@ -93,11 +116,9 @@ fn toggle_inspectors_display(
 ) {
     let mut common_window = inspector_windows.window_data_mut::<CommonPropertyInfo>();
     common_window.visible = *entity_selection == EntitySelection::Common;
-    println!("Common visible {}", common_window.visible);
 
     let mut block_window = inspector_windows.window_data_mut::<BlockPropertyInfo>();
     block_window.visible = *entity_selection == EntitySelection::Block;
-    println!("Block visible {}", block_window.visible);
 }
 
 fn get_selected_entities(items_with_selections: &Query<(Entity, &Selection)>) -> Vec<Entity> {
@@ -141,23 +162,18 @@ fn detect_entity_selections(
                                                 acc
                                             });
     if grouped_entities.len() == 1 {
-        println!("One entity type selected");
         let entity_type = grouped_entities.iter()
                                           .nth(0)
                                           .expect("Hashmap was empty but reported a length of 1")
                                           .0;
-        println!("Type: {:?}", entity_type);
         *entity_selection = match entity_type {
                                 GameEntityType::Block => EntitySelection::Block,
                                 GameEntityType::Snake => EntitySelection::Snake,
                                 GameEntityType::NotSnake => EntitySelection::NotSnake,
                             };
-        println!("selection: {:?}", entity_selection);
     } else if grouped_entities.len() == 0 {
-        println!("Zero entity type selected");
         *entity_selection = EntitySelection::None;
     } else {
-        println!("Common entity type selected");
         *entity_selection = EntitySelection::Common;
     }
 }
@@ -167,7 +183,7 @@ fn get_common_color(
     color: &Option::<Color>,
     pickables: &Query<&PickableButton<StandardMaterial>>,
     materials: &Res<Assets<StandardMaterial>>,
-) -> Color {
+) -> PropertyWrapper::<Color> {
     if let Some(color) = color {
         let all_colors_equal = entities.iter()
                                        .map(|e| 
@@ -181,12 +197,12 @@ fn get_common_color(
                                        .map(|c| c.unwrap())
                                        .all(|c| c.eq(color));
         if all_colors_equal {
-            *color
+            PropertyWrapper::<Color>::Value(*color)
         } else {
-            Color::default()
+            PropertyWrapper::<Color>::MultipleValues
         }
     } else {
-        Color::default()
+        PropertyWrapper::<Color>::MultipleValues
     }
 }
 
@@ -247,7 +263,7 @@ fn handle_common_item_deselected(
                                                  &pickables,
                                                  &materials)
                             } else {
-                                Color::default()
+                                PropertyWrapper::<Color>::MultipleValues
                             };
                     },
                     _ => ()
@@ -316,7 +332,7 @@ fn handle_block_item_deselected(
                                                  &pickables,
                                                  &materials)
                             } else {
-                                Color::default()
+                                PropertyWrapper::<Color>::MultipleValues
                             };
                     },
                     _ => ()
@@ -334,10 +350,10 @@ fn apply_common(
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut selected: Query<(&Selection, &mut PickableButton<StandardMaterial>)>,
 ) {
-    if prop.color != Color::default() {
+    if prop.color.is_single_value() {
         for (selection, mut button) in selected.iter_mut() {
             if selection.selected() {
-                button.initial = Some(materials.add(prop.color.into()));
+                button.initial = Some(materials.add(prop.color.get().into()));
             }
         }
     }
@@ -348,10 +364,10 @@ fn apply_block(
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut selected: Query<(&Selection, &mut PickableButton<StandardMaterial>)>,
 ) {
-    if prop.color != Color::default() {
+    if prop.color.is_single_value() {
         for (selection, mut button) in selected.iter_mut() {
             if selection.selected() {
-                button.initial = Some(materials.add(prop.color.into()));
+                button.initial = Some(materials.add(prop.color.get().into()));
             }
         }
     }

@@ -55,9 +55,6 @@ fn handle_entity_click_events(
             PickingEvent::Clicked(_) => {
                 for picking_camera in picking_cameras.iter() {
                     if let Some((entity, intersection)) = picking_camera.intersect_top() {
-                        println!("{:?} {:?}", convert_normal_to_face(&intersection.normal()), intersection.normal());
-                        println!("{:?}", intersection.position().round());
-
                         match interface.current_state() {
                             interface::InterfaceMode::Normal => {
                                 if let Ok(transform) = entities.get(entity) {
@@ -77,13 +74,17 @@ fn handle_entity_click_events(
                                         Face::Down => selected_position.x -= 1.0, 
                                         Face::Left => selected_position.z -= 1.0,
                                         Face::Right => selected_position.z += 1.0,
+                                        Face::None => {
+                                            // invalid, don't do anything
+                                            return;
+                                        }
                                     }
 
                                     match interface.current_entity {
                                         interface::EntityButton::SnakeSpawn =>
                                             add_entity::add_snake(&mut commands, &mut enemy_meshes, &selected_position),
                                         interface::EntityButton::NotSnakeSpawn =>
-                                            add_entity::add_not_snake(&mut commands, &mut dude_meshes, &selected_position),
+                                            add_entity::add_not_snake(&mut commands, &mut dude_meshes, &mut materials, &selected_position),
                                         _ => add_entity::add_block(&mut commands, &mut meshes, &mut materials, &selected_position)
                                     }
                                     
@@ -117,7 +118,7 @@ pub enum GameEntityType {
 
 #[derive(Debug)]
 enum Face {
-    Up, Down, Left, Right, Above, Below
+    Up, Down, Left, Right, Above, Below, None
 }
 fn convert_normal_to_face(normal: &Vec3) -> Face {
     let is_zero = |n| n < 0.5 && n > -0.5;
@@ -131,7 +132,7 @@ fn convert_normal_to_face(normal: &Vec3) -> Face {
         (x, y, z) if is_negative_one(x) && is_zero(y) && is_zero(z) => Face::Down,
         (x, y, z) if is_zero(x) && is_zero(y) && is_negative_one(z) => Face::Left,
         (x, y, z) if is_zero(x) && is_zero(y) && is_one(z)          => Face::Right,
-        _ => panic!("Normal {:?} was not a unit normal", normal)
+        _ => Face::None
     }
 }
 
