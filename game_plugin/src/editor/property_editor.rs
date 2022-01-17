@@ -20,7 +20,7 @@ impl Plugin for PropertyEditorPlugin {
             SystemSet::on_update(AppState::Editor)
                 .with_system(detect_entity_selections.label("detect")),
         )
-        .insert_resource(EntitySelection::default())
+        .insert_resource(EntitySelection::None)
         .add_plugin(super::property_info::PropertyInfoPlugin);
         //        .add_plugin(InspectorPlugin::<InspectorQuerySingle<Entity, With<GameEntity>>>::new());
     }
@@ -56,11 +56,6 @@ pub enum EntitySelection {
     NotSnake,
     Common,
     None,
-}
-impl Default for EntitySelection {
-    fn default() -> Self {
-        EntitySelection::None
-    }
 }
 
 pub fn get_selected_entities(items_with_selections: &Query<(Entity, &Selection)>) -> Vec<Entity> {

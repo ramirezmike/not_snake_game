@@ -48,7 +48,8 @@ fn handle_entity_click_events(
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut position_camera_event_writer: EventWriter<editor_camera::PositionCameraEvent>,
     picking_cameras: Query<&PickingCamera>,
-    interface: Res<interface::Interface>,
+    entity_action: Res<interface::EntityAction>,
+    entity_type: Res<interface::EntityType>,
     entities: Query<&Transform>,
 ) {
     for event in events.iter() {
@@ -56,18 +57,26 @@ fn handle_entity_click_events(
             PickingEvent::Clicked(_) => {
                 for picking_camera in picking_cameras.iter() {
                     if let Some((entity, intersection)) = picking_camera.intersect_top() {
-                        match interface.current_state() {
-                            interface::InterfaceMode::Normal => {
-                                if let Ok(transform) = entities.get(entity) {
-                                    position_camera_event_writer.send(
-                                        editor_camera::PositionCameraEvent {
-                                            translation: Vec3::ZERO,
-                                            look_at: transform.translation,
-                                        },
-                                    );
-                                }
-                            }
-                            interface::InterfaceMode::Add => {
+                        match *entity_action {
+                            interface::EntityAction::Select => {
+                             // this code would focus the camera on what was selected
+                             // not sure if it feels right though
+                             // 
+                             // if let Ok(transform) = entities.get(entity) {
+                             //     position_camera_event_writer.send(
+                             //         editor_camera::PositionCameraEvent {
+                             //             translation: Vec3::ZERO,
+                             //             look_at: transform.translation,
+                             //         },
+                             //     );
+                             // }
+                            },
+                            interface::EntityAction::Delete => {
+                                // TODO: Need to prevent deleting the last item
+                                //       that exists.
+                                commands.entity(entity).despawn_recursive();
+                            },
+                            interface::EntityAction::Add => {
                                 if let Ok(transform) = entities.get(entity) {
                                     let mut selected_position = transform.translation;
                                     match convert_normal_to_face(&intersection.normal()) {
@@ -83,8 +92,8 @@ fn handle_entity_click_events(
                                         }
                                     }
 
-                                    match interface.current_entity {
-                                        interface::EntityButton::SnakeSpawn => {
+                                    match *entity_type {
+                                        interface::EntityType::Snake => {
                                             add_entity::add_snake(
                                                 &mut commands,
                                                 &mut enemy_meshes,
@@ -92,7 +101,7 @@ fn handle_entity_click_events(
                                                 &selected_position,
                                             )
                                         }
-                                        interface::EntityButton::NotSnakeSpawn => {
+                                        interface::EntityType::NotSnake => {
                                             add_entity::add_not_snake(
                                                 &mut commands,
                                                 &mut dude_meshes,
@@ -108,12 +117,14 @@ fn handle_entity_click_events(
                                         ),
                                     }
 
-                                    position_camera_event_writer.send(
-                                        editor_camera::PositionCameraEvent {
-                                            translation: intersection.normal(),
-                                            look_at: selected_position,
-                                        },
-                                    );
+                                    // this code would focus the camera on what was added
+                                    // not sure if it feels right though
+                                    //  position_camera_event_writer.send(
+                                    //      editor_camera::PositionCameraEvent {
+                                    //          translation: intersection.normal(),
+                                    //          look_at: selected_position,
+                                    //      },
+                                    //  );
                                 }
                             }
                             _ => (),
