@@ -1,4 +1,4 @@
-use crate::editor::{cleanup_editor, editor_camera, GameEntity, GameEntityType};
+use crate::editor::{cleanup_editor, editor_camera, GameEntity, GameEntityType, add_entity::BlockProperties};
 use crate::level::LevelInfo;
 use crate::{
     dude, dust, environment, food, game_controller, holdable, level, moveable, path_find, snake,
@@ -52,7 +52,8 @@ impl Plugin for EditorPlayPlugin {
 fn load_current_editor_level(
     mut level: ResMut<level::Level>,
     mut current_editor_level: ResMut<CurrentEditorLevel>,
-    game_entities: Query<(&Transform, &GameEntity)>,
+    game_entities: Query<(Entity, &Transform, &GameEntity)>,
+    block_properties: Query<&BlockProperties>,
 ) {
     current_editor_level.level_info = None; // TODO remove this
 
@@ -69,7 +70,7 @@ fn load_current_editor_level(
             flag: "fdfe89".to_string(),
             food: "fdfe89".to_string(),
         },
-        levels: vec![convert_state_to_level(&game_entities)],
+        levels: vec![convert_state_to_level(&game_entities, &block_properties)],
     });
 }
 
@@ -77,7 +78,10 @@ pub struct CurrentEditorLevel {
     level_info: Option<LevelInfo>,
 }
 
-pub fn convert_state_to_level(game_entities: &Query<(&Transform, &GameEntity)>) -> LevelInfo {
+pub fn convert_state_to_level(
+    game_entities: &Query<(Entity, &Transform, &GameEntity)>,
+    block_properties: &Query<&BlockProperties>,
+) -> LevelInfo {
     let mut min_x = f32::MAX;
     let mut max_x = f32::MIN;
     let mut min_y = f32::MAX;
@@ -85,7 +89,7 @@ pub fn convert_state_to_level(game_entities: &Query<(&Transform, &GameEntity)>) 
     let mut min_z = f32::MAX;
     let mut max_z = f32::MIN;
 
-    for (transform, _) in game_entities.iter() {
+    for (_, transform, _) in game_entities.iter() {
         println!("Spot: {:?}", transform.translation);
         min_x = min_x.min(transform.translation.x);
         max_x = max_x.max(transform.translation.x);
@@ -107,7 +111,7 @@ pub fn convert_state_to_level(game_entities: &Query<(&Transform, &GameEntity)>) 
 
     let mut level = vec![vec![vec![0; z_length]; x_length]; y_length];
 
-    for (transform, game_entity) in game_entities.iter() {
+    for (entity, transform, game_entity) in game_entities.iter() {
         // shift everything so bottom left of the editor coordinates is 0, 0, 0
         let x_index = (transform.translation.x - min_x) as usize;
         let y_index = y_length - 1 - (transform.translation.y - min_y - 0.5) as usize; // y is inverted (also in editor has 0.5 offset)
@@ -115,7 +119,18 @@ pub fn convert_state_to_level(game_entities: &Query<(&Transform, &GameEntity)>) 
         println!("Storing X {} Y {} Z {}", x_index, y_index, z_index);
 
         level[y_index][x_index][z_index] = match game_entity.entity_type {
-            GameEntityType::Block => 1,
+            GameEntityType::Block => {
+                if let Ok(prop) = block_properties.get(entity) {
+                    if prop.moveable {
+                        println!("movveeee");
+                        2
+                    } else {
+                        1
+                    }
+                } else {
+                    1
+                }
+            },
             GameEntityType::Snake => 5,
             GameEntityType::NotSnake => 11,
         };

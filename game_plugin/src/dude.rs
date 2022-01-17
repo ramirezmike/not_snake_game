@@ -61,6 +61,7 @@ pub struct DudeMeshes {
     pub step1: Handle<Mesh>,
     pub head: Handle<Mesh>,
     pub body: Handle<Mesh>,
+    pub not_snake: Handle<Mesh>,
     pub material: Handle<StandardMaterial>,
 }
 
@@ -85,9 +86,9 @@ pub fn create_not_snake(
 ) -> Entity {
     let mut transform = Transform::from_translation(Vec3::new(x as f32, y as f32, z as f32));
     transform.apply_non_uniform_scale(Vec3::new(SCALE, SCALE, SCALE)); 
-    transform.rotate(Quat::from_axis_angle(Vec3::new(0.0, 1.0, 0.0), std::f32::consts::PI));
+//    transform.rotate(Quat::from_axis_angle(Vec3::new(0.0, 1.0, 0.0), std::f32::consts::PI));
 
-    let inner_mesh_vertical_offset = 1.0;
+    let inner_mesh_vertical_offset = 0.0;
     commands.spawn_bundle(PbrBundle {
                 transform,
                 ..Default::default()
@@ -104,13 +105,6 @@ pub fn create_not_snake(
                 parent.spawn_bundle(PbrBundle {
                     mesh: meshes.body.clone(),
                     material: meshes.material.clone(),
-                    transform: {
-                        let mut transform = Transform::from_rotation(Quat::from_axis_angle(Vec3::new(0.0, 1.0, 0.0), 
-                                (3.0 * std::f32::consts::PI) / 2.0));
-
-                        transform.translation = Vec3::new(0.0, inner_mesh_vertical_offset, 0.0);
-                        transform
-                    },
                     ..Default::default()
                 });
             }).id()
@@ -328,8 +322,8 @@ fn player_input(
                 squash_queue.squashes.push(Squash {
                     start_scale: Vec3::new(0.7, 1.4, 1.0),
                     target_scale: Vec3::new(1.0, 1.0, 1.0),
-                    start_vertical: 2.5,
-                    target_vertical: 1.0,
+                    start_vertical: 1.5,
+                    target_vertical: 0.0,
                     start_horizontal: 0.0,
                     target_horizontal: 0.0,
                     current_scale_time: 0.0,
@@ -338,8 +332,8 @@ fn player_input(
                 squash_queue.squashes.push(Squash {
                     start_scale: Vec3::new(1.0, 1.0, 1.0),
                     target_scale: Vec3::new(0.7, 1.4, 1.0),
-                    start_vertical: 1.0,
-                    target_vertical: 2.5,
+                    start_vertical: 0.0,
+                    target_vertical: 1.5,
                     start_horizontal: 0.0,
                     target_horizontal: 0.0,
                     current_scale_time: 0.0,

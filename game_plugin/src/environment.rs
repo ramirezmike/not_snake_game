@@ -287,7 +287,8 @@ pub fn load_assets(
     let font_handle: Handle<Font> = asset_server.load(crate::FONT);
 
     dude_meshes.step1 = asset_server.load("models/dude.glb#Mesh0/Primitive0");
-    dude_meshes.body = asset_server.load("models/chip.glb#Mesh0/Primitive0");
+    dude_meshes.body = asset_server.load("models/notsnake.glb#Mesh0/Primitive0");
+    dude_meshes.not_snake = asset_server.load("models/notsnake.glb#Mesh0/Primitive0");
     dude_meshes.head = asset_server.load("models/chip.glb#Mesh1/Primitive0");
 
     enemy_meshes.head = asset_server.load("models/snake.glb#Mesh0/Primitive0");
@@ -526,7 +527,7 @@ pub fn load_level(
                                 transform: { 
                                     let mut transform = 
                                     Transform::from_translation(Vec3::new(x as f32, 
-                                                                         if y == 0 { y as f32 + 1.0 } else { y as f32 + 0.5 }, 
+                                                                         if y == 0 { y as f32 + 0.5 } else { y as f32 + 0.0 }, 
                                                                           z as f32));
                                     transform.scale.x = space_scale;
                                     if y != 0 {
@@ -550,7 +551,7 @@ pub fn load_level(
                                     let height = 30.0;
                                     let mut transform =
                                         Transform::from_translation(Vec3::new(x as f32, 
-                                                                             ((y + 1) as f32) - (height / 2.0) - 0.0001, 
+                                                                             ((y as f32) + 0.5) - (height / 2.0) - 0.0001, 
                                                                               z as f32));
 
                                     transform.scale.x = space_scale;
@@ -567,7 +568,7 @@ pub fn load_level(
                         }
                     },
                     2 => { // moveable block
-                        let inner_mesh_vertical_offset = 0.5;
+                        let inner_mesh_vertical_offset = 0.0;
                         let block_entity =
                             commands.spawn_bundle(PbrBundle {
                               transform: Transform::from_xyz(x as f32, y as f32, z as f32),

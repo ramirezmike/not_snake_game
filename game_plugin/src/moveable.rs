@@ -321,8 +321,8 @@ pub fn update_moveable(
                                     squash_queue.squashes.push(dude::Squash {
                                         start_scale: Vec3::new(0.7, 1.4, 1.0),
                                         target_scale: Vec3::new(1.0, 1.0, 1.0),
-                                        start_vertical: 1.0,
-                                        target_vertical: 1.0,
+                                        start_vertical: 0.0,
+                                        target_vertical: 0.0,
                                         start_horizontal: -0.8,
                                         target_horizontal: 0.0,
                                         current_scale_time: 0.0,
@@ -331,8 +331,8 @@ pub fn update_moveable(
                                     squash_queue.squashes.push(dude::Squash {
                                         start_scale: Vec3::new(1.0, 1.0, 1.0),
                                         target_scale: Vec3::new(0.7, 1.4, 1.0),
-                                        start_vertical: 1.0,
-                                        target_vertical: 1.0,
+                                        start_vertical: 0.0,
+                                        target_vertical: 0.0,
                                         start_horizontal: 0.0,
                                         target_horizontal: -0.8,
                                         current_scale_time: 0.0,

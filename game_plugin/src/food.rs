@@ -54,7 +54,6 @@ pub fn spawn_food(
                             materials.add(food_color.into())
                         }
                     },
-                    transform: Transform::from_xyz(0.0, 0.5, 0.0),
                     visibility: Visibility {
                         is_visible: false
                     },
@@ -106,7 +105,7 @@ pub fn spawn_food(
                 (0.0, 0.0, -distance),
             );
             for particle_position in particle_positions.iter() {
-                let transform = Transform::from_xyz(particle_position.0, particle_position.1 + 0.5, particle_position.2);
+                let transform = Transform::from_xyz(particle_position.0, particle_position.1, particle_position.2);
                 let starting_from = transform.translation.clone();
                 parent.spawn_bundle(PbrBundle {
                     mesh: cube.clone(),
@@ -147,7 +146,7 @@ pub fn animate_spawn_particles(
     mut food_visibles: Query<&mut Visibility, With<FoodInnerMesh>>,
     time: Res<Time>,
 ) {
-    let target = Vec3::new(0.0, 0.5, 0.0);
+    let target = Vec3::new(0.0, 0.0, 0.0);
     for (entity, mut transform, mut particle) in particles.iter_mut() {
         if particle.current_movement_time >= particle.finish_movement_time {
             if let Ok(mut visible) = food_visibles.get_mut(particle.parent) {
