@@ -467,22 +467,19 @@ pub fn load_level(
 
     let palette = &level.get_palette();
 
-    dude_meshes.material = materials.add(Color::hex(palette.dude.clone()).unwrap().into());
-    let enemy_color = Color::hex(palette.enemy.clone()).unwrap();
+    dude_meshes.material = materials.add(palette.not_snake.into());
     enemy_meshes.material = materials.add(StandardMaterial {
-                                base_color: enemy_color,
+                                base_color: palette.snake.clone(),
                                 perceptual_roughness: 1.0,
                                 metallic: 0.4,
                                 ..Default::default()
                             });
 
-    enemy_meshes.shadow_material = materials.add(Color::rgba(enemy_color.r(), enemy_color.g(), enemy_color.b(), 0.4).into());
-
     let plane = meshes.add(Mesh::from(shape::Plane { size: 1.0 }));
     let cube = meshes.add(Mesh::from(shape::Cube { size: 1.0 }));
     let mut ground_1_material = materials.add(Color::hex(palette.ground_1.clone()).unwrap().into());
-    let mut ground_2_material = materials.add(Color::hex(palette.ground_2.clone()).unwrap().into());
-    let block_material = materials.add(Color::hex(palette.block.clone()).unwrap().into());
+    let mut ground_2_material = materials.add(palette.block.into());
+    let block_material = materials.add(Color::hex(palette.block_old.clone()).unwrap().into());
     let flag_color = Color::hex(palette.flag.clone()).unwrap();
     let flag_color = Color::rgba(flag_color.r(), flag_color.g(), flag_color.b(), 0.7);
 

@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use crate::{Direction, EntityType, GameObject, level::Level, path_find::PathFinder, dude,
-            teleporter, environment, sounds, Position, food::FoodEatenEvent};
+            teleporter, sounds, Position, food::FoodEatenEvent};
 use petgraph::{graph::NodeIndex};
 use bevy::reflect::{TypeUuid};
 use serde::Deserialize;
@@ -14,7 +14,7 @@ pub struct EnemyMeshes {
     pub shadow_material: Handle<StandardMaterial>,
 }
 
-#[derive(Debug, Clone, Deserialize, TypeUuid)]
+#[derive(PartialEq, Debug, Clone, Copy, Deserialize, TypeUuid)]
 #[uuid = "60cadc56-aa9c-4543-8640-a018b74b5052"] // this needs to be actually generated
 pub enum SnakeTarget {
     Normal,
@@ -83,7 +83,7 @@ struct SnakeMovement {
     finish_rotation_time: f32,
 }
 
-static INNER_MESH_VERTICAL_OFFSET: f32 = 1.0;
+static INNER_MESH_VERTICAL_OFFSET: f32 = 0.0;
 
 pub fn generate_snake_body(
     commands: &mut Commands,

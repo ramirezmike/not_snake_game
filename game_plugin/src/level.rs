@@ -39,9 +39,13 @@ pub struct Palette {
     pub ground_2: String,
     pub dude: String,
     pub enemy: String,
-    pub block: String,
+    pub block_old: String,
     pub flag: String,
     pub food: String,
+
+    pub block: Color,
+    pub not_snake: Color,
+    pub snake: Color,
 }
 
 #[derive(Debug, Clone, Deserialize, TypeUuid)]
@@ -162,9 +166,13 @@ impl Level {
               ground_2: "000000".to_string(),
               dude: "000000".to_string(),
               enemy: "000000".to_string(),
-              block: "000000".to_string(),
+              block_old: "000000".to_string(),
               flag: "000000".to_string(),
               food: "000000".to_string(),
+
+              not_snake: Color::default(),
+              snake: Color::default(),
+              block: Color::default(),
           },
           current_level: INITIAL_LEVEL,
           level_info: vec!(),

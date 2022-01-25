@@ -53,7 +53,6 @@ pub fn update_camera(
         &mut Transform,
         &PerspectiveProjection,
     )>,
-    state: Res<State<crate::AppState>>,
 ) {
     // change input mapping for orbit and panning here
     let orbit_button = MouseButton::Right;

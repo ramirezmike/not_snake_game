@@ -1,4 +1,9 @@
-use crate::editor::{cleanup_editor, editor_camera, GameEntity, GameEntityType, add_entity::BlockProperties};
+use crate::editor::{cleanup_editor, editor_camera, GameEntity, 
+    GameEntityType, 
+    properties::block::BlockProperties, 
+    properties::not_snake::NotSnakeProperties,
+    properties::snake::SnakeProperties,
+};
 use crate::level::LevelInfo;
 use crate::{
     dude, dust, environment, food, game_controller, holdable, level, moveable, path_find, snake,
@@ -54,8 +59,23 @@ fn load_current_editor_level(
     mut current_editor_level: ResMut<CurrentEditorLevel>,
     game_entities: Query<(Entity, &Transform, &GameEntity)>,
     block_properties: Query<&BlockProperties>,
+    not_snake_properties: Query<&NotSnakeProperties>,
+    snake_properties: Query<&SnakeProperties>,
 ) {
     current_editor_level.level_info = None; // TODO remove this
+
+    let block_color = block_properties.iter()
+                                      .last()
+                                      .map(|n| Color::rgb(n.color[0], n.color[1], n.color[2]))
+                                      .unwrap_or(Color::default());
+    let not_snake_color = not_snake_properties.iter()
+                                              .last()
+                                              .map(|n| Color::rgb(n.color[0], n.color[1], n.color[2]))
+                                              .unwrap_or(Color::default());
+    let snake_color = snake_properties.iter()
+                                      .last()
+                                      .map(|n| Color::rgb(n.color[0], n.color[1], n.color[2]))
+                                      .unwrap_or(Color::default());
 
     println!("Loading editor level");
     level.load_stored_levels(level::LevelsAsset {
@@ -63,14 +83,20 @@ fn load_current_editor_level(
         palette: level::Palette {
             base: "b7b7a4".to_string(),
             ground_1: "463c5e".to_string(),
-            ground_2: "6b705c".to_string(), //"444774",
-            dude: "f3a787".to_string(),
+            ground_2: "6b705c".to_string(),
+            dude: "ffffff".to_string(),
+            block: block_color,
+            snake: snake_color,
+            not_snake: not_snake_color,
             enemy: "ff4f69".to_string(),
-            block: "d8e2dc".to_string(), //"85daeb",
+            block_old: "d8e2dc".to_string(),
             flag: "fdfe89".to_string(),
             food: "fdfe89".to_string(),
         },
-        levels: vec![convert_state_to_level(&game_entities, &block_properties)],
+        levels: vec![
+            convert_state_to_level(&game_entities, 
+                                   &block_properties,
+                                   &snake_properties)],
     });
 }
 
@@ -81,6 +107,7 @@ pub struct CurrentEditorLevel {
 pub fn convert_state_to_level(
     game_entities: &Query<(Entity, &Transform, &GameEntity)>,
     block_properties: &Query<&BlockProperties>,
+    snake_properties: &Query<&SnakeProperties>,
 ) -> LevelInfo {
     let mut min_x = f32::MAX;
     let mut max_x = f32::MIN;
@@ -122,7 +149,6 @@ pub fn convert_state_to_level(
             GameEntityType::Block => {
                 if let Ok(prop) = block_properties.get(entity) {
                     if prop.moveable {
-                        println!("movveeee");
                         2
                     } else {
                         1
@@ -131,6 +157,7 @@ pub fn convert_state_to_level(
                     1
                 }
             },
+            GameEntityType::Food => 6,
             GameEntityType::Snake => 5,
             GameEntityType::NotSnake => 11,
         };
@@ -147,6 +174,8 @@ pub fn convert_state_to_level(
         print!("\n\n");
     }
 
+    let snake = snake_properties.iter().last();
+
     LevelInfo {
         title: "Editor Level".to_string(),
         level,
@@ -155,9 +184,9 @@ pub fn convert_state_to_level(
         is_food_random: true,
         minimum_food: 10,
         palette: None,
-        snake_speed: None,
-        snake_target: None,
-        snake_min_length: Some(5),
+        snake_speed: snake.map(|s| s.speed),
+        snake_target: snake.map(|s| s.target),
+        snake_min_length: snake.map(|s| s.min_length),
         camera_x: -7.8,
         camera_y: 6.93746,
         camera_z: 4.988021,
