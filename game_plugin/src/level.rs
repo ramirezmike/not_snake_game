@@ -43,6 +43,7 @@ pub struct Palette {
     pub flag: String,
     pub food: String,
 
+    pub background: Color,
     pub block: Color,
     pub not_snake: Color,
     pub snake: Color,
@@ -170,6 +171,7 @@ impl Level {
               flag: "000000".to_string(),
               food: "000000".to_string(),
 
+              background: Color::default(),
               not_snake: Color::default(),
               snake: Color::default(),
               block: Color::default(),

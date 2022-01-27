@@ -185,7 +185,6 @@ fn paint_ui(
         .collapsible(false)
         .default_width(300.0)
         .show(ctx, |ui| {
-
             ui.label("Level Title:");
             ui.add(egui::TextEdit::singleline(&mut properties.level_title));
             ui.end_row();
@@ -193,6 +192,9 @@ fn paint_ui(
             ui.end_row();
             ui.label("Goal Points:");
             ui.add(egui::DragValue::new(&mut properties.minimum_food).speed(1.0));
+            ui.end_row();
+            ui.label("Background: ");
+            ui.color_edit_button_rgb(&mut properties.background_color);
             ui.end_row();
         });
 }

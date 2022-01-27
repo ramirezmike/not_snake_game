@@ -415,7 +415,7 @@ pub fn set_clear_color(
     mut clear_color: ResMut<ClearColor>,
 ) {
     let palette = &level.get_palette();
-    clear_color.0 = Color::hex(palette.base.clone()).unwrap();
+    clear_color.0 = palette.background;
 }
 
 pub fn load_level_into_path_finder(

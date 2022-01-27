@@ -49,6 +49,7 @@ impl Plugin for EditorPlayPlugin {
                 .with_system(game_controller::gamepad_connections)
                 .with_system(environment::shrink_shrinkables)
                 .with_system(environment::grow_growables)
+                .with_system(environment::set_clear_color)
                 .with_system(dust::handle_create_dust_event)
                 .with_system(dust::animate_dust),
         );
@@ -78,6 +79,10 @@ fn load_current_editor_level(
                                       .last()
                                       .map(|n| Color::rgb(n.color[0], n.color[1], n.color[2]))
                                       .unwrap_or(Color::default());
+    let background_color = {
+        let c = properties.background_color;
+        Color::rgb(c[0], c[1], c[2])
+    };
 
     println!("Loading editor level");
     level.load_stored_levels(level::LevelsAsset {
@@ -87,6 +92,7 @@ fn load_current_editor_level(
             ground_1: "463c5e".to_string(),
             ground_2: "6b705c".to_string(),
             dude: "ffffff".to_string(),
+            background: background_color,
             block: block_color,
             snake: snake_color,
             not_snake: not_snake_color,
