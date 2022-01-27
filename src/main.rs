@@ -4,8 +4,7 @@
 #[cfg(target_arch = "wasm32")]
 use bevy_webgl2;
 
-use bevy::prelude::{App, ClearColor, Color, WindowDescriptor, Msaa};
-use bevy::DefaultPlugins;
+use bevy::prelude::{App, ClearColor, Color, Msaa};
 use game_plugin::GamePlugin;
 
 pub static COLOR_BLACK: &str = "000000";
