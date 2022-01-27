@@ -9,6 +9,9 @@ pub mod snake;
 pub mod food;
 
 pub struct Properties {
+    pub level_title: String,
+    pub is_food_random: bool,
+    pub minimum_food: usize,
     pub block: block::BlockProperties,
     pub not_snake: not_snake::NotSnakeProperties,
     pub snake: snake::SnakeProperties,
@@ -17,6 +20,9 @@ pub struct Properties {
 impl Properties {
     pub fn new() -> Self {
         Properties {
+            level_title: "Title".to_string(),
+            is_food_random: false,
+            minimum_food: 1,
             block: block::BlockProperties::default(),
             not_snake: not_snake::NotSnakeProperties::default(),
             snake: snake::SnakeProperties::default(),

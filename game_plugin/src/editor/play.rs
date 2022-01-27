@@ -1,5 +1,6 @@
 use crate::editor::{cleanup_editor, editor_camera, GameEntity, 
     GameEntityType, 
+    properties::Properties,
     properties::block::BlockProperties, 
     properties::not_snake::NotSnakeProperties,
     properties::snake::SnakeProperties,
@@ -58,6 +59,7 @@ fn load_current_editor_level(
     mut level: ResMut<level::Level>,
     mut current_editor_level: ResMut<CurrentEditorLevel>,
     game_entities: Query<(Entity, &Transform, &GameEntity)>,
+    properties: Res<Properties>,
     block_properties: Query<&BlockProperties>,
     not_snake_properties: Query<&NotSnakeProperties>,
     snake_properties: Query<&SnakeProperties>,
@@ -95,6 +97,7 @@ fn load_current_editor_level(
         },
         levels: vec![
             convert_state_to_level(&game_entities, 
+                                   &properties,
                                    &block_properties,
                                    &snake_properties)],
     });
@@ -106,6 +109,7 @@ pub struct CurrentEditorLevel {
 
 pub fn convert_state_to_level(
     game_entities: &Query<(Entity, &Transform, &GameEntity)>,
+    properties: &Res<Properties>,
     block_properties: &Query<&BlockProperties>,
     snake_properties: &Query<&SnakeProperties>,
 ) -> LevelInfo {
@@ -177,12 +181,12 @@ pub fn convert_state_to_level(
     let snake = snake_properties.iter().last();
 
     LevelInfo {
-        title: "Editor Level".to_string(),
+        title: properties.level_title.clone(),
         level,
         score_text: vec![],
         level_text: vec![],
-        is_food_random: true,
-        minimum_food: 10,
+        is_food_random: properties.is_food_random,
+        minimum_food: properties.minimum_food,
         palette: None,
         snake_speed: snake.map(|s| s.speed),
         snake_target: snake.map(|s| s.target),

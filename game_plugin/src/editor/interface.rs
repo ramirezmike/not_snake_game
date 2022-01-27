@@ -20,6 +20,9 @@ impl Plugin for EditorInterfacePlugin {
            )
            .add_plugin(EguiPlugin)
            .insert_resource(properties::Properties::new())
+           .insert_resource(Interface {
+               show_level_properties: false,
+           })
            .insert_resource(WindowSize {
                width: 0.0,
                height: 0.0,
@@ -45,6 +48,10 @@ pub enum EntitySelection {
     NotSnake,
     Food,
     None,
+}
+
+struct Interface {
+    show_level_properties: bool
 }
 
 struct WindowSize {
@@ -76,6 +83,7 @@ fn paint_ui(
     mut entity_selection: ResMut<EntitySelection>,
     mut state: ResMut<State<AppState>>,
     mut properties: ResMut<properties::Properties>,
+    mut interface: ResMut<Interface>,
 ) {
     let ctx = ctx.ctx();
 
@@ -124,6 +132,9 @@ fn paint_ui(
                             panic!("Quit hit");
                         }
                     });
+                    if ui.button("Level").clicked() {
+                        interface.show_level_properties = true;
+                    }
                     if ui.button("Play").clicked() {
                         state.set(AppState::EditorPlay).unwrap();
                     }
@@ -166,5 +177,22 @@ fn paint_ui(
             ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
                 ui.separator();
             });
+        });
+
+    egui::Window::new("Level Properties")
+        .open(&mut interface.show_level_properties)
+        .resizable(false)
+        .collapsible(false)
+        .default_width(300.0)
+        .show(ctx, |ui| {
+
+            ui.label("Level Title:");
+            ui.add(egui::TextEdit::singleline(&mut properties.level_title));
+            ui.end_row();
+            ui.checkbox(&mut properties.is_food_random, "Foods Spawn Randomly");
+            ui.end_row();
+            ui.label("Goal Points:");
+            ui.add(egui::DragValue::new(&mut properties.minimum_food).speed(1.0));
+            ui.end_row();
         });
 }
