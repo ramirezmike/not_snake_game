@@ -1,34 +1,38 @@
+use crate::editor::{properties, select_entity};
+use crate::AppState;
 use bevy::prelude::*;
 use bevy::window::WindowResized;
-use crate::AppState;
-use crate::editor::{select_entity, properties};
 use bevy_inspector_egui::bevy_egui::{egui, EguiContext, EguiPlugin};
 
 pub struct EditorInterfacePlugin;
 impl Plugin for EditorInterfacePlugin {
     fn build(&self, app: &mut App) {
         app.add_system_set(
-               SystemSet::on_update(AppState::Editor)
-                   .with_system(store_current_window_size)
-                   .with_system(select_entity::handle_entity_click_events.before("detect"))
-                   .with_system(select_entity::detect_entity_selections.label("detect"))
-                   .with_system(select_entity::store_selected_values.label("select_store").after("detect"))
-                   .with_system(paint_ui.label("paint").after("select_store"))
-                   .with_system(properties::apply_properties_to_selected_block.after("paint"))
-                   .with_system(properties::apply_properties_to_selected_not_snake.after("paint"))
-                   .with_system(properties::apply_properties_to_selected_snake.after("paint"))
-           )
-           .add_plugin(EguiPlugin)
-           .insert_resource(properties::Properties::new())
-           .insert_resource(Interface {
-               show_level_properties: false,
-           })
-           .insert_resource(WindowSize {
-               width: 0.0,
-               height: 0.0,
-           })
-           .insert_resource(EntitySelection::None)
-           .insert_resource(EntityAction::Select);
+            SystemSet::on_update(AppState::Editor)
+                .with_system(store_current_window_size)
+                .with_system(select_entity::handle_entity_click_events.before("detect"))
+                .with_system(select_entity::detect_entity_selections.label("detect"))
+                .with_system(
+                    select_entity::store_selected_values
+                        .label("select_store")
+                        .after("detect"),
+                )
+                .with_system(paint_ui.label("paint").after("select_store"))
+                .with_system(properties::apply_properties_to_selected_block.after("paint"))
+                .with_system(properties::apply_properties_to_selected_not_snake.after("paint"))
+                .with_system(properties::apply_properties_to_selected_snake.after("paint")),
+        )
+        .add_plugin(EguiPlugin)
+        .insert_resource(properties::Properties::new())
+        .insert_resource(Interface {
+            show_level_properties: false,
+        })
+        .insert_resource(WindowSize {
+            width: 0.0,
+            height: 0.0,
+        })
+        .insert_resource(EntitySelection::None)
+        .insert_resource(EntityAction::Select);
     }
 }
 
@@ -51,7 +55,7 @@ pub enum EntitySelection {
 }
 
 struct Interface {
-    show_level_properties: bool
+    show_level_properties: bool,
 }
 
 struct WindowSize {
@@ -93,27 +97,32 @@ fn paint_ui(
 
     fonts.family_and_size.insert(
         egui::TextStyle::Button,
-        (egui::FontFamily::Proportional, base_font_size)
+        (egui::FontFamily::Proportional, base_font_size),
     );
     fonts.family_and_size.insert(
         egui::TextStyle::Small,
-        (egui::FontFamily::Proportional, base_font_size)
+        (egui::FontFamily::Proportional, base_font_size),
     );
     fonts.family_and_size.insert(
         egui::TextStyle::Body,
-        (egui::FontFamily::Proportional, base_font_size * 1.5)
+        (egui::FontFamily::Proportional, base_font_size * 1.5),
     );
     fonts.family_and_size.insert(
         egui::TextStyle::Heading,
-        (egui::FontFamily::Proportional, base_font_size * 1.2)
+        (egui::FontFamily::Proportional, base_font_size * 1.2),
     );
 
     // use custom font
-    fonts.font_data.insert("custom".to_owned(),
-       egui::FontData::from_static(include_bytes!("../../../assets/fonts/monogram.ttf"))); // .ttf and .otf supported
+    fonts.font_data.insert(
+        "custom".to_owned(),
+        egui::FontData::from_static(include_bytes!("../../../assets/fonts/monogram.ttf")),
+    ); // .ttf and .otf supported
 
     // put custom font first
-    fonts.fonts_for_family.get_mut(&egui::FontFamily::Proportional).unwrap()
+    fonts
+        .fonts_for_family
+        .get_mut(&egui::FontFamily::Proportional)
+        .unwrap()
         .insert(0, "custom".to_owned());
 
     ctx.set_fonts(fonts);
@@ -146,29 +155,41 @@ fn paint_ui(
             ui.heading("Action");
 
             ui.vertical(|ui| {
-              ui.selectable_value(&mut *entity_action, EntityAction::Select, "Select");
-              ui.horizontal(|ui| {
-                  ui.selectable_value(&mut *entity_action, EntityAction::Add, "Create");
-              });
-              ui.selectable_value(&mut *entity_action, EntityAction::Delete, "Delete");
+                ui.selectable_value(&mut *entity_action, EntityAction::Select, "Select");
+                ui.horizontal(|ui| {
+                    ui.selectable_value(&mut *entity_action, EntityAction::Add, "Create");
+                });
+                ui.selectable_value(&mut *entity_action, EntityAction::Delete, "Delete");
             });
 
             ui.separator();
 
             ui.heading("Properties");
             if *entity_selection != EntitySelection::None || *entity_action == EntityAction::Add {
-              egui::ComboBox::from_label("")
-                             .selected_text(format!("{:?}", *entity_selection))
-                             .show_ui(ui, |ui| {
-                                 ui.selectable_value(&mut *entity_selection, EntitySelection::Block, "Block");
-                                 ui.selectable_value(&mut *entity_selection, EntitySelection::NotSnake, "Not Snake");
-                                 ui.selectable_value(&mut *entity_selection, EntitySelection::Snake, "Snake");
-                                 ui.selectable_value(&mut *entity_selection, EntitySelection::Food, "Food");
-                             });
+                egui::ComboBox::from_label("")
+                    .selected_text(format!("{:?}", *entity_selection))
+                    .show_ui(ui, |ui| {
+                        ui.selectable_value(
+                            &mut *entity_selection,
+                            EntitySelection::Block,
+                            "Block",
+                        );
+                        ui.selectable_value(
+                            &mut *entity_selection,
+                            EntitySelection::NotSnake,
+                            "Not Snake",
+                        );
+                        ui.selectable_value(
+                            &mut *entity_selection,
+                            EntitySelection::Snake,
+                            "Snake",
+                        );
+                        ui.selectable_value(&mut *entity_selection, EntitySelection::Food, "Food");
+                    });
 
-              properties.draw_property_ui(&entity_selection, ui);
+                properties.draw_property_ui(&entity_selection, ui);
             } else {
-              ui.label("-----");
+                ui.label("-----");
             }
 
             ui.separator();

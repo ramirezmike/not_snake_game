@@ -1,22 +1,18 @@
-use bevy::prelude::*;
-use bevy::app::Events;
-use bevy::app::AppExit;
-use std::collections::HashMap;
 use crate::{game_controller, level, score};
+use bevy::app::AppExit;
+use bevy::app::Events;
+use bevy::prelude::*;
+use std::collections::HashMap;
 
 #[derive(Component)]
 pub struct BylineText;
 #[derive(Component)]
 pub struct MenuButton;
-pub fn setup_menu(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-) {
+pub fn setup_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
     // ui camera
     commands.spawn_bundle(UiCameraBundle::default());
 
-    let byline_text_entity = 
-    commands
+    let byline_text_entity = commands
         .spawn_bundle(TextBundle {
             style: Style {
                 align_self: AlignSelf::FlexEnd,
@@ -41,13 +37,13 @@ pub fn setup_menu(
                 },
                 TextAlignment {
                     ..Default::default()
-                }
+                },
             ),
             ..Default::default()
         })
         .insert(BylineText)
         .id();
-    
+
     let start_button_entity = commands
         .spawn_bundle(ButtonBundle {
             style: Style {
@@ -66,28 +62,26 @@ pub fn setup_menu(
                 },
                 ..Default::default()
             },
-            visibility: Visibility {
-                is_visible: false,
-            },
+            visibility: Visibility { is_visible: false },
             color: NORMAL_BUTTON.into(),
             ..Default::default()
         })
         .with_children(|parent| {
-            parent.spawn_bundle(TextBundle {
-                text: Text::with_section(
-                    "Start",
-                    TextStyle {
-                        font: asset_server.load(crate::FONT),
-                        font_size: 40.0,
-                        color: Color::rgb(0.9, 0.9, 0.9),
-                    },
-                    Default::default(),
-                ),
-                visibility: Visibility {
-                    is_visible: false,
-                },
-                ..Default::default()
-            }).insert(MenuButton);
+            parent
+                .spawn_bundle(TextBundle {
+                    text: Text::with_section(
+                        "Start",
+                        TextStyle {
+                            font: asset_server.load(crate::FONT),
+                            font_size: 40.0,
+                            color: Color::rgb(0.9, 0.9, 0.9),
+                        },
+                        Default::default(),
+                    ),
+                    visibility: Visibility { is_visible: false },
+                    ..Default::default()
+                })
+                .insert(MenuButton);
         })
         .insert(MenuButton)
         .id();
@@ -110,28 +104,26 @@ pub fn setup_menu(
                 },
                 ..Default::default()
             },
-            visibility: Visibility {
-                is_visible: false,
-            },
+            visibility: Visibility { is_visible: false },
             color: NORMAL_BUTTON.into(),
             ..Default::default()
         })
         .with_children(|parent| {
-            parent.spawn_bundle(TextBundle {
-                text: Text::with_section(
-                    "Editor",
-                    TextStyle {
-                        font: asset_server.load(crate::FONT),
-                        font_size: 40.0,
-                        color: Color::rgb(0.9, 0.9, 0.9),
-                    },
-                    Default::default(),
-                ),
-                visibility: Visibility {
-                    is_visible: false,
-                },
-                ..Default::default()
-            }).insert(MenuButton);
+            parent
+                .spawn_bundle(TextBundle {
+                    text: Text::with_section(
+                        "Editor",
+                        TextStyle {
+                            font: asset_server.load(crate::FONT),
+                            font_size: 40.0,
+                            color: Color::rgb(0.9, 0.9, 0.9),
+                        },
+                        Default::default(),
+                    ),
+                    visibility: Visibility { is_visible: false },
+                    ..Default::default()
+                })
+                .insert(MenuButton);
         })
         .insert(MenuButton)
         .id();
@@ -154,55 +146,60 @@ pub fn setup_menu(
                 },
                 ..Default::default()
             },
-            visibility: Visibility {
-                is_visible: false,
-            },
+            visibility: Visibility { is_visible: false },
             color: NORMAL_BUTTON.into(),
             ..Default::default()
         })
         .with_children(|parent| {
-            parent.spawn_bundle(TextBundle {
-                text: Text::with_section(
-                    "Quit",
-                    TextStyle {
-                        font: asset_server.load(crate::FONT),
-                        font_size: 40.0,
-                        color: Color::rgb(0.9, 0.9, 0.9),
-                    },
-                    Default::default(),
-                ),
-                visibility: Visibility {
-                    is_visible: false,
-                },
-                ..Default::default()
-            }).insert(MenuButton);
+            parent
+                .spawn_bundle(TextBundle {
+                    text: Text::with_section(
+                        "Quit",
+                        TextStyle {
+                            font: asset_server.load(crate::FONT),
+                            font_size: 40.0,
+                            color: Color::rgb(0.9, 0.9, 0.9),
+                        },
+                        Default::default(),
+                    ),
+                    visibility: Visibility { is_visible: false },
+                    ..Default::default()
+                })
+                .insert(MenuButton);
         })
         .insert(MenuButton)
         .id();
 
-    commands.insert_resource(
-        MenuData { 
-            start_button_entity, 
-            quit_button_entity, 
-            editor_button_entity,
-            byline_text_entity,
-            selected: start_button_entity
-        });
+    commands.insert_resource(MenuData {
+        start_button_entity,
+        quit_button_entity,
+        editor_button_entity,
+        byline_text_entity,
+        selected: start_button_entity,
+    });
 }
 
 pub struct MenuData {
     start_button_entity: Entity,
     editor_button_entity: Entity,
     quit_button_entity: Entity,
-    byline_text_entity: Entity, 
+    byline_text_entity: Entity,
     selected: Entity,
 }
 
 pub fn cleanup_menu(mut commands: Commands, menu_data: Res<MenuData>) {
-    commands.entity(menu_data.start_button_entity).despawn_recursive();
-    commands.entity(menu_data.editor_button_entity).despawn_recursive();
-    commands.entity(menu_data.quit_button_entity).despawn_recursive();
-    commands.entity(menu_data.byline_text_entity).despawn_recursive();
+    commands
+        .entity(menu_data.start_button_entity)
+        .despawn_recursive();
+    commands
+        .entity(menu_data.editor_button_entity)
+        .despawn_recursive();
+    commands
+        .entity(menu_data.quit_button_entity)
+        .despawn_recursive();
+    commands
+        .entity(menu_data.byline_text_entity)
+        .despawn_recursive();
 }
 
 pub fn menu(
@@ -227,7 +224,10 @@ pub fn menu(
     for mut byline in bylines.iter_mut() {
         let a = byline.sections[0].style.color.a();
         if a < 0.95 {
-            byline.sections[0].style.color.set_a(a + time.delta_seconds() / 5.0);
+            byline.sections[0]
+                .style
+                .color
+                .set_a(a + time.delta_seconds() / 5.0);
         } else {
             byline.sections[0].style.color.set_a(1.0);
         }
@@ -235,24 +235,30 @@ pub fn menu(
         if a > 0.8 {
             // make buttons visible now that byline is visible enough
             for mut visible in menu_buttons.iter_mut() {
-                visible.is_visible = true; 
+                visible.is_visible = true;
             }
         }
     }
 
     let mut next_button = HashMap::new();
-    next_button.insert(menu_data.start_button_entity, menu_data.editor_button_entity);
+    next_button.insert(
+        menu_data.start_button_entity,
+        menu_data.editor_button_entity,
+    );
     next_button.insert(menu_data.editor_button_entity, menu_data.quit_button_entity);
     next_button.insert(menu_data.quit_button_entity, menu_data.start_button_entity);
 
     let mut prev_button = HashMap::new();
     prev_button.insert(menu_data.start_button_entity, menu_data.quit_button_entity);
-    prev_button.insert(menu_data.editor_button_entity, menu_data.start_button_entity);
+    prev_button.insert(
+        menu_data.editor_button_entity,
+        menu_data.start_button_entity,
+    );
     prev_button.insert(menu_data.quit_button_entity, menu_data.editor_button_entity);
 
     let mut pressed_buttons = game_controller::get_pressed_buttons(&axes, &buttons, gamepad);
     if *gamepad_buffer < 0.25 {
-        pressed_buttons = vec!(); 
+        pressed_buttons = vec![];
     }
 
     if !pressed_buttons.is_empty() {
@@ -260,18 +266,24 @@ pub fn menu(
     }
 
     // keyboard and gamepad
-    if keyboard_input.just_pressed(KeyCode::Return) || keyboard_input.just_pressed(KeyCode::Space)
-    || pressed_buttons.contains(&game_controller::GameButton::Action){
-        selected_button = Some(menu_data.selected); 
+    if keyboard_input.just_pressed(KeyCode::Return)
+        || keyboard_input.just_pressed(KeyCode::Space)
+        || pressed_buttons.contains(&game_controller::GameButton::Action)
+    {
+        selected_button = Some(menu_data.selected);
     }
 
-    if keyboard_input.just_pressed(KeyCode::W) || keyboard_input.just_pressed(KeyCode::Up) 
-    || pressed_buttons.contains(&game_controller::GameButton::Up) {
+    if keyboard_input.just_pressed(KeyCode::W)
+        || keyboard_input.just_pressed(KeyCode::Up)
+        || pressed_buttons.contains(&game_controller::GameButton::Up)
+    {
         menu_data.selected = *prev_button.get(&menu_data.selected).unwrap();
     }
 
-    if keyboard_input.just_pressed(KeyCode::S) || keyboard_input.just_pressed(KeyCode::Down) 
-    || pressed_buttons.contains(&game_controller::GameButton::Down) {
+    if keyboard_input.just_pressed(KeyCode::S)
+        || keyboard_input.just_pressed(KeyCode::Down)
+        || pressed_buttons.contains(&game_controller::GameButton::Down)
+    {
         menu_data.selected = *next_button.get(&menu_data.selected).unwrap();
     }
 
@@ -280,7 +292,7 @@ pub fn menu(
         match *interaction {
             Interaction::Clicked => selected_button = Some(button_entity),
             Interaction::Hovered => menu_data.selected = button_entity,
-            _ => ()
+            _ => (),
         }
     }
 

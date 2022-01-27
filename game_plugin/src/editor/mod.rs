@@ -1,14 +1,14 @@
+use crate::AppState;
 use bevy::prelude::*;
 use bevy_mod_picking::*;
-use crate::AppState;
 
 mod add_entity;
-mod select_entity;
 mod editor_camera;
 mod help_text;
 mod interface;
 mod play;
 pub mod properties;
+mod select_entity;
 
 #[derive(Component)]
 pub struct EditorTrashMarker;
@@ -19,7 +19,7 @@ impl Plugin for EditorPlugin {
         app.add_system_set(
             SystemSet::on_enter(AppState::Editor)
                 .with_system(editor_camera::spawn_camera)
-                .with_system(load_editor_world)
+                .with_system(load_editor_world),
         )
         .add_plugin(PickingPlugin)
         .add_plugin(InteractablePickingPlugin)
@@ -32,7 +32,7 @@ impl Plugin for EditorPlugin {
         .add_system_set(
             SystemSet::on_update(AppState::Editor)
                 .with_system(editor_camera::handle_position_camera_event)
-                .with_system(editor_camera::update_camera)
+                .with_system(editor_camera::update_camera),
         );
     }
 }

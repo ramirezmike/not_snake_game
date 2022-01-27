@@ -1,5 +1,5 @@
+use crate::{dude, food::FoodEatenEvent, game_controller, level, level_over, sounds, Dude};
 use bevy::prelude::*;
-use crate::{food::FoodEatenEvent, Dude, sounds, level, level_over, game_controller, dude};
 
 #[derive(Component)]
 pub struct ContinueText;
@@ -47,11 +47,12 @@ pub fn setup_score_screen(
     mut windows: ResMut<Windows>,
     asset_server: Res<AssetServer>,
 ) {
-    commands.spawn_bundle(UiCameraBundle::default())
-            .insert(level_over::LevelOverText {});
+    commands
+        .spawn_bundle(UiCameraBundle::default())
+        .insert(level_over::LevelOverText {});
     let window = windows.get_primary_mut().unwrap();
-    let width = window.width(); 
-    let height = window.height(); 
+    let width = window.width();
+    let height = window.height();
     commands
         .spawn_bundle(TextBundle {
             style: Style {
@@ -85,37 +86,37 @@ pub fn setup_score_screen(
         })
         .insert(level_over::LevelOverText {});
 
-        commands
-            .spawn_bundle(TextBundle {
-                style: Style {
-                    align_self: AlignSelf::FlexEnd,
-                    position_type: PositionType::Absolute,
-                    position: Rect {
-                        bottom: Val::Px(5.0),
-                        right: Val::Px(15.0),
-                        ..Default::default()
-                    },
-                    size: Size {
-                        //width: Val::Px(200.0),
-                        ..Default::default()
-                    },
+    commands
+        .spawn_bundle(TextBundle {
+            style: Style {
+                align_self: AlignSelf::FlexEnd,
+                position_type: PositionType::Absolute,
+                position: Rect {
+                    bottom: Val::Px(5.0),
+                    right: Val::Px(15.0),
                     ..Default::default()
                 },
-                text: Text::with_section(
-                    "".to_string(),
-                    TextStyle {
-                        font: asset_server.load(crate::FONT),
-                        font_size: 100.0,
-                        color: Color::rgba(0.8, 0.8, 0.8, 1.0),
-                    },
-                    TextAlignment {
-                        ..Default::default()
-                    }
-                ),
+                size: Size {
+                    //width: Val::Px(200.0),
+                    ..Default::default()
+                },
                 ..Default::default()
-            })
-            .insert(level_over::LevelOverText {})
-            .insert(ContinueText);
+            },
+            text: Text::with_section(
+                "".to_string(),
+                TextStyle {
+                    font: asset_server.load(crate::FONT),
+                    font_size: 100.0,
+                    color: Color::rgba(0.8, 0.8, 0.8, 1.0),
+                },
+                TextAlignment {
+                    ..Default::default()
+                },
+            ),
+            ..Default::default()
+        })
+        .insert(level_over::LevelOverText {})
+        .insert(ContinueText);
     println!("Score text made!");
 }
 
@@ -151,16 +152,21 @@ pub fn displaying_score(
                 text.sections[0].value = "".to_string();
             }
         }
-        println!("Score: {} Death: {}",score.total, score.current_death_count);
+        println!(
+            "Score: {} Death: {}",
+            score.total, score.current_death_count
+        );
         *text_set = true;
     }
 
     *buffer += time.delta_seconds();
     if *buffer > 0.5 {
         let pressed_buttons = game_controller::get_pressed_buttons(&axes, &buttons, gamepad);
-        if keyboard_input.just_pressed(KeyCode::Return) || keyboard_input.just_pressed(KeyCode::Space)
-        || keyboard_input.just_pressed(KeyCode::J)    
-        || pressed_buttons.contains(&game_controller::GameButton::Action){
+        if keyboard_input.just_pressed(KeyCode::Return)
+            || keyboard_input.just_pressed(KeyCode::Space)
+            || keyboard_input.just_pressed(KeyCode::J)
+            || pressed_buttons.contains(&game_controller::GameButton::Action)
+        {
             *text_counter += 1;
             *text_set = false;
             *buffer = 0.0;
@@ -169,7 +175,7 @@ pub fn displaying_score(
 
     for mut text in continue_text.iter_mut() {
         let a = text.sections[0].style.color.a();
-        if a < 0.5 { 
+        if a < 0.5 {
             *text_blink = false;
         }
         if a > 1.0 {
@@ -186,7 +192,7 @@ pub fn displaying_score(
     if *text_counter >= score_texts.len() {
         state.set(crate::AppState::LevelTitle).unwrap();
         *text_set = false;
-        *text_counter = 0; 
+        *text_counter = 0;
         *score_added = false;
         score.current_death_count = 0;
     }

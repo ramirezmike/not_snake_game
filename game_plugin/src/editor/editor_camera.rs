@@ -48,11 +48,7 @@ pub fn update_camera(
     mut ev_scroll: EventReader<MouseWheel>,
     input_mouse: Res<Input<MouseButton>>,
     keyboard_input: Res<Input<KeyCode>>,
-    mut query: Query<(
-        &mut PanOrbitCamera,
-        &mut Transform,
-        &PerspectiveProjection,
-    )>,
+    mut query: Query<(&mut PanOrbitCamera, &mut Transform, &PerspectiveProjection)>,
 ) {
     // change input mapping for orbit and panning here
     let orbit_button = MouseButton::Right;
@@ -78,8 +74,11 @@ pub fn update_camera(
     for ev in ev_scroll.iter() {
         scroll += ev.y;
     }
-    if input_mouse.just_released(orbit_button) || input_mouse.just_pressed(orbit_button) ||
-       keyboard_input.just_released(orbit_key) || keyboard_input.just_pressed(orbit_key) {
+    if input_mouse.just_released(orbit_button)
+        || input_mouse.just_pressed(orbit_button)
+        || keyboard_input.just_released(orbit_key)
+        || keyboard_input.just_pressed(orbit_key)
+    {
         orbit_button_changed = true;
     }
 
@@ -97,7 +96,11 @@ pub fn update_camera(
             let window = get_primary_window_size(&windows);
             let delta_x = {
                 let delta = rotation_move.x / window.x * std::f32::consts::PI * 2.0;
-                if pan_orbit.upside_down { -delta } else { delta }
+                if pan_orbit.upside_down {
+                    -delta
+                } else {
+                    delta
+                }
             };
             let delta_y = rotation_move.y / window.y * std::f32::consts::PI;
             let yaw = Quat::from_rotation_y(-delta_x);
@@ -127,7 +130,8 @@ pub fn update_camera(
             // parent = x and y rotation
             // child = z-offset
             let rot_matrix = Mat3::from_quat(transform.rotation);
-            transform.translation = pan_orbit.focus + rot_matrix.mul_vec3(Vec3::new(0.0, 0.0, pan_orbit.radius));
+            transform.translation =
+                pan_orbit.focus + rot_matrix.mul_vec3(Vec3::new(0.0, 0.0, pan_orbit.radius));
         }
     }
 }

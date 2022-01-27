@@ -36,15 +36,21 @@ pub fn gamepad_connections(
 
 #[derive(PartialEq)]
 pub enum GameButton {
-    Up, Down, Left, Right, Action, Nothing, Start
+    Up,
+    Down,
+    Left,
+    Right,
+    Action,
+    Nothing,
+    Start,
 }
 
 pub fn get_pressed_buttons(
     axes: &Res<Axis<GamepadAxis>>,
     buttons: &Res<Input<GamepadButton>>,
     gamepad: Option<Res<GameController>>,
-) -> Vec::<GameButton> {
-    let mut pressed_buttons = vec!();
+) -> Vec<GameButton> {
+    let mut pressed_buttons = vec![];
     let gamepad = if let Some(gp) = gamepad {
         // a gamepad is connected, we have the id
         gp.0

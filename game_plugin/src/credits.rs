@@ -14,8 +14,8 @@ pub fn setup_credits(
     commands.spawn_bundle(UiCameraBundle::default());
     commands.insert_resource(ClearColor(Color::hex(crate::COLOR_BLACK).unwrap()));
     let window = windows.get_primary_mut().unwrap();
-    let width = window.width(); 
-    let height = window.height(); 
+    let width = window.width();
+    let height = window.height();
     commands
         .spawn_bundle(TextBundle {
             style: Style {
@@ -140,16 +140,16 @@ pub fn update_credits(
     mut windows: ResMut<Windows>,
 ) {
     let window = windows.get_primary_mut().unwrap();
-    let height = window.height(); 
+    let height = window.height();
 
     let mut end_credits_have_ended = false;
     for (_, mut end_credit, mut style) in end_credits.iter_mut() {
         end_credit.0 = end_credit.0 - (time.delta_seconds() * (8592.0 / height));
         style.position.top = Val::Percent(end_credit.0);
 
-        println!("End Credit: {}",end_credit.0);
+        println!("End Credit: {}", end_credit.0);
         if end_credit.0 < -60.0 * (8592.0 / height) {
-            end_credits_have_ended = true; 
+            end_credits_have_ended = true;
         }
     }
 
@@ -165,8 +165,8 @@ pub fn update_credits(
 
 pub fn show_credits(
     mut credit_event: EventReader<CreditsEvent>,
-    mut app_state: ResMut<State<crate::AppState>>
-) { 
+    mut app_state: ResMut<State<crate::AppState>>,
+) {
     if credit_event.iter().count() > 0 {
         app_state.set(crate::AppState::Credits).unwrap();
     }

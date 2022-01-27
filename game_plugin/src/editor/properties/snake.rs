@@ -1,6 +1,6 @@
+use crate::snake::SnakeTarget;
 use bevy::prelude::*;
 use bevy_inspector_egui::bevy_egui::egui;
-use crate::snake::SnakeTarget;
 
 #[derive(Component, Copy, Clone)]
 pub struct SnakeProperties {
@@ -15,10 +15,10 @@ impl Default for SnakeProperties {
         let color = Color::hex("ff4f69").unwrap();
 
         SnakeProperties {
-            color: [color.r(), color.g(), color.b()], 
+            color: [color.r(), color.g(), color.b()],
             speed: 0.5,
             target: SnakeTarget::Normal,
-            min_length: 5
+            min_length: 5,
         }
     }
 }
@@ -35,13 +35,13 @@ impl SnakeProperties {
 
         ui.label("Target: ");
         egui::ComboBox::from_id_source(123)
-                       .selected_text(format!("{:?}", SnakeTarget::Normal))
-                       .show_ui(ui, |ui| {
-                           ui.selectable_value(&mut self.target, SnakeTarget::Normal, "Normal");
-                           ui.selectable_value(&mut self.target, SnakeTarget::OnlyFood, "Only Food");
-                           ui.selectable_value(&mut self.target, SnakeTarget::OnlyDude, "Not Snake");
-                           ui.selectable_value(&mut self.target, SnakeTarget::OnlyRandom, "Random");
-                       });
+            .selected_text(format!("{:?}", SnakeTarget::Normal))
+            .show_ui(ui, |ui| {
+                ui.selectable_value(&mut self.target, SnakeTarget::Normal, "Normal");
+                ui.selectable_value(&mut self.target, SnakeTarget::OnlyFood, "Only Food");
+                ui.selectable_value(&mut self.target, SnakeTarget::OnlyDude, "Not Snake");
+                ui.selectable_value(&mut self.target, SnakeTarget::OnlyRandom, "Random");
+            });
         ui.end_row();
 
         ui.label("Color: ");

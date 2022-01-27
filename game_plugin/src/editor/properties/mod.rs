@@ -1,12 +1,12 @@
+use crate::editor::interface::{EntityAction, EntitySelection};
 use bevy::prelude::*;
 use bevy_inspector_egui::bevy_egui::egui;
 use bevy_mod_picking::*;
-use crate::editor::interface::{EntitySelection, EntityAction};
 
 pub mod block;
+pub mod food;
 pub mod not_snake;
 pub mod snake;
-pub mod food;
 
 pub struct Properties {
     pub level_title: String,
@@ -42,7 +42,7 @@ impl Properties {
             EntitySelection::NotSnake => self.not_snake.render(ui),
             EntitySelection::Snake => self.snake.render(ui),
             EntitySelection::Food => self.food.render(ui),
-            _ => ()
+            _ => (),
         }
     }
 }
@@ -52,9 +52,15 @@ pub fn apply_properties_to_selected_block(
     entity_selection: Res<EntitySelection>,
     properties: Res<Properties>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    mut selected: Query<(&Selection, &mut PickableButton<StandardMaterial>, &mut block::BlockProperties)>,
+    mut selected: Query<(
+        &Selection,
+        &mut PickableButton<StandardMaterial>,
+        &mut block::BlockProperties,
+    )>,
 ) {
-    if *entity_action != EntityAction::Select || *entity_selection != EntitySelection::Block { return; }
+    if *entity_action != EntityAction::Select || *entity_selection != EntitySelection::Block {
+        return;
+    }
 
     for (selection, mut button, mut block_properties) in selected.iter_mut() {
         if selection.selected() {
@@ -70,9 +76,15 @@ pub fn apply_properties_to_selected_not_snake(
     entity_selection: Res<EntitySelection>,
     properties: Res<Properties>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    mut selected: Query<(&Selection, &mut PickableButton<StandardMaterial>, &mut not_snake::NotSnakeProperties)>,
+    mut selected: Query<(
+        &Selection,
+        &mut PickableButton<StandardMaterial>,
+        &mut not_snake::NotSnakeProperties,
+    )>,
 ) {
-    if *entity_action != EntityAction::Select || *entity_selection != EntitySelection::NotSnake { return; }
+    if *entity_action != EntityAction::Select || *entity_selection != EntitySelection::NotSnake {
+        return;
+    }
 
     for (selection, mut button, mut not_snake_properties) in selected.iter_mut() {
         if selection.selected() {
@@ -88,9 +100,15 @@ pub fn apply_properties_to_selected_snake(
     entity_selection: Res<EntitySelection>,
     properties: Res<Properties>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    mut selected: Query<(&Selection, &mut PickableButton<StandardMaterial>, &mut snake::SnakeProperties)>,
+    mut selected: Query<(
+        &Selection,
+        &mut PickableButton<StandardMaterial>,
+        &mut snake::SnakeProperties,
+    )>,
 ) {
-    if *entity_action != EntityAction::Select || *entity_selection != EntitySelection::Snake { return; }
+    if *entity_action != EntityAction::Select || *entity_selection != EntitySelection::Snake {
+        return;
+    }
 
     for (selection, mut button, mut snake_properties) in selected.iter_mut() {
         if selection.selected() {

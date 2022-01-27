@@ -1,6 +1,6 @@
+use crate::{Direction, Position};
 use bevy::prelude::*;
-use crate::{ Position, Direction };
-use bevy::reflect::{TypeUuid};
+use bevy::reflect::TypeUuid;
 use serde::Deserialize;
 
 #[derive(Debug, Clone, Deserialize, TypeUuid, Component)]
@@ -12,10 +12,6 @@ pub struct Teleporter {
     pub facing: Direction,
 }
 
-pub fn spawn_teleporter(
-    commands: &mut Commands,
-    teleporter: Teleporter,
-){
-    commands.spawn()
-            .insert(teleporter);
+pub fn spawn_teleporter(commands: &mut Commands, teleporter: Teleporter) {
+    commands.spawn().insert(teleporter);
 }

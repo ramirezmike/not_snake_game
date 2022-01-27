@@ -1,9 +1,9 @@
+use crate::{dude, level, snake};
 use bevy::prelude::*;
+use bevy::reflect::TypeUuid;
 use bevy_kira_audio::{Audio, AudioChannel, AudioPlugin, AudioSource};
-use std::collections::HashMap;
 use serde::Deserialize;
-use bevy::reflect::{TypeUuid};
-use crate::{level, dude, snake};
+use std::collections::HashMap;
 
 pub struct SoundEvent(pub Sounds);
 pub struct CollectSounds {
@@ -13,10 +13,7 @@ pub struct CollectSounds {
 
 impl CollectSounds {
     pub fn new() -> Self {
-        CollectSounds {
-            snake: 0,
-            dude: 0,
-        }
+        CollectSounds { snake: 0, dude: 0 }
     }
 }
 
@@ -43,17 +40,17 @@ pub enum MusicPiece {
 #[derive(Debug, Clone, Deserialize, TypeUuid)]
 #[uuid = "67fadc56-aa9c-4543-8640-a018b74b5052"]
 pub struct LevelMusic {
-    before: Vec::<MusicPiece>,
-    during: Vec::<MusicPiece>,
-    after: Vec::<MusicPiece>,
+    before: Vec<MusicPiece>,
+    during: Vec<MusicPiece>,
+    after: Vec<MusicPiece>,
 }
 
 impl LevelMusic {
     pub fn new() -> Self {
         LevelMusic {
-            before: vec!(),
-            during: vec!(),
-            after: vec!(),
+            before: vec![],
+            during: vec![],
+            after: vec![],
         }
     }
 }
@@ -62,11 +59,11 @@ pub struct AudioState {
     channels: HashMap<AudioChannel, ChannelAudioState>,
     sound_channel: AudioChannel,
     music_channel: AudioChannel,
-    current_music: Option::<MusicPiece>,
+    current_music: Option<MusicPiece>,
 
     electricity_channel: AudioChannel,
-    pickup_handle: Vec::<Handle<AudioSource>>,
-    bite_handle: Vec::<Handle<AudioSource>>,
+    pickup_handle: Vec<Handle<AudioSource>>,
+    bite_handle: Vec<Handle<AudioSource>>,
     flag_spawn_handle: Handle<AudioSource>,
     shock_handle: Handle<AudioSource>,
     electricity_handle: Handle<AudioSource>,
@@ -130,28 +127,19 @@ impl AudioState {
         let electricity_channel = AudioChannel::new("electricity".to_owned());
         let intro_handle = asset_server.load("music/intro.ogg");
 
-        channels.insert(
-            sound_channel.clone(),
-            ChannelAudioState::default(),
-        );
-        channels.insert(
-            music_channel.clone(),
-            ChannelAudioState::default(),
-        );
-        channels.insert(
-            electricity_channel.clone(), 
-            ChannelAudioState::default(),
-        );
+        channels.insert(sound_channel.clone(), ChannelAudioState::default());
+        channels.insert(music_channel.clone(), ChannelAudioState::default());
+        channels.insert(electricity_channel.clone(), ChannelAudioState::default());
 
         AudioState {
             intro_handle: intro_handle.clone(),
             sound_channel,
             music_channel,
-            electricity_channel, 
+            electricity_channel,
             channels,
             current_music: None,
-            pickup_handle: vec!(),
-            bite_handle: vec!(),
+            pickup_handle: vec![],
+            bite_handle: vec![],
             flag_spawn_handle: intro_handle.clone(),
             land_handle: intro_handle.clone(),
             shock_handle: intro_handle.clone(),
@@ -178,12 +166,13 @@ impl AudioState {
     }
 
     pub fn get_sound_handles(&self) -> Vec<HandleUntyped> {
-        vec!(self.intro_handle.clone_untyped())
+        vec![self.intro_handle.clone_untyped()]
     }
 
-    pub fn play(&mut self, 
-        sound: &Sounds, 
-        audio: &Res<Audio>, 
+    pub fn play(
+        &mut self,
+        sound: &Sounds,
+        audio: &Res<Audio>,
         collect_sounds_tracker: &mut ResMut<CollectSounds>,
     ) {
         let mut channel_audio_state = self.channels.get_mut(&self.sound_channel).unwrap();
@@ -191,41 +180,48 @@ impl AudioState {
         channel_audio_state.stopped = false;
 
         let sound_to_play = match sound {
-                                Sounds::Pickup => {
-                                    let sound = self.pickup_handle[collect_sounds_tracker.dude % 5].clone();
-                                    collect_sounds_tracker.dude += 1;
-                                    sound
-                                },
-                                Sounds::Bite => {
-                                    audio.stop_channel(&self.sound_channel);
-                                    let sound = self.bite_handle[collect_sounds_tracker.snake % 4].clone();
-                                    //collect_sounds_tracker.snake += 1;
-                                    sound
-                                },
-                                Sounds::FlagSpawn => self.flag_spawn_handle.clone(),
-                                Sounds::Land => self.land_handle.clone(),
-                                Sounds::LevelEnd => self.level_end_handle.clone(),
-                                Sounds::Slide => self.slide_handle.clone(),
-                                Sounds::Shock => {
-                                    audio.stop_channel(&self.sound_channel);
-                                    self.shock_handle.clone()
-                                }
-                                Sounds::Fall => self.fall_handle.clone(),
-                                _ => { return; }
-                            };
+            Sounds::Pickup => {
+                let sound = self.pickup_handle[collect_sounds_tracker.dude % 5].clone();
+                collect_sounds_tracker.dude += 1;
+                sound
+            }
+            Sounds::Bite => {
+                audio.stop_channel(&self.sound_channel);
+                let sound = self.bite_handle[collect_sounds_tracker.snake % 4].clone();
+                //collect_sounds_tracker.snake += 1;
+                sound
+            }
+            Sounds::FlagSpawn => self.flag_spawn_handle.clone(),
+            Sounds::Land => self.land_handle.clone(),
+            Sounds::LevelEnd => self.level_end_handle.clone(),
+            Sounds::Slide => self.slide_handle.clone(),
+            Sounds::Shock => {
+                audio.stop_channel(&self.sound_channel);
+                self.shock_handle.clone()
+            }
+            Sounds::Fall => self.fall_handle.clone(),
+            _ => {
+                return;
+            }
+        };
 
         audio.play_in_channel(sound_to_play, &self.sound_channel);
     }
 
     pub fn start_music_channels(&mut self, audio: &Res<Audio>) {
-        AudioState::start_music_channel(&mut self.channels, audio, &self.bass_drum_handle, &self.music_channel);
+        AudioState::start_music_channel(
+            &mut self.channels,
+            audio,
+            &self.bass_drum_handle,
+            &self.music_channel,
+        );
     }
 
     fn start_music_channel(
         channels: &mut HashMap<AudioChannel, ChannelAudioState>,
-        audio: &Res<Audio>, 
-        handle: &Handle<AudioSource>, 
-        channel: &AudioChannel
+        audio: &Res<Audio>,
+        handle: &Handle<AudioSource>,
+        channel: &AudioChannel,
     ) {
         let mut channel_audio_state = channels.get_mut(channel).unwrap();
         channel_audio_state.paused = false;
@@ -235,15 +231,14 @@ impl AudioState {
         audio.play_looped_in_channel(handle.clone(), channel);
     }
 
-//  pub fn play_music(&mut self, audio: &Res<Audio>, musics: Vec::<MusicPiece>) {
-//      audio.set_volume_in_channel(1.0, channel);
-//  }
+    //  pub fn play_music(&mut self, audio: &Res<Audio>, musics: Vec::<MusicPiece>) {
+    //      audio.set_volume_in_channel(1.0, channel);
+    //  }
 
     pub fn play_electricity(&mut self, audio: &Res<Audio>) {
         let mut channel_audio_state = self.channels.get_mut(&self.electricity_channel).unwrap();
         channel_audio_state.paused = false;
         channel_audio_state.stopped = false;
-
 
         audio.stop_channel(&self.electricity_channel);
         audio.play_looped_in_channel(self.electricity_handle.clone(), &self.electricity_channel);
@@ -251,15 +246,14 @@ impl AudioState {
 
     pub fn play_fanfare_in_channel(
         &self,
-        audio: &Res<Audio>, 
+        audio: &Res<Audio>,
         music: &MusicPiece,
-        channel: &AudioChannel
+        channel: &AudioChannel,
     ) {
-        let handle = 
-            match music {
-                MusicPiece::BassDrum => Some(&self.bass_drum_handle),
-                _ => None
-            };
+        let handle = match music {
+            MusicPiece::BassDrum => Some(&self.bass_drum_handle),
+            _ => None,
+        };
 
         if let Some(handle) = handle {
             println!("Playing a fanfare..");
@@ -269,29 +263,28 @@ impl AudioState {
 
     pub fn play_music_in_channel<'a>(
         &self,
-        audio: &Res<Audio>, 
+        audio: &Res<Audio>,
         music: &'a MusicPiece,
-        channel: &AudioChannel
-    ) -> Option::<&'a MusicPiece> {
-        let handle = 
-            match music {
-                MusicPiece::BassDrum => Some(&self.bass_drum_handle),
-                MusicPiece::BassDrumReverb => Some(&self.bass_drum_reverb_handle),
-                MusicPiece::DrumAndBell => Some(&self.drum_and_bell_handle),
-                MusicPiece::LevelOne => Some(&self.level_one_handle),
-                MusicPiece::LevelOne8Bit => Some(&self.level_one_8bit_handle),
-                MusicPiece::Halloween => Some(&self.halloween_handle),
-                MusicPiece::Classic => Some(&self.classic_handle),
-                MusicPiece::Boss => Some(&self.boss_handle),
-                MusicPiece::Space => Some(&self.space_handle),
-                MusicPiece::Hurry => Some(&self.hurry_handle),
-                MusicPiece::Qwerty => Some(&self.qwerty_handle),
-                MusicPiece::Credits => Some(&self.credits_handle),
-                MusicPiece::Organ => Some(&self.organ_handle),
-                MusicPiece::TickTock => Some(&self.tick_tock_handle),
-                MusicPiece::Intro => Some(&self.intro_handle),
-                _ => None
-            };
+        channel: &AudioChannel,
+    ) -> Option<&'a MusicPiece> {
+        let handle = match music {
+            MusicPiece::BassDrum => Some(&self.bass_drum_handle),
+            MusicPiece::BassDrumReverb => Some(&self.bass_drum_reverb_handle),
+            MusicPiece::DrumAndBell => Some(&self.drum_and_bell_handle),
+            MusicPiece::LevelOne => Some(&self.level_one_handle),
+            MusicPiece::LevelOne8Bit => Some(&self.level_one_8bit_handle),
+            MusicPiece::Halloween => Some(&self.halloween_handle),
+            MusicPiece::Classic => Some(&self.classic_handle),
+            MusicPiece::Boss => Some(&self.boss_handle),
+            MusicPiece::Space => Some(&self.space_handle),
+            MusicPiece::Hurry => Some(&self.hurry_handle),
+            MusicPiece::Qwerty => Some(&self.qwerty_handle),
+            MusicPiece::Credits => Some(&self.credits_handle),
+            MusicPiece::Organ => Some(&self.organ_handle),
+            MusicPiece::TickTock => Some(&self.tick_tock_handle),
+            MusicPiece::Intro => Some(&self.intro_handle),
+            _ => None,
+        };
 
         if let Some(handle) = handle {
             println!("Playing a music..");
@@ -314,25 +307,20 @@ pub fn play_sounds(
     }
 }
 
-pub fn play_fanfare(
-    level: Res<level::Level>,
-    audio: Res<Audio>,
-    audio_state: Res<AudioState>,
-) {
+pub fn play_fanfare(level: Res<level::Level>, audio: Res<Audio>, audio_state: Res<AudioState>) {
     let level_music = level.get_music(false);
     if let Some(music) = level_music.during.get(1) {
         println!("playing during music");
         audio_state.play_fanfare_in_channel(&audio, &music, &audio_state.music_channel);
-    } 
+    }
 }
 
-pub fn play_credits_music(
-    audio: Res<Audio>,
-    mut audio_state: ResMut<AudioState>,
-) {
+pub fn play_credits_music(audio: Res<Audio>, mut audio_state: ResMut<AudioState>) {
     println!("Stopping existing music to swich to new music");
     audio.stop_channel(&audio_state.music_channel);
-    if let Some(_) = audio_state.play_music_in_channel(&audio, &MusicPiece::Credits, &audio_state.music_channel) {
+    if let Some(_) =
+        audio_state.play_music_in_channel(&audio, &MusicPiece::Credits, &audio_state.music_channel)
+    {
         audio_state.current_music = Some(MusicPiece::Credits.clone());
     } else {
         audio_state.current_music = None;
@@ -356,7 +344,9 @@ pub fn play_ingame_music(
         }
 
         println!("playing during music");
-        if let Some(_) = audio_state.play_music_in_channel(&audio, &music, &audio_state.music_channel) {
+        if let Some(_) =
+            audio_state.play_music_in_channel(&audio, &music, &audio_state.music_channel)
+        {
             audio_state.current_music = Some(music.clone());
         } else {
             audio_state.current_music = None;
@@ -385,7 +375,9 @@ pub fn play_before_music(
         }
 
         println!("playing before music");
-        if let Some(_) = audio_state.play_music_in_channel(&audio, &music, &audio_state.music_channel) {
+        if let Some(_) =
+            audio_state.play_music_in_channel(&audio, &music, &audio_state.music_channel)
+        {
             audio_state.current_music = Some(music.clone());
         } else {
             audio_state.current_music = None;
@@ -414,7 +406,9 @@ pub fn play_after_music(
         }
 
         println!("playing after music");
-        if let Some(_) = audio_state.play_music_in_channel(&audio, &music, &audio_state.music_channel) {
+        if let Some(_) =
+            audio_state.play_music_in_channel(&audio, &music, &audio_state.music_channel)
+        {
             audio_state.current_music = Some(music.clone());
         } else {
             audio_state.current_music = None;
@@ -426,32 +420,21 @@ pub fn play_after_music(
     }
 }
 
-pub fn pause_music(
-    level: Res<level::Level>,
-    audio: Res<Audio>,
-    audio_state: Res<AudioState>,
-) {
+pub fn pause_music(level: Res<level::Level>, audio: Res<Audio>, audio_state: Res<AudioState>) {
     let level_music = level.get_music(true);
     if let Some(_) = level_music.during.get(0) {
         audio.pause_channel(&audio_state.music_channel);
-    } 
+    }
 }
 
-pub fn unpause_music(
-    level: Res<level::Level>,
-    audio: Res<Audio>,
-    audio_state: Res<AudioState>,
-) {
+pub fn unpause_music(level: Res<level::Level>, audio: Res<Audio>, audio_state: Res<AudioState>) {
     let level_music = level.get_music(true);
     if let Some(_) = level_music.during.get(0) {
         audio.resume_channel(&audio_state.music_channel);
-    } 
+    }
 }
 
-pub fn stop_electricity(
-    audio_state: Res<AudioState>,
-    audio: Res<Audio>
-) {
+pub fn stop_electricity(audio_state: Res<AudioState>, audio: Res<Audio>) {
     audio.stop_channel(&audio_state.electricity_channel);
 }
 
@@ -465,7 +448,9 @@ pub fn adjust_electricity_volume(
     for dude_transform in dudes.iter() {
         for (enemy_transform, enemy) in enemies.iter() {
             if enemy.is_electric {
-                let distance = dude_transform.translation.distance(enemy_transform.translation);
+                let distance = dude_transform
+                    .translation
+                    .distance(enemy_transform.translation);
 
                 if distance < 1.5 {
                     audio.set_volume_in_channel(0.75, &audio_state.electricity_channel);
@@ -481,39 +466,30 @@ pub fn adjust_electricity_volume(
     }
 }
 
-
 // this kinda isn't needed anymore but leaving it to just set the volume
-pub fn set_level_music(
-    audio: Res<Audio>,
-    audio_state: Res<AudioState>,
-) {
+pub fn set_level_music(audio: Res<Audio>, audio_state: Res<AudioState>) {
     audio.set_volume_in_channel(0.0, &audio_state.music_channel);
 }
 
-pub fn reset_sounds(
-    mut collect_sounds_tracker: ResMut<CollectSounds>,
-) {
+pub fn reset_sounds(mut collect_sounds_tracker: ResMut<CollectSounds>) {
     collect_sounds_tracker.dude = 0;
     collect_sounds_tracker.snake = 0;
 }
 
-pub fn load_rest_of_sounds(
-    mut audio_state: ResMut<AudioState>,
-    asset_server: Res<AssetServer>
-) {
-    audio_state.pickup_handle = vec!(
+pub fn load_rest_of_sounds(mut audio_state: ResMut<AudioState>, asset_server: Res<AssetServer>) {
+    audio_state.pickup_handle = vec![
         asset_server.load("sounds/pickup0.ogg"),
         asset_server.load("sounds/pickup1.ogg"),
         asset_server.load("sounds/pickup2.ogg"),
         asset_server.load("sounds/pickup3.ogg"),
         asset_server.load("sounds/pickup4.ogg"),
-    );
-    audio_state.bite_handle = vec!(
+    ];
+    audio_state.bite_handle = vec![
         asset_server.load("sounds/bite0.ogg"),
         asset_server.load("sounds/bite1.ogg"),
         asset_server.load("sounds/bite2.ogg"),
         asset_server.load("sounds/bite3.ogg"),
-    );
+    ];
     audio_state.flag_spawn_handle = asset_server.load("sounds/flagspawn.ogg");
     audio_state.land_handle = asset_server.load("sounds/land.ogg");
     audio_state.shock_handle = asset_server.load("sounds/electric.ogg");

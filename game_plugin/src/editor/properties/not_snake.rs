@@ -11,7 +11,7 @@ impl Default for NotSnakeProperties {
         let color = Color::hex("f3a787").unwrap();
 
         NotSnakeProperties {
-            color: [color.r(), color.g(), color.b()], 
+            color: [color.r(), color.g(), color.b()],
         }
     }
 }

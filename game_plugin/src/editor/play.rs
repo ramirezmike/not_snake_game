@@ -1,9 +1,7 @@
-use crate::editor::{cleanup_editor, editor_camera, GameEntity, 
-    GameEntityType, 
-    properties::Properties,
-    properties::block::BlockProperties, 
-    properties::not_snake::NotSnakeProperties,
-    properties::snake::SnakeProperties,
+use crate::editor::{
+    cleanup_editor, editor_camera, properties::block::BlockProperties,
+    properties::not_snake::NotSnakeProperties, properties::snake::SnakeProperties,
+    properties::Properties, GameEntity, GameEntityType,
 };
 use crate::level::LevelInfo;
 use crate::{
@@ -67,18 +65,21 @@ fn load_current_editor_level(
 ) {
     current_editor_level.level_info = None; // TODO remove this
 
-    let block_color = block_properties.iter()
-                                      .last()
-                                      .map(|n| Color::rgb(n.color[0], n.color[1], n.color[2]))
-                                      .unwrap_or(Color::default());
-    let not_snake_color = not_snake_properties.iter()
-                                              .last()
-                                              .map(|n| Color::rgb(n.color[0], n.color[1], n.color[2]))
-                                              .unwrap_or(Color::default());
-    let snake_color = snake_properties.iter()
-                                      .last()
-                                      .map(|n| Color::rgb(n.color[0], n.color[1], n.color[2]))
-                                      .unwrap_or(Color::default());
+    let block_color = block_properties
+        .iter()
+        .last()
+        .map(|n| Color::rgb(n.color[0], n.color[1], n.color[2]))
+        .unwrap_or(Color::default());
+    let not_snake_color = not_snake_properties
+        .iter()
+        .last()
+        .map(|n| Color::rgb(n.color[0], n.color[1], n.color[2]))
+        .unwrap_or(Color::default());
+    let snake_color = snake_properties
+        .iter()
+        .last()
+        .map(|n| Color::rgb(n.color[0], n.color[1], n.color[2]))
+        .unwrap_or(Color::default());
     let background_color = {
         let c = properties.background_color;
         Color::rgb(c[0], c[1], c[2])
@@ -101,11 +102,12 @@ fn load_current_editor_level(
             flag: "fdfe89".to_string(),
             food: "fdfe89".to_string(),
         },
-        levels: vec![
-            convert_state_to_level(&game_entities, 
-                                   &properties,
-                                   &block_properties,
-                                   &snake_properties)],
+        levels: vec![convert_state_to_level(
+            &game_entities,
+            &properties,
+            &block_properties,
+            &snake_properties,
+        )],
     });
 }
 
@@ -166,7 +168,7 @@ pub fn convert_state_to_level(
                 } else {
                     1
                 }
-            },
+            }
             GameEntityType::Food => 6,
             GameEntityType::Snake => 5,
             GameEntityType::NotSnake => 11,

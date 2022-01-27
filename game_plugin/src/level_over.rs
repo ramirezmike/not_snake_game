@@ -1,5 +1,5 @@
-use bevy::{prelude::*,};
-use crate::{credits, level, dude, moveable, environment, game_controller, snake::Enemy};
+use crate::{credits, dude, environment, game_controller, level, moveable, snake::Enemy};
+use bevy::prelude::*;
 
 pub struct LevelOverEvent {}
 #[derive(Component)]
@@ -11,11 +11,12 @@ pub fn setup_level_over_screen(
     asset_server: Res<AssetServer>,
 ) {
     let window = windows.get_primary_mut().unwrap();
-    let width = window.width(); 
-    let height = window.height(); 
+    let width = window.width();
+    let height = window.height();
 
-    commands.spawn_bundle(UiCameraBundle::default())
-            .insert(LevelOverText {});
+    commands
+        .spawn_bundle(UiCameraBundle::default())
+        .insert(LevelOverText {});
 
     commands
         .spawn_bundle(TextBundle {
@@ -49,10 +50,10 @@ pub fn setup_level_over_screen(
             ..Default::default()
         })
         .insert(LevelOverText {});
-        println!("Level over text made!");
+    println!("Level over text made!");
 }
 
-pub fn displaying_title (
+pub fn displaying_title(
     mut state: ResMut<State<crate::AppState>>,
     time: Res<Time>,
     mut query: Query<&mut Text>,
@@ -81,29 +82,30 @@ pub fn displaying_title (
             if level.current_level == 15 {
                 text.sections[0].style.color = Color::BLACK;
             }
-
         }
         *text_set = true;
     }
 
     // change background color gradually to next level's color
     let target_palette = &level.get_next_level_palette();
-    
-    let current_color = clear_color.0.clone();//Color::hex(current_palette.base.clone()).unwrap();
+
+    let current_color = clear_color.0.clone(); //Color::hex(current_palette.base.clone()).unwrap();
     let target_color = Color::hex(target_palette.base.clone()).unwrap();
     let target = Vec3::new(target_color.r(), target_color.g(), target_color.b());
     let start = Vec3::new(current_color.r(), current_color.g(), current_color.b());
     let new_color = start.lerp(target, *timer);
-    clear_color.0 = Color::rgb(new_color.x, new_color.y, new_color.z); 
+    clear_color.0 = Color::rgb(new_color.x, new_color.y, new_color.z);
 
     *timer += time.delta_seconds();
 
     *buffer += time.delta_seconds();
     if *buffer > 0.2 {
         let pressed_buttons = game_controller::get_pressed_buttons(&axes, &buttons, gamepad);
-        if keyboard_input.just_pressed(KeyCode::Return) || keyboard_input.just_pressed(KeyCode::Space)
-        || keyboard_input.just_pressed(KeyCode::J)           
-        || pressed_buttons.contains(&game_controller::GameButton::Action){
+        if keyboard_input.just_pressed(KeyCode::Return)
+            || keyboard_input.just_pressed(KeyCode::Space)
+            || keyboard_input.just_pressed(KeyCode::J)
+            || pressed_buttons.contains(&game_controller::GameButton::Action)
+        {
             *text_counter += 1;
             *text_set = false;
             *buffer = 0.0;
@@ -114,7 +116,7 @@ pub fn displaying_title (
         state.set(crate::AppState::ChangingLevel).unwrap();
         *text_set = false;
         *color_set = false;
-        *text_counter = 0; 
+        *text_counter = 0;
         *timer = 0.0;
     }
 }
@@ -125,7 +127,7 @@ pub fn level_over_check(
     mut query: Query<&mut Text>,
     mut game_is_over: ResMut<environment::GameOver>,
     level: ResMut<level::Level>,
-    time: Res<Time>, 
+    time: Res<Time>,
     mut commands: Commands,
     mut dudes: Query<Entity, With<dude::Dude>>,
     mut snakes: Query<&mut Enemy>,

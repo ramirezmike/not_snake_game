@@ -1,7 +1,9 @@
+use crate::{
+    dude, editor::properties, editor::EditorTrashMarker, editor::GameEntity,
+    editor::GameEntityType, snake,
+};
 use bevy::prelude::*;
 use bevy_mod_picking::*;
-use crate::{dude, editor::EditorTrashMarker, editor::GameEntity, 
-    editor::GameEntityType, snake, editor::properties};
 
 pub fn add_block(
     commands: &mut Commands,
@@ -10,7 +12,11 @@ pub fn add_block(
     properties: &Res<properties::Properties>,
     position: &Vec3,
 ) {
-    let color = Color::rgb(properties.block.color[0], properties.block.color[1], properties.block.color[2]);
+    let color = Color::rgb(
+        properties.block.color[0],
+        properties.block.color[1],
+        properties.block.color[2],
+    );
     commands
         .spawn_bundle(PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
@@ -35,7 +41,10 @@ pub fn add_food(
 ) {
     commands
         .spawn_bundle(PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Icosphere { radius: 0.25, subdivisions: 0 })),
+            mesh: meshes.add(Mesh::from(shape::Icosphere {
+                radius: 0.25,
+                subdivisions: 0,
+            })),
             material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
             transform: Transform::from_xyz(position.x, position.y, position.z),
             ..Default::default()
@@ -49,11 +58,11 @@ pub fn add_food(
 }
 
 pub fn add_snake(
-    commands: &mut Commands, 
-    meshes: &ResMut<snake::EnemyMeshes>, 
+    commands: &mut Commands,
+    meshes: &ResMut<snake::EnemyMeshes>,
     materials: &mut ResMut<Assets<StandardMaterial>>,
     properties: &Res<properties::Properties>,
-    position: &Vec3
+    position: &Vec3,
 ) {
     let mut transform = Transform::from_translation(*position);
     transform.apply_non_uniform_scale(Vec3::new(0.50, 0.50, 0.50));

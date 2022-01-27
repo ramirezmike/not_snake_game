@@ -1,13 +1,10 @@
-use bevy::prelude::*;
-use bevy::app::Events;
-use bevy::app::AppExit;
-use std::collections::HashMap;
 use crate::game_controller;
+use bevy::app::AppExit;
+use bevy::app::Events;
+use bevy::prelude::*;
+use std::collections::HashMap;
 
-pub fn setup_menu(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-) {
+pub fn setup_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
     // ui camera
     commands.spawn_bundle(UiCameraBundle::default());
 
@@ -123,7 +120,6 @@ pub fn setup_menu(
         })
         .id();
 
-
     let quit_button_entity = commands
         .spawn_bundle(ButtonBundle {
             style: Style {
@@ -161,15 +157,13 @@ pub fn setup_menu(
         })
         .id();
 
-    commands.insert_resource(
-        PauseMenuData { 
-            resume_button_entity, 
-            main_menu_button_entity,
-            quit_button_entity, 
-            restart_button_entity,
-            selected: resume_button_entity 
-        }
-    );
+    commands.insert_resource(PauseMenuData {
+        resume_button_entity,
+        main_menu_button_entity,
+        quit_button_entity,
+        restart_button_entity,
+        selected: resume_button_entity,
+    });
 }
 
 pub struct PauseMenuData {
@@ -181,10 +175,18 @@ pub struct PauseMenuData {
 }
 
 pub fn cleanup_pause_menu(mut commands: Commands, menu_data: Res<PauseMenuData>) {
-    commands.entity(menu_data.resume_button_entity).despawn_recursive();
-    commands.entity(menu_data.main_menu_button_entity).despawn_recursive();
-    commands.entity(menu_data.restart_button_entity).despawn_recursive();
-    commands.entity(menu_data.quit_button_entity).despawn_recursive();
+    commands
+        .entity(menu_data.resume_button_entity)
+        .despawn_recursive();
+    commands
+        .entity(menu_data.main_menu_button_entity)
+        .despawn_recursive();
+    commands
+        .entity(menu_data.restart_button_entity)
+        .despawn_recursive();
+    commands
+        .entity(menu_data.quit_button_entity)
+        .despawn_recursive();
 }
 
 pub fn pause_menu(
@@ -205,20 +207,38 @@ pub fn pause_menu(
     let mut selected_button = None;
 
     let mut next_button = HashMap::new();
-    next_button.insert(menu_data.resume_button_entity, menu_data.restart_button_entity);
-    next_button.insert(menu_data.restart_button_entity, menu_data.main_menu_button_entity);
-    next_button.insert(menu_data.main_menu_button_entity, menu_data.quit_button_entity);
+    next_button.insert(
+        menu_data.resume_button_entity,
+        menu_data.restart_button_entity,
+    );
+    next_button.insert(
+        menu_data.restart_button_entity,
+        menu_data.main_menu_button_entity,
+    );
+    next_button.insert(
+        menu_data.main_menu_button_entity,
+        menu_data.quit_button_entity,
+    );
     next_button.insert(menu_data.quit_button_entity, menu_data.resume_button_entity);
 
     let mut prev_button = HashMap::new();
     prev_button.insert(menu_data.resume_button_entity, menu_data.quit_button_entity);
-    prev_button.insert(menu_data.restart_button_entity, menu_data.resume_button_entity);
-    prev_button.insert(menu_data.main_menu_button_entity, menu_data.restart_button_entity);
-    prev_button.insert(menu_data.quit_button_entity, menu_data.main_menu_button_entity);
+    prev_button.insert(
+        menu_data.restart_button_entity,
+        menu_data.resume_button_entity,
+    );
+    prev_button.insert(
+        menu_data.main_menu_button_entity,
+        menu_data.restart_button_entity,
+    );
+    prev_button.insert(
+        menu_data.quit_button_entity,
+        menu_data.main_menu_button_entity,
+    );
 
     let mut pressed_buttons = game_controller::get_pressed_buttons(&axes, &buttons, gamepad);
     if *gamepad_buffer < 0.25 {
-        pressed_buttons = vec!(); 
+        pressed_buttons = vec![];
     }
 
     if !pressed_buttons.is_empty() {
@@ -226,18 +246,24 @@ pub fn pause_menu(
     }
 
     // keyboard and gamepad
-    if keyboard_input.just_pressed(KeyCode::Return) || keyboard_input.just_pressed(KeyCode::Space)
-    || pressed_buttons.contains(&game_controller::GameButton::Action){
-        selected_button = Some(menu_data.selected); 
+    if keyboard_input.just_pressed(KeyCode::Return)
+        || keyboard_input.just_pressed(KeyCode::Space)
+        || pressed_buttons.contains(&game_controller::GameButton::Action)
+    {
+        selected_button = Some(menu_data.selected);
     }
 
-    if keyboard_input.just_pressed(KeyCode::W) || keyboard_input.just_pressed(KeyCode::Up) 
-    || pressed_buttons.contains(&game_controller::GameButton::Up) {
+    if keyboard_input.just_pressed(KeyCode::W)
+        || keyboard_input.just_pressed(KeyCode::Up)
+        || pressed_buttons.contains(&game_controller::GameButton::Up)
+    {
         menu_data.selected = *prev_button.get(&menu_data.selected).unwrap();
     }
 
-    if keyboard_input.just_pressed(KeyCode::S) || keyboard_input.just_pressed(KeyCode::Down) 
-    || pressed_buttons.contains(&game_controller::GameButton::Down) {
+    if keyboard_input.just_pressed(KeyCode::S)
+        || keyboard_input.just_pressed(KeyCode::Down)
+        || pressed_buttons.contains(&game_controller::GameButton::Down)
+    {
         menu_data.selected = *next_button.get(&menu_data.selected).unwrap();
     }
 
@@ -246,7 +272,7 @@ pub fn pause_menu(
         match *interaction {
             Interaction::Clicked => selected_button = Some(button_entity),
             Interaction::Hovered => menu_data.selected = button_entity,
-            _ => ()
+            _ => (),
         }
     }
 
