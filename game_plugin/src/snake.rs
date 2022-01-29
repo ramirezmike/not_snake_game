@@ -5,7 +5,7 @@ use crate::{
 use bevy::prelude::*;
 use bevy::reflect::TypeUuid;
 use petgraph::graph::NodeIndex;
-use serde::Deserialize;
+use serde::{Serialize, Deserialize};
 
 #[derive(Default)]
 pub struct EnemyMeshes {
@@ -16,7 +16,7 @@ pub struct EnemyMeshes {
     pub shadow_material: Handle<StandardMaterial>,
 }
 
-#[derive(PartialEq, Debug, Clone, Copy, Deserialize, TypeUuid)]
+#[derive(PartialEq, Debug, Clone, Copy, Serialize, Deserialize, TypeUuid)]
 #[uuid = "60cadc56-aa9c-4543-8640-a018b74b5052"] // this needs to be actually generated
 pub enum SnakeTarget {
     Normal,

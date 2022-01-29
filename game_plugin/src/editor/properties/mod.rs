@@ -2,12 +2,14 @@ use crate::editor::interface::{EntityAction, EntitySelection};
 use bevy::prelude::*;
 use bevy_inspector_egui::bevy_egui::egui;
 use bevy_mod_picking::*;
+use serde::{Serialize, Deserialize};
 
 pub mod block;
 pub mod food;
 pub mod not_snake;
 pub mod snake;
 
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Properties {
     pub level_title: String,
     pub is_food_random: bool,
@@ -21,7 +23,7 @@ pub struct Properties {
 impl Properties {
     pub fn new() -> Self {
         Properties {
-            level_title: "Title".to_string(),
+            level_title: "Untitled".to_string(),
             is_food_random: false,
             minimum_food: 1,
             background_color: [0.0, 0.0, 0.0],

@@ -1,8 +1,9 @@
 use crate::snake::SnakeTarget;
 use bevy::prelude::*;
 use bevy_inspector_egui::bevy_egui::egui;
+use serde::{Serialize, Deserialize};
 
-#[derive(Component, Copy, Clone)]
+#[derive(Component, Copy, Clone, Serialize, Deserialize)]
 pub struct SnakeProperties {
     pub color: [f32; 3],
     pub speed: f32,

@@ -1,6 +1,10 @@
 use crate::{
-    dude, editor::properties, editor::EditorTrashMarker, editor::GameEntity,
+    dude, editor::EditorTrashMarker, editor::GameEntity,
     editor::GameEntityType, snake,
+};
+use crate::editor::properties::{ 
+    block::BlockProperties, snake::SnakeProperties,
+    food::FoodProperties, not_snake::NotSnakeProperties,
 };
 use bevy::prelude::*;
 use bevy_mod_picking::*;
@@ -9,13 +13,13 @@ pub fn add_block(
     commands: &mut Commands,
     meshes: &mut ResMut<Assets<Mesh>>,
     materials: &mut ResMut<Assets<StandardMaterial>>,
-    properties: &Res<properties::Properties>,
+    properties: &BlockProperties,
     position: &Vec3,
 ) {
     let color = Color::rgb(
-        properties.block.color[0],
-        properties.block.color[1],
-        properties.block.color[2],
+        properties.color[0],
+        properties.color[1],
+        properties.color[2],
     );
     commands
         .spawn_bundle(PbrBundle {
@@ -25,7 +29,7 @@ pub fn add_block(
             ..Default::default()
         })
         .insert(EditorTrashMarker)
-        .insert(properties.block.clone())
+        .insert(properties.clone())
         .insert(GameEntity {
             entity_type: GameEntityType::Block,
         })
@@ -36,7 +40,7 @@ pub fn add_food(
     commands: &mut Commands,
     meshes: &mut ResMut<Assets<Mesh>>,
     materials: &mut ResMut<Assets<StandardMaterial>>,
-    properties: &Res<properties::Properties>,
+    properties: &FoodProperties,
     position: &Vec3,
 ) {
     commands
@@ -50,7 +54,7 @@ pub fn add_food(
             ..Default::default()
         })
         .insert(EditorTrashMarker)
-        .insert(properties.food.clone())
+        .insert(properties.clone())
         .insert(GameEntity {
             entity_type: GameEntityType::Food,
         })
@@ -61,7 +65,7 @@ pub fn add_snake(
     commands: &mut Commands,
     meshes: &ResMut<snake::EnemyMeshes>,
     materials: &mut ResMut<Assets<StandardMaterial>>,
-    properties: &Res<properties::Properties>,
+    properties: &SnakeProperties,
     position: &Vec3,
 ) {
     let mut transform = Transform::from_translation(*position);
@@ -71,7 +75,7 @@ pub fn add_snake(
         std::f32::consts::FRAC_PI_2,
     ));
 
-    let color = properties.snake.color;
+    let color = properties.color;
     let color = Color::rgb(color[0], color[1], color[2]);
 
     commands
@@ -85,7 +89,7 @@ pub fn add_snake(
         .insert(GameEntity {
             entity_type: GameEntityType::Snake,
         })
-        .insert(properties.snake.clone())
+        .insert(properties.clone())
         .insert_bundle(PickableBundle::default());
 }
 
@@ -93,13 +97,13 @@ pub fn add_not_snake(
     commands: &mut Commands,
     meshes: &mut ResMut<dude::DudeMeshes>,
     materials: &mut ResMut<Assets<StandardMaterial>>,
-    properties: &Res<properties::Properties>,
+    properties: &NotSnakeProperties,
     position: &Vec3,
 ) {
     let mut transform = Transform::from_translation(Vec3::new(position.x, position.y, position.z));
     transform.apply_non_uniform_scale(Vec3::new(dude::SCALE, dude::SCALE, dude::SCALE));
 
-    let color = properties.not_snake.color;
+    let color = properties.color;
     let color = Color::rgb(color[0], color[1], color[2]);
 
     commands
@@ -113,6 +117,6 @@ pub fn add_not_snake(
         .insert(GameEntity {
             entity_type: GameEntityType::NotSnake,
         })
-        .insert(properties.not_snake.clone())
+        .insert(properties.clone())
         .insert_bundle(PickableBundle::default());
 }

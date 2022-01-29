@@ -1,4 +1,4 @@
-use crate::editor::{properties, select_entity};
+use crate::editor::{properties, select_entity, file};
 use crate::AppState;
 use bevy::prelude::*;
 use bevy::window::WindowResized;
@@ -88,6 +88,9 @@ fn paint_ui(
     mut state: ResMut<State<AppState>>,
     mut properties: ResMut<properties::Properties>,
     mut interface: ResMut<Interface>,
+    mut new_level_event_writer: EventWriter<file::NewLevelEvent>,
+    mut save_level_event_writer: EventWriter<file::SaveLevelEvent>,
+    mut load_level_event_writer: EventWriter<file::LoadLevelEvent>,
 ) {
     let ctx = ctx.ctx();
 
@@ -137,6 +140,18 @@ fn paint_ui(
             egui::menu::bar(ui, |ui| {
                 ui.horizontal(|ui| {
                     ui.menu_button("File", |ui| {
+                        if ui.button("New").clicked() {
+                            new_level_event_writer.send(file::NewLevelEvent);
+                            ui.close_menu();
+                        }
+                        if ui.button("Load").clicked() {
+                            load_level_event_writer.send(file::LoadLevelEvent);
+                            ui.close_menu();
+                        }
+                        if ui.button("Save").clicked() {
+                            save_level_event_writer.send(file::SaveLevelEvent);
+                            ui.close_menu();
+                        }
                         if ui.button("Quit").clicked() {
                             panic!("Quit hit");
                         }

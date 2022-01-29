@@ -1,7 +1,8 @@
 use bevy::prelude::*;
 use bevy_inspector_egui::bevy_egui::egui;
+use serde::{Serialize, Deserialize};
 
-#[derive(Component, Copy, Clone)]
+#[derive(Component, Copy, Clone, Serialize, Deserialize)]
 pub struct NotSnakeProperties {
     pub color: [f32; 3],
 }

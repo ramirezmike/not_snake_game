@@ -9,6 +9,7 @@ mod interface;
 mod play;
 pub mod properties;
 mod select_entity;
+mod file;
 
 #[derive(Component)]
 pub struct EditorTrashMarker;
@@ -28,6 +29,7 @@ impl Plugin for EditorPlugin {
         .add_plugin(interface::EditorInterfacePlugin)
         .add_plugin(help_text::HelpTextPlugin)
         .add_plugin(play::EditorPlayPlugin)
+        .add_plugin(file::EditorFilePlugin) 
         .add_event::<editor_camera::PositionCameraEvent>()
         .add_system_set(
             SystemSet::on_update(AppState::Editor)
@@ -54,6 +56,7 @@ fn load_editor_world(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     properties: Res<properties::Properties>,
+    mut new_level_event_writer: EventWriter<file::NewLevelEvent>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     commands.insert_resource(AmbientLight {
@@ -61,13 +64,7 @@ fn load_editor_world(
         brightness: 0.50,
     });
 
-    add_entity::add_block(
-        &mut commands,
-        &mut meshes,
-        &mut materials,
-        &properties,
-        &Vec3::new(0.0, 0.5, 0.0),
-    );
+    new_level_event_writer.send(file::NewLevelEvent);
 
     commands
         .spawn_bundle(PbrBundle {
