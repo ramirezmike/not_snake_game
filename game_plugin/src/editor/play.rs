@@ -1,12 +1,13 @@
 use crate::editor::{
     cleanup_editor, editor_camera, properties::block::BlockProperties,
     properties::not_snake::NotSnakeProperties, properties::snake::SnakeProperties,
-    properties::Properties, GameEntity, GameEntityType,
+    properties::Properties, GameEntity, GameEntityType, file::LevelFile, 
+    file::EditorState, file,
 };
 use crate::level::LevelInfo;
 use crate::{
-    dude, dust, environment, food, game_controller, holdable, level, moveable, path_find, snake,
-    sounds, AppState,
+    dude, dust, environment, food, game_controller, holdable, 
+    level, moveable, path_find, snake, sounds, AppState,
 };
 use bevy::prelude::*;
 
@@ -16,15 +17,21 @@ impl Plugin for EditorPlayPlugin {
         app.add_system_set(
             SystemSet::on_enter(AppState::EditorPlay)
                 .with_system(load_current_editor_level.label("load_level_from_editor"))
-                .with_system(cleanup_editor.after("load_level_from_editor"))
+                .with_system(store_current_editor_level.label("store_editor_level").after("load_level_from_editor"))
+                .with_system(cleanup_editor.after("store_editor_level"))
                 .with_system(
                     environment::load_level
                         .label("loading_level")
                         .after("load_level_from_editor"),
                 )
-                .with_system(environment::load_level_into_path_finder.after("loading_level")),
+                .with_system(environment::load_level_into_path_finder.after("loading_level"))
         )
-        .insert_resource(CurrentEditorLevel { level_info: None })
+        .add_system_set(
+            SystemSet::on_exit(AppState::EditorPlay)
+                .with_system(despawn_everything.label("despawn_everything"))
+                .with_system(reload_current_editor_level.after("despawn_everything"))
+        )
+        .insert_resource(CurrentEditorLevel(LevelFile::new()))
         .add_system_set(
             SystemSet::on_update(AppState::EditorPlay)
                 .with_system(editor_camera::update_camera)
@@ -49,22 +56,48 @@ impl Plugin for EditorPlayPlugin {
                 .with_system(environment::grow_growables)
                 .with_system(environment::set_clear_color)
                 .with_system(dust::handle_create_dust_event)
-                .with_system(dust::animate_dust),
+                .with_system(dust::animate_dust)
+                .with_system(handle_input)
         );
     }
 }
 
+struct CurrentEditorLevel(LevelFile);
+fn store_current_editor_level(
+    editor_state: EditorState,
+    mut current_editor_level: ResMut<CurrentEditorLevel>, 
+) {
+    println!("Storing level...");
+    current_editor_level.0 = editor_state.to_level_file();
+}
+
+fn despawn_everything(
+    mut commands: Commands,
+    entities: Query<Entity>,
+) {
+    for entity in entities.iter() {
+        commands.entity(entity).despawn_recursive();
+    }
+}
+
+fn reload_current_editor_level(
+    mut commands: Commands,
+    mut current_editor_level: ResMut<CurrentEditorLevel>, 
+    mut meshes: (ResMut<dude::DudeMeshes>, ResMut<snake::EnemyMeshes>, ResMut<Assets<Mesh>>),
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
+    println!("Reloading level...");
+    file::load_level(&mut commands, meshes, materials, &current_editor_level.0);
+}
+
 fn load_current_editor_level(
     mut level: ResMut<level::Level>,
-    mut current_editor_level: ResMut<CurrentEditorLevel>,
     game_entities: Query<(Entity, &Transform, &GameEntity)>,
     properties: Res<Properties>,
     block_properties: Query<&BlockProperties>,
     not_snake_properties: Query<&NotSnakeProperties>,
     snake_properties: Query<&SnakeProperties>,
 ) {
-    current_editor_level.level_info = None; // TODO remove this
-
     let block_color = block_properties
         .iter()
         .last()
@@ -111,8 +144,13 @@ fn load_current_editor_level(
     });
 }
 
-pub struct CurrentEditorLevel {
-    level_info: Option<LevelInfo>,
+pub fn handle_input(
+    mut state: ResMut<State<AppState>>,
+    keyboard_input: Res<Input<KeyCode>>,
+) {
+    if keyboard_input.just_pressed(KeyCode::Escape) {
+        state.set(AppState::Editor).unwrap();
+    }
 }
 
 pub fn convert_state_to_level(

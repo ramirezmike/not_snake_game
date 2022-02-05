@@ -52,13 +52,18 @@ pub enum GameEntityType {
     Food,
 }
 
+
+// This should maybe only run when we enter the editor
+// and detect that nothing already exists
 fn load_editor_world(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
-    properties: Res<properties::Properties>,
+    editor_state: file::EditorState,
     mut new_level_event_writer: EventWriter<file::NewLevelEvent>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
+    if !editor_state.is_empty() { return; }
+
     commands.insert_resource(AmbientLight {
         color: Color::WHITE,
         brightness: 0.50,

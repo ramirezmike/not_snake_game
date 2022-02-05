@@ -171,9 +171,7 @@ fn paint_ui(
 
             ui.vertical(|ui| {
                 ui.selectable_value(&mut *entity_action, EntityAction::Select, "Select");
-                ui.horizontal(|ui| {
-                    ui.selectable_value(&mut *entity_action, EntityAction::Add, "Create");
-                });
+                ui.selectable_value(&mut *entity_action, EntityAction::Add, "Create");
                 ui.selectable_value(&mut *entity_action, EntityAction::Delete, "Delete");
             });
 
