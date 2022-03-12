@@ -139,6 +139,7 @@ impl Plugin for EnvironmentPlugin {
                          .with_system(set_clear_color.system().after("loading_level"))
                          .with_system(load_level_into_path_finder.system().after("loading_level"))
                          .with_system(reset_score.system())
+                         .with_system(disable_shadows.after("loading_level"))
                          .with_system(sounds::reset_sounds.system())
                          .with_system(sounds::play_ingame_music.system())
                          .with_system(level_over::setup_level_over_screen.system().after("loading_level"))
@@ -185,7 +186,7 @@ impl Plugin for EnvironmentPlugin {
                .with_system(food::animate_spawn_particles.system())
                .with_system(sounds::play_sounds.system())
                .with_system(game_controller::gamepad_connections.system())
-               .with_system(update_fps.system())
+//              .with_system(update_fps.system())
                .with_system(camera::cull_blocks.system())
                .with_system(snake::detect_dude_on_electric_snake.system())
                .with_system(shrink_shrinkables.system())
@@ -210,6 +211,18 @@ pub fn material_test(
     }
 }
 */
+
+fn disable_shadows(
+    mut commands: Commands,
+    mut lights: Query<&mut DirectionalLight>,
+    level: Res<Level>,
+) {
+    if level.current_level == 16 {
+        for mut light in lights.iter_mut() {
+            light.shadows_enabled = false; 
+        }
+    }
+}
 
 pub fn restart_level(
     mut state: ResMut<State<crate::AppState>>,
@@ -521,7 +534,7 @@ pub fn load_level(
                                           } else {
                                               EntityType::Block
                                           };
-                        let entity =
+                        let mut block =
                             commands.spawn_bundle(PbrBundle {
                                 mesh: if y == 0 { plane.clone() } else { cube.clone() },
                                 material: if item == 1 { ground_2_material.clone() } else { ground_1_material.clone() },
@@ -538,10 +551,15 @@ pub fn load_level(
                                     transform
                                 },
                                 ..Default::default()
-                            })
-                            .insert(entity_type)
-                            .insert(BlockMesh)
-                            .id();
+                            });
+                            block.insert(entity_type)
+                                 .insert(BlockMesh);
+                        if level.current_level == 16 {
+                            block.insert(bevy::pbr::NotShadowCaster)
+                                 .insert(bevy::pbr::NotShadowReceiver);
+                        } 
+                        let entity = block.id();
+
                         level.set(x as i32, y as i32, z as i32, Some(GameObject::new(entity, entity_type)));
 
                         if y == 0 {
@@ -570,12 +588,13 @@ pub fn load_level(
                     },
                     2 => { // moveable block
                         let inner_mesh_vertical_offset = 0.5;
-                        let block_entity =
+                        let mut block =
                             commands.spawn_bundle(PbrBundle {
                               transform: Transform::from_xyz(x as f32, y as f32, z as f32),
                                 material: block_material.clone(),
                               ..Default::default()
-                            })
+                            });
+                            block
                             .with_children(|parent| {
                                 parent.spawn_bundle(PbrBundle {
                                     mesh: cube.clone(),
@@ -590,13 +609,22 @@ pub fn load_level(
                                     },
                                     ..Default::default()
                                 });
-                            })
+                            });
+
+                            block
                             .insert(EntityType::Block)
                             .insert(holdable::Holdable {})
                             .insert(Position { x: x as i32, y: y as i32, z: z as i32 })
                             .insert(block::BlockObject { })
-                            .insert(moveable::Moveable::new(0.1, inner_mesh_vertical_offset))
-                            .id();
+                            .insert(moveable::Moveable::new(0.1, inner_mesh_vertical_offset));
+
+                        if level.current_level == 16 {
+                            block.insert(bevy::pbr::NotShadowCaster)
+                                 .insert(bevy::pbr::NotShadowReceiver);
+                        } 
+
+                        let block_entity = block.id();
+
                         level.set(x as i32, y as i32, z as i32, Some(GameObject::new(block_entity, EntityType::Block)));
                     },
                     3 => { // win_flag
@@ -711,38 +739,38 @@ fn create_hud(
         })
         .insert(FollowText);
 
-        commands
-        .spawn_bundle(TextBundle {
-            style: Style {
-                align_self: AlignSelf::FlexEnd,
-                ..Default::default()
-            },
-            // Use `Text` directly
-            text: Text {
-                // Construct a `Vec` of `TextSection`s
-                sections: vec![
-                    TextSection {
-                        value: "FPS: ".to_string(),
-                        style: TextStyle {
-                            font: font.clone(),
-                            font_size: 20.0,
-                            color: Color::WHITE,
-                        },
-                    },
-                    TextSection {
-                        value: "".to_string(),
-                        style: TextStyle {
-                            font: font.clone(),
-                            font_size: 20.0,
-                            color: Color::GOLD,
-                        },
-                    },
-                ],
-                ..Default::default()
-            },
-            ..Default::default()
-        })
-        .insert(FpsText);
+//      commands
+//      .spawn_bundle(TextBundle {
+//          style: Style {
+//              align_self: AlignSelf::FlexEnd,
+//              ..Default::default()
+//          },
+//          // Use `Text` directly
+//          text: Text {
+//              // Construct a `Vec` of `TextSection`s
+//              sections: vec![
+//                  TextSection {
+//                      value: "FPS: ".to_string(),
+//                      style: TextStyle {
+//                          font: font.clone(),
+//                          font_size: 20.0,
+//                          color: Color::WHITE,
+//                      },
+//                  },
+//                  TextSection {
+//                      value: "".to_string(),
+//                      style: TextStyle {
+//                          font: font.clone(),
+//                          font_size: 20.0,
+//                          color: Color::GOLD,
+//                      },
+//                  },
+//              ],
+//              ..Default::default()
+//          },
+//          ..Default::default()
+//      })
+//      .insert(FpsText);
 
 
     println!("Added HUD");
