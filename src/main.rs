@@ -1,6 +1,3 @@
-#[cfg(target_arch = "wasm32")]
-use bevy_webgl2;
-
 use bevy::{prelude::*,};
 use bevy::DefaultPlugins;
 use bevy::app::AppExit;
