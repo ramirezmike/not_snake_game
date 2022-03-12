@@ -1,35 +1,25 @@
 [package]
 name = "not_snake"
 version = "0.1.0"
-publish = false
-authors = ["mramirez <ramirezmike2@gmail.com>"]
 edition = "2021"
+authors = ["mramirez <ramirezmike2@gmail.com>"]
 
-[features]
-default = [
-    "bevy/bevy_gltf",
-    "bevy/bevy_winit",
-    "bevy/render",
-    "bevy/bevy_gilrs",
-    "bevy/bevy_winit",
-    "bevy/png",
-    "game_plugin/default",
-]
+# Enable only a small amount of optimization in debug mode
+[profile.dev]
+opt-level = 1
 
-native = [
-    "game_plugin/native"
-]
-
-dev = [
-    "bevy/dynamic",
-    "bevy/bevy_dynamic_plugin",
-    "native",
-]
+# Enable high optimizations for dependencies (incl. Bevy), but not for our code:
+[profile.dev.package."*"]
+opt-level = 3
 
 [dependencies]
-bevy = { version = "0.6.1", default-features = false }
-game_plugin = {path = "game_plugin"}
-winit = { version = "0.25.0" }
-
-[build-dependencies]
-embed-resource = "1.4"
+bevy = "0.6.1"
+#bevy_mod_raycast = { git = "https://github.com/aevyrie/bevy_mod_raycast" }
+#bevy_mod_picking = { git = "https://github.com/aevyrie/bevy_mod_picking" }
+petgraph = "0.5.1"
+#bevy_prototype_debug_lines = "0.2.2"
+rand = "0.8"
+serde = {version = "1", features = ["derive"]}
+anyhow = "1.0"
+ron = "0.6.2"
+bevy_kira_audio = { git = "https://github.com/NiklasEi/bevy_kira_audio", features = ["wav", "ogg"]}
