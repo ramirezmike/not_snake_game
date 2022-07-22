@@ -1,12 +1,12 @@
+use crate::{level, score::Score, audio, assets::GameAssets,};
 use bevy::prelude::*;
-use crate::{score::Score, level, sounds};
 
 #[derive(Component)]
-pub struct WinFlag { }
+pub struct WinFlag {}
 #[derive(Component)]
-pub struct WinFlagInnerMesh { }
+pub struct WinFlagInnerMesh {}
 #[derive(Component)]
-pub struct WinFlagOuterMesh { }
+pub struct WinFlagOuterMesh {}
 
 #[derive(Default)]
 pub struct WinFlagMeshes {
@@ -14,15 +14,24 @@ pub struct WinFlagMeshes {
 }
 
 pub fn update_flag(
-    mut flags: Query<(&WinFlagInnerMesh, &mut Visibility, &mut Transform), Without<WinFlagOuterMesh>>,
-    mut outer_flags: Query<(&WinFlagOuterMesh, &mut Visibility, &mut Transform), Without<WinFlagInnerMesh>>,
+    mut flags: Query<
+        (&WinFlagInnerMesh, &mut Visibility, &mut Transform),
+        Without<WinFlagOuterMesh>,
+    >,
+    mut outer_flags: Query<
+        (&WinFlagOuterMesh, &mut Visibility, &mut Transform),
+        Without<WinFlagInnerMesh>,
+    >,
     score: Res<Score>,
     level: ResMut<level::Level>,
     time: Res<Time>,
     mut is_flag_scaling_up: Local<bool>,
-    mut sound_writer: EventWriter<sounds::SoundEvent>,
+    game_assets: Res<GameAssets>,
+    mut audio: audio::GameAudio,
 ) {
-    if score.current_level < level.get_current_minimum_food() { return; }
+    if score.current_level < level.get_current_minimum_food() {
+        return;
+    }
 
     for (_flag, mut visible, mut transform) in outer_flags.iter_mut() {
         if transform.scale.x == 1.0 {
@@ -47,8 +56,8 @@ pub fn update_flag(
 
         if !visible.is_visible {
             print!("Making flag visible and sending sound!");
-            // flag is becoming visible so send spawn sound
-            sound_writer.send(sounds::SoundEvent(sounds::Sounds::FlagSpawn));
+            // flag is becoming visible so play spawn sound
+            audio.play_sfx(&game_assets.flag_spawn_handle);
         }
         visible.is_visible = true;
         transform.rotate(Quat::from_rotation_y(time.delta_seconds()));

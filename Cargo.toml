@@ -13,13 +13,13 @@ opt-level = 1
 opt-level = 3
 
 [dependencies]
-bevy = "0.6.1"
-#bevy_mod_raycast = { git = "https://github.com/aevyrie/bevy_mod_raycast" }
-#bevy_mod_picking = { git = "https://github.com/aevyrie/bevy_mod_picking" }
+bevy = "0.7.0"
 petgraph = "0.5.1"
-#bevy_prototype_debug_lines = "0.2.2"
 rand = "0.8"
 serde = {version = "1", features = ["derive"]}
 anyhow = "1.0"
 ron = "0.6.2"
-bevy_kira_audio = { git = "https://github.com/NiklasEi/bevy_kira_audio", features = ["wav", "ogg"]}
+bevy_kira_audio = { git = "https://github.com/NiklasEi/bevy_kira_audio", branch = "main", features = ["wav", "ogg"]}
+bevy_utils = {version = "0.7", default-features = false}
+leafwing-input-manager = "0.3.0"
+

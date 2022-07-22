@@ -1,5 +1,5 @@
+use crate::{level::Level, Direction, EntityType, Position, environment};
 use bevy::prelude::*;
-use crate::{level, level::Level, Direction, Position, EntityType, GameObject};
 use rand::{thread_rng, Rng};
 
 #[derive(Component)]
@@ -23,7 +23,9 @@ pub fn animate_dust(
         transform.rotate(Quat::from_rotation_y(time.delta_seconds()));
         transform.scale *= 1.0 - (time.delta_seconds() * 0.9);
 
-        let target = transform.translation.lerp(dust.move_toward, time.delta_seconds() * 0.3);
+        let target = transform
+            .translation
+            .lerp(dust.move_toward, time.delta_seconds() * 0.3);
         if !target.is_nan() {
             transform.translation = target;
         }
@@ -37,7 +39,7 @@ pub fn animate_dust(
                 despawn_entity = false;
                 material.base_color.set_a(a - (time.delta_seconds() * 1.25));
             }
-        } 
+        }
 
         if despawn_entity {
             commands.entity(**parent).despawn_recursive();
@@ -54,13 +56,14 @@ pub fn handle_create_dust_event(
     level: Res<Level>,
 ) {
     for event in create_dust_event_reader.iter() {
-        let position =  event.position;
+        let position = event.position;
 
         let ground = level.get(position.x, position.y - 1, position.z);
         if let Some(ground) = ground {
             if ground.entity_type != EntityType::Block
-            && ground.entity_type != EntityType::Platform 
-            && ground.entity_type != EntityType::UnstandableBlock {
+                && ground.entity_type != EntityType::Platform
+                && ground.entity_type != EntityType::UnstandableBlock
+            {
                 continue;
             }
 
@@ -70,13 +73,14 @@ pub fn handle_create_dust_event(
                     color = Some(material.base_color.clone());
                 }
             }
-            
+
             if color.is_none() {
                 continue;
             }
 
             let color = color.unwrap();
-            let transform = Transform::from_xyz(position.x as f32, position.y as f32, position.z as f32);
+            let transform =
+                Transform::from_xyz(position.x as f32, position.y as f32, position.z as f32);
 
             for _ in 0..3 {
                 let inner_mesh_x = thread_rng().gen_range(-25 as i32..25) as f32 / 100.0;
@@ -84,34 +88,36 @@ pub fn handle_create_dust_event(
 
                 let color = Color::rgba(color.r(), color.g(), color.b(), 0.7 + inner_mesh_x.abs());
                 let move_toward = match event.move_away_from {
-                                      Direction::Up => Vec3::new(-1.0, 0.0, 0.0),
-                                      Direction::Down => Vec3::new(1.0, 0.0, 0.0),
-                                      Direction::Left => Vec3::new(0.0, 0.0, 1.0),
-                                      Direction::Right => Vec3::new(0.0, 0.0, -1.0),
-                                      _ => Vec3::new(0.0, 0.0, 0.0),
-                                  };
+                    Direction::Up => Vec3::new(-1.0, 0.0, 0.0),
+                    Direction::Down => Vec3::new(1.0, 0.0, 0.0),
+                    Direction::Left => Vec3::new(0.0, 0.0, 1.0),
+                    Direction::Right => Vec3::new(0.0, 0.0, -1.0),
+                    _ => Vec3::new(0.0, 0.0, 0.0),
+                };
 
-                commands.spawn_bundle(PbrBundle {
-                  transform,
-                  ..Default::default()
-                })
-                .with_children(|parent| {
-                    parent.spawn_bundle(PbrBundle {
-                        mesh: meshes.add(Mesh::from(shape::Cube { size: 0.15 })),
-                        material: materials.add(color.into()),
-                        transform: {
-                            let mut t = Transform::from_xyz(inner_mesh_x, 0.1, inner_mesh_z);
-                            t.rotate(Quat::from_rotation_x(inner_mesh_z));
-                            t.rotate(Quat::from_rotation_y(inner_mesh_x));
-                            t
-                        },
-                        visibility: Visibility {
-                            is_visible: true,
-                        },
+                commands
+                    .spawn_bundle(PbrBundle {
+                        transform,
                         ..Default::default()
                     })
-                    .insert(Dust { move_toward });
-                });
+                    .with_children(|parent| {
+                        parent
+                            .spawn_bundle(PbrBundle {
+                                mesh: meshes.add(Mesh::from(shape::Cube { size: 0.15 })),
+                                material: materials.add(color.into()),
+                                transform: {
+                                    let mut t =
+                                        Transform::from_xyz(inner_mesh_x, 0.1, inner_mesh_z);
+                                    t.rotate(Quat::from_rotation_x(inner_mesh_z));
+                                    t.rotate(Quat::from_rotation_y(inner_mesh_x));
+                                    t
+                                },
+                                visibility: Visibility { is_visible: true },
+                                ..Default::default()
+                            })
+                            .insert(Dust { move_toward });
+                    })
+                    .insert(environment::CleanupMarker);
             }
         }
     }

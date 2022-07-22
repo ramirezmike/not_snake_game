@@ -1,10 +1,10 @@
-use bevy::prelude::*;
 use crate::Direction;
+use bevy::prelude::*;
 
 #[derive(Debug, Component)]
 pub struct Facing {
     pub direction: Direction,
-    pub can_face_verticals: bool
+    pub can_face_verticals: bool,
 }
 
 impl Facing {

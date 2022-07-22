@@ -1,58 +1,64 @@
-use bevy::{prelude::*,};
-use crate::{credits, level, dude, moveable, environment, game_controller, snake::Enemy};
+use crate::{credits, dude, environment, game_controller, cleanup, level, moveable, snake::Enemy, AppState, title_screen::MenuAction, title_screen, ui::text_size, ui::text_display, menus, assets, audio};
+use bevy::prelude::*;
+use leafwing_input_manager::prelude::*;
 
 pub struct LevelOverEvent {}
-#[derive(Component)]
-pub struct LevelOverText {} // TODO: change this to like "BetweenLevelEntity" or something marker or something
 
-pub fn setup_level_over_screen(
-    mut commands: Commands,
-    mut windows: ResMut<Windows>,
-    asset_server: Res<AssetServer>,
-) {
-    let window = windows.get_primary_mut().unwrap();
-    let width = window.width(); 
-    let height = window.height(); 
-
-    commands.spawn_bundle(UiCameraBundle::default())
-            .insert(LevelOverText {});
-
-    commands
-        .spawn_bundle(TextBundle {
-            style: Style {
-                align_self: AlignSelf::FlexEnd,
-                position_type: PositionType::Absolute,
-                position: Rect {
-                    top: Val::Px(height * 0.35),
-                    left: Val::Px(width * 0.25),
-                    ..Default::default()
-                },
-                max_size: Size {
-                    width: Val::Px(width / 2.0),
-                    height: Val::Undefined,
-                    ..Default::default()
-                },
-                ..Default::default()
-            },
-            text: Text::with_section(
-                "".to_string(),
-                TextStyle {
-                    font: asset_server.load(crate::FONT),
-                    font_size: 80.0,
-                    color: Color::WHITE,
-                },
-                TextAlignment {
-                    horizontal: HorizontalAlign::Center,
-                    vertical: VerticalAlign::Center,
-                },
-            ),
-            ..Default::default()
-        })
-        .insert(LevelOverText {});
-        println!("Level over text made!");
+pub struct LevelOverPlugin;
+impl Plugin for LevelOverPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_system_set(
+                SystemSet::on_enter(AppState::LevelTitle)
+                    .with_system(audio::play_ingame_music)
+                    .with_system(setup)
+                    .with_system(title_screen::release_all_presses.after(setup))
+            )
+            .add_system_set(
+                SystemSet::on_update(AppState::LevelTitle)
+                    .with_system(displaying_title.after("handle_input"))
+                    .with_system(
+                        handle_controllers
+                            .label("handle_input")
+                            .after("store_controller_inputs"),
+                    ),
+            )
+            .init_resource::<ControllerBuffer>()
+            .add_system_set(
+                SystemSet::on_exit(AppState::LevelTitle)
+                    .with_system(title_screen::release_all_presses)
+                    .with_system(cleanup::<CleanupMarker>),
+            );
+    }
 }
 
-pub fn displaying_title (
+#[derive(Default)]
+struct ControllerBuffer {
+    cooldown: f32
+}
+
+#[derive(Component)]
+struct CleanupMarker;
+
+fn setup(
+    mut commands: Commands,
+    game_assets: Res<assets::GameAssets>,
+    text_scaler: text_size::TextScaler,
+    mut controller_buffer: ResMut<ControllerBuffer>,
+) {
+    commands
+        .spawn_bundle(UiCameraBundle::default())
+        .insert(CleanupMarker);
+
+    text_display::add_text(&mut commands,
+                          game_assets.font.clone(),
+                          &text_scaler,
+                          vec!(CleanupMarker));
+    controller_buffer.cooldown = 0.1;
+
+    println!("Level over text made!");
+}
+
+fn displaying_title(
     mut state: ResMut<State<crate::AppState>>,
     time: Res<Time>,
     mut query: Query<&mut Text>,
@@ -61,13 +67,12 @@ pub fn displaying_title (
     mut timer: Local<f32>,
     mut text_set: Local<bool>,
     mut color_set: Local<bool>,
+    game_assets: Res<assets::GameAssets>,
+    mut audio: audio::GameAudio,
 
-    mut buffer: Local<f32>,
+    action_state: Query<&ActionState<MenuAction>>,
     mut text_counter: Local<usize>,
-    keyboard_input: Res<Input<KeyCode>>,
-    axes: Res<Axis<GamepadAxis>>,
-    buttons: Res<Input<GamepadButton>>,
-    gamepad: Option<Res<game_controller::GameController>>,
+    mut controller_buffer: ResMut<ControllerBuffer>,
 ) {
     let level_texts = level.get_level_text();
     if !*text_set {
@@ -78,35 +83,33 @@ pub fn displaying_title (
                 text.sections[0].value = "".to_string();
             }
 
-            if level.current_level == 15 {
-                text.sections[0].style.color = Color::BLACK;
-            }
-
+            println!("Text set {}", text.sections[0].value);
         }
         *text_set = true;
+        audio.play_sfx(&game_assets.blip);
     }
 
     // change background color gradually to next level's color
     let target_palette = &level.get_next_level_palette();
-    
-    let current_color = clear_color.0.clone();//Color::hex(current_palette.base.clone()).unwrap();
+
+    let current_color = clear_color.0.clone(); //Color::hex(current_palette.base.clone()).unwrap();
     let target_color = Color::hex(target_palette.base.clone()).unwrap();
     let target = Vec3::new(target_color.r(), target_color.g(), target_color.b());
     let start = Vec3::new(current_color.r(), current_color.g(), current_color.b());
     let new_color = start.lerp(target, *timer);
-    clear_color.0 = Color::rgb(new_color.x, new_color.y, new_color.z); 
+    clear_color.0 = Color::rgb(new_color.x, new_color.y, new_color.z);
 
     *timer += time.delta_seconds();
 
-    *buffer += time.delta_seconds();
-    if *buffer > 0.2 {
-        let pressed_buttons = game_controller::get_pressed_buttons(&axes, &buttons, gamepad);
-        if keyboard_input.just_pressed(KeyCode::Return) || keyboard_input.just_pressed(KeyCode::Space)
-        || keyboard_input.just_pressed(KeyCode::J)           
-        || pressed_buttons.contains(&game_controller::GameButton::Action){
+    controller_buffer.cooldown -= time.delta_seconds();
+    controller_buffer.cooldown = controller_buffer.cooldown.clamp(-10.0, 30.0);
+
+    if controller_buffer.cooldown <= 0.0 {
+        let action_state = action_state.single();
+        if action_state.just_pressed(MenuAction::Select) {
+            println!("level over screen received");
             *text_counter += 1;
             *text_set = false;
-            *buffer = 0.0;
         }
     }
 
@@ -114,7 +117,7 @@ pub fn displaying_title (
         state.set(crate::AppState::ChangingLevel).unwrap();
         *text_set = false;
         *color_set = false;
-        *text_counter = 0; 
+        *text_counter = 0;
         *timer = 0.0;
     }
 }
@@ -125,7 +128,7 @@ pub fn level_over_check(
     mut query: Query<&mut Text>,
     mut game_is_over: ResMut<environment::GameOver>,
     level: ResMut<level::Level>,
-    time: Res<Time>, 
+    time: Res<Time>,
     mut commands: Commands,
     mut dudes: Query<Entity, With<dude::Dude>>,
     mut snakes: Query<&mut Enemy>,
@@ -153,5 +156,27 @@ pub fn level_over_check(
 
     if game_is_over.0 && credits_delay.0.tick(time.delta()).finished() {
         credits_event_writer.send(crate::credits::CreditsEvent {});
+    }
+}
+
+fn handle_controllers(
+    controllers: Res<game_controller::GameController>,
+    mut players: Query<(Entity, &mut ActionState<MenuAction>)>,
+) {
+    for (_, mut action_state) in players.iter_mut() {
+        for (_, just_pressed) in controllers.just_pressed.iter() {
+            if just_pressed.contains(&game_controller::GameButton::ActionDown)
+            {
+                println!("level over screen pressed");
+                action_state.release(MenuAction::Select);
+                action_state.press(MenuAction::Select);
+            }
+
+            if just_pressed.contains(&game_controller::GameButton::Other)
+                || just_pressed.contains(&game_controller::GameButton::Start) {
+                action_state.release(MenuAction::Other);
+                action_state.press(MenuAction::Other);
+            }
+        }
     }
 }

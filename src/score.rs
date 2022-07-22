@@ -1,5 +1,43 @@
+use crate::{AppState, dude, food::FoodEatenEvent, game_controller, level, level_over, audio, Dude, assets::GameAssets,
+    title_screen::MenuAction, environment, cleanup, title_screen, ui::text_display, ui::text_size, assets
+};
 use bevy::prelude::*;
-use crate::{food::FoodEatenEvent, Dude, sounds, level, level_over, game_controller, dude};
+use leafwing_input_manager::prelude::*;
+
+pub struct ScorePlugin;
+impl Plugin for ScorePlugin {
+    fn build(&self, app: &mut App) {
+        app.add_system_set(
+            SystemSet::on_enter(AppState::ScoreDisplay)
+                .with_system(audio::play_ingame_music)
+                .with_system(setup)
+                .with_system(title_screen::release_all_presses.after(setup))
+        )
+        .add_system_set(
+            SystemSet::on_update(AppState::ScoreDisplay)
+                .with_system(displaying_score.after("handle_input"))
+                .with_system(
+                    handle_controllers
+                        .label("handle_input")
+                        .after("store_controller_inputs"),
+                ),
+        )
+        .init_resource::<ControllerBuffer>()
+        .add_system_set(
+            SystemSet::on_exit(AppState::ScoreDisplay)
+                .with_system(title_screen::release_all_presses)
+                .with_system(cleanup::<CleanupMarker>)
+        );
+    }
+}
+
+#[derive(Default)]
+struct ControllerBuffer {
+    cooldown: f32
+}
+
+#[derive(Component)]
+struct CleanupMarker;
 
 #[derive(Component)]
 pub struct ContinueText;
@@ -27,99 +65,73 @@ pub fn handle_food_eaten(
     mut score: ResMut<Score>,
     mut food_eaten_event_reader: EventReader<FoodEatenEvent>,
     dude: Query<Entity, With<Dude>>,
-    mut sound_writer: EventWriter<sounds::SoundEvent>,
+    game_assets: Res<GameAssets>,
+    mut audio: audio::GameAudio,
 ) {
     for eater in food_eaten_event_reader.iter() {
         if let Ok(_) = dude.get(eater.0) {
+            audio.play_sfx(&game_assets.pickup_handle[score.current_level % 5]);
+
             if eater.1 {
                 score.current_level_bonus += 1;
-                sound_writer.send(sounds::SoundEvent(sounds::Sounds::Pickup));
             } else {
                 score.current_level += 1;
-                sound_writer.send(sounds::SoundEvent(sounds::Sounds::Pickup));
             }
         }
     }
 }
 
-pub fn setup_score_screen(
+fn setup(
     mut commands: Commands,
-    mut windows: ResMut<Windows>,
-    asset_server: Res<AssetServer>,
+    game_assets: Res<assets::GameAssets>,
+    text_scaler: text_size::TextScaler,
+    mut controller_buffer: ResMut<ControllerBuffer>,
 ) {
-    commands.spawn_bundle(UiCameraBundle::default())
-            .insert(level_over::LevelOverText {});
-    let window = windows.get_primary_mut().unwrap();
-    let width = window.width(); 
-    let height = window.height(); 
     commands
-        .spawn_bundle(TextBundle {
-            style: Style {
-                align_self: AlignSelf::FlexEnd,
-                position_type: PositionType::Absolute,
-                position: Rect {
-                    top: Val::Px(height * 0.35),
-                    left: Val::Px(width * 0.25),
-                    ..Default::default()
-                },
-                max_size: Size {
-                    width: Val::Px(width / 2.0),
-                    height: Val::Undefined,
-                    ..Default::default()
-                },
-                ..Default::default()
-            },
-            text: Text::with_section(
-                "".to_string(),
-                TextStyle {
-                    font: asset_server.load(crate::FONT),
-                    font_size: 80.0,
-                    color: Color::WHITE,
-                },
-                TextAlignment {
-                    horizontal: HorizontalAlign::Center,
-                    vertical: VerticalAlign::Center,
-                },
-            ),
-            ..Default::default()
-        })
-        .insert(level_over::LevelOverText {});
+        .spawn_bundle(UiCameraBundle::default())
+        .insert(CleanupMarker);
 
-        commands
-            .spawn_bundle(TextBundle {
-                style: Style {
-                    align_self: AlignSelf::FlexEnd,
-                    position_type: PositionType::Absolute,
-                    position: Rect {
-                        bottom: Val::Px(5.0),
-                        right: Val::Px(15.0),
-                        ..Default::default()
-                    },
-                    size: Size {
-                        //width: Val::Px(200.0),
-                        ..Default::default()
-                    },
-                    ..Default::default()
-                },
-                text: Text::with_section(
-                    "".to_string(),
-                    TextStyle {
-                        font: asset_server.load(crate::FONT),
-                        font_size: 100.0,
-                        color: Color::rgba(0.8, 0.8, 0.8, 1.0),
-                    },
-                    TextAlignment {
-                        ..Default::default()
-                    }
-                ),
-                ..Default::default()
-            })
-            .insert(level_over::LevelOverText {})
-            .insert(ContinueText);
+    text_display::add_text(&mut commands,
+                          game_assets.font.clone(),
+                          &text_scaler,
+                          vec!(CleanupMarker));
+    controller_buffer.cooldown = 0.1;
+
+//  commands
+//      .spawn_bundle(TextBundle {
+//          style: Style {
+//              align_self: AlignSelf::FlexEnd,
+//              position_type: PositionType::Absolute,
+//              position: Rect {
+//                  bottom: Val::Px(5.0),
+//                  right: Val::Px(15.0),
+//                  ..Default::default()
+//              },
+//              size: Size {
+//                  //width: Val::Px(200.0),
+//                  ..Default::default()
+//              },
+//              ..Default::default()
+//          },
+//          text: Text::with_section(
+//              "".to_string(),
+//              TextStyle {
+//                  font: asset_server.load(crate::FONT),
+//                  font_size: 100.0,
+//                  color: Color::rgba(0.8, 0.8, 0.8, 1.0),
+//              },
+//              TextAlignment {
+//                  ..Default::default()
+//              },
+//          ),
+//          ..Default::default()
+//      })
+//      .insert(CleanupMarker)
+//      .insert(ContinueText);
     println!("Score text made!");
 }
 
-pub fn displaying_score(
+fn displaying_score(
     mut state: ResMut<State<crate::AppState>>,
     mut query: Query<&mut Text, Without<ContinueText>>,
     mut score: ResMut<Score>,
@@ -127,15 +139,14 @@ pub fn displaying_score(
     mut text_set: Local<bool>,
     mut continue_text: Query<&mut Text, With<ContinueText>>,
     mut text_blink: Local<bool>,
+    game_assets: Res<GameAssets>,
+    mut audio: audio::GameAudio,
 
-    time: Res<Time>,
-    mut buffer: Local<f32>,
+    action_state: Query<&ActionState<MenuAction>>,
     mut text_counter: Local<usize>,
     mut score_added: Local<bool>,
-    keyboard_input: Res<Input<KeyCode>>,
-    axes: Res<Axis<GamepadAxis>>,
-    buttons: Res<Input<GamepadButton>>,
-    gamepad: Option<Res<game_controller::GameController>>,
+    mut controller_buffer: ResMut<ControllerBuffer>,
+    time: Res<Time>,
 ) {
     if !*score_added {
         score.total += score.current_level;
@@ -151,25 +162,29 @@ pub fn displaying_score(
                 text.sections[0].value = "".to_string();
             }
         }
-        println!("Score: {} Death: {}",score.total, score.current_death_count);
+        println!(
+            "Score: {} Death: {}",
+            score.total, score.current_death_count
+        );
         *text_set = true;
+        audio.play_sfx(&game_assets.blip);
     }
 
-    *buffer += time.delta_seconds();
-    if *buffer > 0.5 {
-        let pressed_buttons = game_controller::get_pressed_buttons(&axes, &buttons, gamepad);
-        if keyboard_input.just_pressed(KeyCode::Return) || keyboard_input.just_pressed(KeyCode::Space)
-        || keyboard_input.just_pressed(KeyCode::J)    
-        || pressed_buttons.contains(&game_controller::GameButton::Action){
+    controller_buffer.cooldown -= time.delta_seconds();
+    controller_buffer.cooldown = controller_buffer.cooldown.clamp(-10.0, 30.0);
+
+    if controller_buffer.cooldown <= 0.0 {
+        let action_state = action_state.single();
+        if action_state.just_pressed(MenuAction::Select) {
+            println!("score screen received");
             *text_counter += 1;
             *text_set = false;
-            *buffer = 0.0;
         }
     }
 
     for mut text in continue_text.iter_mut() {
         let a = text.sections[0].style.color.a();
-        if a < 0.5 { 
+        if a < 0.5 {
             *text_blink = false;
         }
         if a > 1.0 {
@@ -186,17 +201,29 @@ pub fn displaying_score(
     if *text_counter >= score_texts.len() {
         state.set(crate::AppState::LevelTitle).unwrap();
         *text_set = false;
-        *text_counter = 0; 
+        *text_counter = 0;
         *score_added = false;
         score.current_death_count = 0;
     }
 }
 
-pub fn handle_kill_dude(
+pub fn increase_death_count(
     mut score: ResMut<Score>,
-    mut kill_dude_event_reader: EventReader<dude::KillDudeEvent>,
 ) {
-    for _ in kill_dude_event_reader.iter() {
-        score.current_death_count += 1;
+    score.current_death_count += 1;
+}
+
+fn handle_controllers(
+    controllers: Res<game_controller::GameController>,
+    mut players: Query<(Entity, &mut ActionState<MenuAction>)>,
+) {
+    for (_, mut action_state) in players.iter_mut() {
+        for (_, just_pressed) in controllers.just_pressed.iter() {
+            if just_pressed.contains(&game_controller::GameButton::ActionDown) {
+                println!("score screen pressed");
+                action_state.release(MenuAction::Select);
+                action_state.press(MenuAction::Select);
+            }
+        }
     }
 }

@@ -1,4 +1,4 @@
 use bevy::prelude::*;
 
 #[derive(Component)]
-pub struct BlockObject { }
+pub struct BlockObject {}
