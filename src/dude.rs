@@ -353,6 +353,8 @@ fn default_input_map() -> InputMap<PlayerAction> {
     input_map.insert(ActionUp, GamepadButtonType::North);
 
     input_map.insert(ActionDown, KeyCode::K);
+    input_map.insert(ActionDown, KeyCode::Return);
+    input_map.insert(ActionDown, KeyCode::Space);
     input_map.insert(ActionDown, GamepadButtonType::South);
 
     input_map.insert(ActionLeft, KeyCode::J);

@@ -33,6 +33,8 @@ jobs:
         run: |
           wasm-bindgen --no-typescript --out-name not_snake --out-dir wasm --target web target/wasm32-unknown-unknown/release/${{ env.binary }}.wasm
           cp -r assets wasm/
+          cp LICENSE-MIT wasm/
+          cp LICENSE-APACHE wasm/
       - name: Package as a zip
         uses: vimtor/action-zip@v1
         with:
@@ -72,6 +74,8 @@ jobs:
           mkdir linux
           cp target/x86_64-unknown-linux-gnu/release/${{ env.binary }} linux/
           cp -r assets linux/
+          cp LICENSE-MIT linux/
+          cp LICENSE-APACHE linux/
       - name: Package as a zip
         uses: vimtor/action-zip@v1
         with:
@@ -109,6 +113,8 @@ jobs:
           mkdir windows
           cp target/x86_64-pc-windows-msvc/release/${{ env.binary }}.exe windows/
           cp -r assets windows/
+          cp LICENSE-MIT windows/
+          cp LICENSE-APACHE windows/
       - name: Package as a zip
         uses: vimtor/action-zip@v1
         with:
@@ -149,6 +155,8 @@ jobs:
           mkdir -p ${{ env.binary }}.app/Contents/MacOS
           cp target/x86_64-apple-darwin/release/${{ env.binary }} ${{ env.binary }}.app/Contents/MacOS/
           cp -r assets ${{ env.binary }}.app/Contents/MacOS/
+          cp LICENSE-MIT ${{ env.binary }}.app/Contents/MacOS/
+          cp LICENSE-APACHE ${{ env.binary }}.app/Contents/MacOS/
           hdiutil create -fs HFS+ -volname "${{ env.binary }}" -srcfolder ${{ env.binary }}.app ${{ env.binary }}.dmg
       - name: Upload binaries to release
         uses: svenstaro/upload-release-action@v2
